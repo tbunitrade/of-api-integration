@@ -1,0 +1,154 @@
+import { Injectable } from '@nestjs/common';
+import { PuppeteerUtil, CONFIG } from './utils/puppeteer-utils';
+
+/* Logic of login_captcha
+The OnlyFans website has 2 captcha google recaptcha v2 and v3. (v2 enterprise, v3 enterprise)
+At first when users try to login on the website the website tries to login with default v3 cookie from browser site Cookie.
+If it fails then the website will be reloaded and at this time it shows google recaptcha v2 version.
+
+Now we have to resolve 2 captchas (v2, v3)
+First we have to resolve v3 and replace the e-recaptcha-response field with the result.
+Next we have to resolve v2 and replace the ec-recaptcha-response field with the result.
+
+And with these keys click login button.
+*/
+
+const checkIfExpired = (
+  numberOfDays: number,
+  scheduled_date: string,
+): boolean => {
+  const currentDate = new Date();
+  const scheduledDate = new Date(scheduled_date);
+  scheduledDate.setDate(scheduledDate.getDate() + numberOfDays);
+  return currentDate > scheduledDate;
+};
+
+@Injectable()
+export class AutomateService {
+  constructor() {}
+
+  //test data
+  // data = {
+  //   username: 'chadstevens578@gmail.com',
+  //   password: 'Duvo1234!',
+  //   number_of_days: 5,
+  //   scheduled_date: '2023-02-20',
+  //   model_id: 1,
+  //   platform_id: 1,
+  //   groupsWithMessages: [
+  //     {
+  //       messages: [
+  //         {
+  //           message_time: '00:00:00',
+  //         },
+  //       ],
+  //     },
+  //   ],
+  // };
+  async start(data: any = {}) {
+    const isExpired = checkIfExpired(data.number_of_days, data.scheduled_date);
+    if (!isExpired) return;
+
+    const puppeteerUtil = new PuppeteerUtil();
+    puppeteerUtil.initialize();
+    puppeteerUtil.setConfig();
+    // recaptcha solving can be wrong sometime
+    await puppeteerUtil.openBrowser();
+    const cookieFileName = 'user_' + data.model_id + data.platform_id;
+    await puppeteerUtil.loadCookiesFromFile(cookieFileName);
+    await puppeteerUtil.openPage('https://onlyfans.com/my/chats/send');
+    const isLoginPage = await puppeteerUtil.checkLogin();
+
+    while (1) {
+      try {
+        const _config = CONFIG;
+        let isLoggedIn = false;
+        if (!data.username) break;
+        if (isLoginPage) {
+          _config.login.idValue = _config.login.idValue.replace(
+            '$value',
+            data.username,
+          );
+          _config.login.passwordValue = _config.login.passwordValue.replace(
+            '$value',
+            data.password,
+          );
+          isLoggedIn = await puppeteerUtil.login(_config);
+        } else {
+          console.log('----------------- Login Success -----------------');
+          isLoggedIn = true;
+        }
+        if (isLoggedIn) {
+          //start cron
+          console.log('----------------- Start cron -----------------');
+          const groupsWithMessages = data.groupsWithMessages;
+          let scheduledDate;
+          if (data.scheduled_date)
+            scheduledDate = new Date(data.scheduled_date);
+          else {
+            scheduledDate = new Date();
+          }
+
+          for (let i = 0; i < groupsWithMessages.length; i++) {
+            const group = groupsWithMessages[i];
+            for (let j = 0; j < group.messages.length; j++) {
+              const msg = group.messages[i];
+              const [_hour, minutes, secs] = msg.message_time.split(':');
+              const hour = parseInt(_hour) % 13;
+              const suffix = parseInt(_hour) > 11 ? 'pm' : 'am';
+
+              let free_previews =
+                (msg.content.split(',') || []).length <= msg.free_preview
+                  ? msg.free_preview - 1
+                  : msg.free_preview;
+              free_previews = free_previews > 0 ? free_previews : 0;
+              if (msg.price === 0) {
+                free_previews = 0;
+              }
+
+              const msgData = {
+                message: msg.message,
+                message_month: scheduledDate.getMonth(),
+                message_date: scheduledDate.getDate() + i + 1,
+                message_hour: hour,
+                message_minute: minutes,
+                message_time_suffix: suffix,
+                message_list: msg.message_list,
+                message_exclude_list: msg.message_exclude_list,
+                release_form_tags: msg.release_form_tags,
+                release_user_tags: msg.release_user_tags,
+                content: msg.content,
+                message_price: msg.price,
+                free_preview:
+                  free_previews > 0
+                    ? Array.from(
+                        { length: free_previews },
+                        (_, i) => i + 1,
+                      ).join(',')
+                    : '',
+                idValue: data.username,
+                passwordValue: data.password,
+              };
+              const config = _config.work.map((c) => {
+                if (c['key']) {
+                  c.value = c.value.replace('$value', msgData[c['key']]);
+                }
+                return { ...c };
+              });
+              await puppeteerUtil.work(config);
+            }
+          }
+
+          console.log('Work Finished');
+          break;
+        } else {
+          continue;
+        }
+      } catch (error) {
+        console.log('Error: ', error);
+        continue;
+      }
+    }
+    await puppeteerUtil.closeBrowser();
+  }
+}
