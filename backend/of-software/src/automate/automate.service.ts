@@ -105,7 +105,11 @@ export class AutomateService {
               if (msg.price === 0) {
                 free_previews = 0;
               }
-
+              console.log(
+                `Message Date : ${scheduledDate.getMonth()}: ${
+                  scheduledDate.getDate() + i + 1
+                }`,
+              );
               const msgData = {
                 message: msg.message,
                 message_month: scheduledDate.getMonth(),
