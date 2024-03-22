@@ -1027,9 +1027,7 @@ export class PuppeteerUtil {
           ]);
           const fileNameList = step.value.split(',') || [];
           const filePathList = fileNameList.map((it) => {
-            const url = new URL(it);
-            const pathName = url.pathname;
-            const fileName = pathName.substring(pathName.lastIndexOf('/') + 1);
+            const fileName = it.replace(/^.*[\\/]/, '');
             return `${process.env.UPLOAD_FOLDER_URL}/${fileName}`;
           });
           await fileChooser.accept(filePathList);
