@@ -625,6 +625,7 @@ export class PuppeteerUtil {
         args: [
           `--disable-extensions-except=${pathToExtension}`,
           `--load-extension=${pathToExtension}`,
+          `--window-size=1920,1080`,
         ],
         executablePath: executablePath(),
       });
@@ -996,7 +997,7 @@ export class PuppeteerUtil {
         case 'type':
           await this._page.evaluate((selector) => {
             const ele = document.querySelector(selector);
-            ele.value = '';
+            if (ele) ele.value = '';
             ele.dispatchEvent(new Event('input', { bubbles: true })); // As this is vue website, it doens't chagne state value though we set value on input box
           }, step.selector);
           await this._page.type(step.selector, step.value);
