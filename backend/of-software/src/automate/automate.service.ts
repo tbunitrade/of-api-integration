@@ -108,7 +108,7 @@ export class AutomateService {
               console.log(
                 `Message Date : ${scheduledDate.getMonth()}: ${
                   scheduledDate.getDate() + i + 1
-                }`,
+                },  Time: ${hour}:${minutes}:${suffix}`,
               );
               const msgData = {
                 message: msg.message,
