@@ -563,6 +563,14 @@ export const CONFIG = {
       value: '1000',
     },
     {
+      type: 'click', // Click calendar nav button in case message not posted automatically.
+      value: '.l-header a[href="/my/vault"]',
+    },
+    {
+      type: 'waitForTime',
+      value: '1000',
+    },
+    {
       type: 'waitForTime',
       value: '30000',
     },
@@ -958,112 +966,123 @@ export class PuppeteerUtil {
       workConfig = [_config];
     }
     for (let i = 0; i < workConfig.length; i++) {
-      await this._page.waitForTimeout(1000);
-      compareResultValue = null;
-      const step = workConfig[i];
-      console.log(`Step: ${step.type}, Value: ${step.value}`);
-      switch (step.type) {
-        case 'click':
-          const ele = await this._page.$(step.value);
-          if (ele) {
-            await ele.click();
-          }
-
-          break;
-        case 'waitForSelector':
-          await this._page.waitForSelector(step.value, {
-            timeout: 10000,
-          });
-          break;
-        case 'loop':
-          const messageListStr = step.value;
-          const _messageList = messageListStr ? messageListStr.split(',') : [];
-          if (_messageList.length === 0) compareResultValue = false;
-          const messageList = _messageList.map((m) => m.trim());
-          for (let mi = 0; mi < messageList.length; mi++) {
-            const msg = messageList[mi];
-            for (let li = 0; li < step.childs.length; li++) {
-              const _step = { ...step.childs[li] };
-              if (_step.value) {
-                _step.value = _step.value.replaceAll('$value', msg);
-              }
-
-              await this.work(_step);
+      try {
+        await this._page.waitForTimeout(1000);
+        compareResultValue = null;
+        const step = workConfig[i];
+        console.log(`Step: ${step.type}, Value: ${step.value}`);
+        switch (step.type) {
+          case 'click':
+            const ele = await this._page.$(step.value);
+            if (ele) {
+              await ele.click();
             }
-          }
 
-          break;
+            break;
+          case 'waitForSelector':
+            await this._page.waitForSelector(step.value, {
+              timeout: 10000,
+            });
+            break;
+          case 'loop':
+            const messageListStr = step.value;
+            const _messageList = messageListStr
+              ? messageListStr.split(',')
+              : [];
+            if (_messageList.length === 0) compareResultValue = false;
+            const messageList = _messageList.map((m) => m.trim());
+            for (let mi = 0; mi < messageList.length; mi++) {
+              const msg = messageList[mi];
+              for (let li = 0; li < step.childs.length; li++) {
+                const _step = { ...step.childs[li] };
+                if (_step.value) {
+                  _step.value = _step.value.replaceAll('$value', msg);
+                }
 
-        case 'type':
-          await this._page.evaluate((selector) => {
-            const ele = document.querySelector(selector);
-            if (ele) ele.value = '';
-            ele.dispatchEvent(new Event('input', { bubbles: true })); // As this is vue website, it doens't chagne state value though we set value on input box
-          }, step.selector);
-          await this._page.type(step.selector, step.value);
-          break;
-        case 'clickForValue':
-          await this._page.evaluate(
-            ({ selector, value }) => {
-              debugger;
-              const elements = Array.from(document.querySelectorAll(selector));
-              const eles = elements.filter((ele) =>
-                ele.textContent.toLowerCase().includes(value.toLowerCase()),
-              );
-              if (eles.length > 0) {
-                eles[0].click();
+                await this.work(_step);
               }
-            },
-            { selector: step.selector, value: step.value },
-          );
+            }
 
-          // await this._page.click(`${step.selector}:contains("${step.value})`);
-          break;
+            break;
 
-        case 'appendMedias':
-          const [fileChooser] = await Promise.all([
-            this._page.waitForFileChooser(),
-            this._page.$eval(step.selector, (element) => element.click()),
-          ]);
-          const fileNameList = step.value.split(',') || [];
-          const filePathList = fileNameList.map((it) => {
-            const fileName = it.replace(/^.*[\\/]/, '');
-            return `${process.env.UPLOAD_FOLDER_URL}/${fileName}`;
-          });
-          await fileChooser.accept(filePathList);
-          await this._page.waitForTimeout(500);
-          await this._page.waitForSelector('button.b-dropzone__preview__edit', {
-            timeout: 60000,
-          });
-          break;
-        case 'waitForTime':
-          await this._page.waitForTimeout(step.value);
-          break;
-        case 'compareValue':
-          const actualValue = await this._page.evaluate((selector) => {
-            const div = document.querySelector(selector);
-            return div ? div.textContent.trim() : null;
-          }, step.selector);
-          compareResultValue =
-            actualValue.toLowerCase() === step.value.toLowerCase();
-          break;
-        case 'condition':
-          const conditions = step.childs;
-          if (compareResultValue === true) {
-            await this.work(conditions['yes']);
-          }
-          if (compareResultValue === false) {
-            await this.work(conditions['no']);
-          }
-          break;
-        case 'waitForNavigation':
-          await this._page.waitForNavigation();
-          break;
-        case 'close':
-          await this._browser.close();
-          break;
-        default:
-          break;
+          case 'type':
+            await this._page.evaluate((selector) => {
+              const ele = document.querySelector(selector);
+              if (ele) ele.value = '';
+              ele.dispatchEvent(new Event('input', { bubbles: true })); // As this is vue website, it doens't chagne state value though we set value on input box
+            }, step.selector);
+            await this._page.type(step.selector, step.value);
+            break;
+          case 'clickForValue':
+            await this._page.evaluate(
+              ({ selector, value }) => {
+                debugger;
+                const elements = Array.from(
+                  document.querySelectorAll(selector),
+                );
+                const eles = elements.filter((ele) =>
+                  ele.textContent.toLowerCase().includes(value.toLowerCase()),
+                );
+                if (eles.length > 0) {
+                  eles[0].click();
+                }
+              },
+              { selector: step.selector, value: step.value },
+            );
+
+            // await this._page.click(`${step.selector}:contains("${step.value})`);
+            break;
+
+          case 'appendMedias':
+            const [fileChooser] = await Promise.all([
+              this._page.waitForFileChooser(),
+              this._page.$eval(step.selector, (element) => element.click()),
+            ]);
+            const fileNameList = step.value.split(',') || [];
+            const filePathList = fileNameList.map((it) => {
+              const fileName = it.replace(/^.*[\\/]/, '');
+              return `${process.env.UPLOAD_FOLDER_URL}/${fileName}`;
+            });
+            await fileChooser.accept(filePathList);
+            await this._page.waitForTimeout(500);
+            await this._page.waitForSelector(
+              'button.b-dropzone__preview__edit',
+              {
+                timeout: 60000,
+              },
+            );
+            break;
+          case 'waitForTime':
+            await this._page.waitForTimeout(step.value);
+            break;
+          case 'compareValue':
+            const actualValue = await this._page.evaluate((selector) => {
+              const div = document.querySelector(selector);
+              return div ? div.textContent.trim() : null;
+            }, step.selector);
+            compareResultValue =
+              actualValue.toLowerCase() === step.value.toLowerCase();
+            break;
+          case 'condition':
+            const conditions = step.childs;
+            if (compareResultValue === true) {
+              await this.work(conditions['yes']);
+            }
+            if (compareResultValue === false) {
+              await this.work(conditions['no']);
+            }
+            break;
+          case 'waitForNavigation':
+            await this._page.waitForNavigation();
+            break;
+          case 'close':
+            await this._browser.close();
+            break;
+          default:
+            break;
+        }
+      } catch (error) {
+        console.log('Error in work: ', error);
       }
     }
   }
