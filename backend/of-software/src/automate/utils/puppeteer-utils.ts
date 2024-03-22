@@ -563,8 +563,8 @@ export const CONFIG = {
       value: '1000',
     },
     {
-      type: 'waitForNavigation',
-      value: '',
+      type: 'waitForTime',
+      value: '30000',
     },
     {
       type: 'waitForSelector',
