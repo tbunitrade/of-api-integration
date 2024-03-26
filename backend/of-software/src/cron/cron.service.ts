@@ -43,16 +43,16 @@ export class CronService {
    */
   async create(createCronDto: CreateCronDto) {
     //this is test line and need to be deleted
-    const test = this.createCron();
-    await test();
-    // const job = new CronJob(createCronDto.interval, this.createCron());
-    // this.schedulerRegistry.addCronJob(createCronDto.name, job);
-    // job.start();
-    // this.saveCronJob(createCronDto);
-    // return {
-    //   name: createCronDto.name,
-    //   next: job.nextDate(),
-    // };
+    // const test = this.createCron();
+    // await test();
+    const job = new CronJob(createCronDto.interval, this.createCron());
+    this.schedulerRegistry.addCronJob(createCronDto.name, job);
+    job.start();
+    this.saveCronJob(createCronDto);
+    return {
+      name: createCronDto.name,
+      next: job.nextDate(),
+    };
   }
 
   /**
