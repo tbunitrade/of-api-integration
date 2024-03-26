@@ -121,7 +121,7 @@ export class CronService {
         for (let i = 0; i < modelPlatforms.length; i++) {
           const mp = modelPlatforms[i];
           //debugging for live server
-          if (mp.id != 24) continue;
+          // if (mp.id != 24) continue;
           let groups = await this.groupService.findNGroupsByPlatformId(
             mp.platform_id,
             mp.latest_group_id || 0,
@@ -144,6 +144,15 @@ export class CronService {
           const data: any = mp;
           data.groupsWithMessages = groupsWithMessages;
           await this.automateService.start(data);
+          const latestGroupId = groupIds ? groupIds[groupIds.length - 1] : 0;
+          const now = new Date();
+          const afterDays = new Date(
+            new Date(now).setDate(now.getDate() + mp.number_of_days),
+          );
+          await this.modelPlatformService.update(mp.id, {
+            latest_group_id: latestGroupId,
+            scheduled_date: afterDays.toDateString(),
+          });
         }
       } catch (error) {
         console.error('Error in Cron job => ', error?.message ?? 'Unknown');

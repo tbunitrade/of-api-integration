@@ -564,7 +564,7 @@ export const CONFIG = {
     },
     {
       type: 'click', // Click calendar nav button in case message not posted automatically.
-      value: '.l-header a[href="/my/vault"]',
+      value: '.l-header a[href="/my/queue"]',
     },
     {
       type: 'waitForTime',
@@ -622,14 +622,14 @@ export class PuppeteerUtil {
   }
 
   setConfig(_config?: any) {
-    this._config = _config || CONFIG;
+    this._config = _config || { ...CONFIG };
   }
 
   async openBrowser() {
     try {
       this._browser = await this._puppeteer.launch({
-        headless: true,
-        slowMo: 10,
+        headless: false,
+        slowMo: 100,
         args: [
           `--disable-extensions-except=${pathToExtension}`,
           `--load-extension=${pathToExtension}`,

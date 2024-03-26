@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PuppeteerUtil, CONFIG } from './utils/puppeteer-utils';
+import * as _ from 'lodash';
 
 /* Logic of login_captcha
 The OnlyFans website has 2 captcha google recaptcha v2 and v3. (v2 enterprise, v3 enterprise)
@@ -58,10 +59,11 @@ export class AutomateService {
     await puppeteerUtil.loadCookiesFromFile(cookieFileName);
     await puppeteerUtil.openPage('https://onlyfans.com/my/chats/send');
     const isLoginPage = await puppeteerUtil.checkLogin();
+    let repeatCount = 50;
 
     while (1) {
       try {
-        const _config = CONFIG;
+        let _config = _.cloneDeep(CONFIG);
         let isLoggedIn = false;
         if (!data.username) break;
         if (isLoginPage) {
@@ -90,56 +92,63 @@ export class AutomateService {
           }
 
           for (let i = 0; i < groupsWithMessages.length; i++) {
+            _config = null;
+            _config = _.cloneDeep(CONFIG);
             const group = groupsWithMessages[i];
             for (let j = 0; j < group.messages.length; j++) {
-              const msg = group.messages[i];
-              const [_hour, minutes, secs] = msg.message_time.split(':');
-              const hour = parseInt(_hour) % 13;
-              const suffix = parseInt(_hour) > 11 ? 'pm' : 'am';
+              try {
+                const msg = group.messages[j];
+                const [_hour, minutes, secs] = msg.message_time?.split(':');
+                const hour = ((parseInt(_hour) % 13) + _hour / 13) | 0;
+                const suffix = parseInt(_hour) >= 12 ? 'pm' : 'am';
 
-              let free_previews =
-                (msg.content.split(',') || []).length <= msg.free_preview
-                  ? msg.free_preview - 1
-                  : msg.free_preview;
-              free_previews = free_previews > 0 ? free_previews : 0;
-              if (msg.price === 0) {
-                free_previews = 0;
-              }
-              console.log(
-                `Message Date : ${scheduledDate.getMonth()}: ${
-                  scheduledDate.getDate() + i + 1
-                },  Time: ${hour}:${minutes}:${suffix}`,
-              );
-              const msgData = {
-                message: msg.message,
-                message_month: scheduledDate.getMonth(),
-                message_date: scheduledDate.getDate() + i + 1,
-                message_hour: hour,
-                message_minute: minutes,
-                message_time_suffix: suffix,
-                message_list: msg.message_list,
-                message_exclude_list: msg.message_exclude_list,
-                release_form_tags: msg.release_form_tags,
-                release_user_tags: msg.release_user_tags,
-                content: msg.content,
-                message_price: msg.price,
-                free_preview:
-                  free_previews > 0
-                    ? Array.from(
-                        { length: free_previews },
-                        (_, i) => i + 1,
-                      ).join(',')
-                    : '',
-                idValue: data.username,
-                passwordValue: data.password,
-              };
-              const config = _config.work.map((c) => {
-                if (c['key']) {
-                  c.value = c.value.replace('$value', msgData[c['key']]);
+                let free_previews =
+                  (msg.content?.split(',') || []).length <= msg.free_preview
+                    ? msg.free_preview - 1
+                    : msg.free_preview;
+                free_previews = free_previews > 0 ? free_previews : 0;
+                if (msg.price === 0) {
+                  free_previews = 0;
                 }
-                return { ...c };
-              });
-              await puppeteerUtil.work(config);
+                console.log(
+                  `Message Date : ${scheduledDate.getMonth()}: ${
+                    scheduledDate.getDate() + i + 1
+                  },  Time: ${hour}:${minutes}:${suffix}`,
+                );
+                const msgData = {
+                  message: msg.message,
+                  message_month: scheduledDate.getMonth(),
+                  message_date: scheduledDate.getDate() + i + 1,
+                  message_hour: hour,
+                  message_minute: minutes,
+                  message_time_suffix: suffix,
+                  message_list: msg.message_list,
+                  message_exclude_list: msg.message_exclude_list,
+                  release_form_tags: msg.release_form_tags,
+                  release_user_tags: msg.release_user_tags,
+                  content: msg.content,
+                  message_price: msg.price,
+                  free_preview:
+                    free_previews > 0
+                      ? Array.from(
+                          { length: free_previews },
+                          (_, k) => k + 1,
+                        ).join(',')
+                      : '',
+                  idValue: data.username,
+                  passwordValue: data.password,
+                };
+                const config = _config.work.map((c) => {
+                  if (c['key']) {
+                    c.value = c.value.replace('$value', msgData[c['key']]);
+                  }
+                  return { ...c };
+                });
+                await puppeteerUtil.work(config);
+              } catch (error) {
+                console.log('Error : ', error);
+                continue;
+              }
             }
           }
 
@@ -150,6 +159,8 @@ export class AutomateService {
         }
       } catch (error) {
         console.log('Error: ', error);
+        repeatCount--; // IF error occurs over 50 times, break and exit;
+        if (repeatCount < 0) break;
         continue;
       }
     }
