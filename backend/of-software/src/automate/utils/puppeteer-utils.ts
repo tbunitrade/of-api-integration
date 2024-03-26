@@ -629,7 +629,7 @@ export class PuppeteerUtil {
     try {
       this._browser = await this._puppeteer.launch({
         headless: true,
-        slowMo: 100,
+        slowMo: 10,
         args: [
           `--disable-extensions-except=${pathToExtension}`,
           `--load-extension=${pathToExtension}`,
