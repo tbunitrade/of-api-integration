@@ -115,6 +115,7 @@ export class GroupService {
           .where('platform.id = :platform_id', { platform_id })
           .andWhere('group.model_id = :model_id', { model_id })
           .andWhere('group.id > :group_id', { group_id })
+          .andWhere('group.status = 1')
           .take(count)
           .getMany();
       } catch (err) {
