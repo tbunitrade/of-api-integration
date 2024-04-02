@@ -32,4 +32,16 @@ export class CronController {
       console.log(error);
     }
   }
+
+  @Get('manual-start')
+  @ApiBearerAuth('jwt')
+  @UseGuards(JwtAuthGuard)
+  async manualStart() {
+    try {
+      const result = await this.cronService.manualStart();
+      return result;
+    } catch (error) {
+      console.log(error);
+    }
+  }
 }

@@ -42,9 +42,6 @@ export class CronService {
    * @returns
    */
   async create(createCronDto: CreateCronDto) {
-    //this is test line and need to be deleted
-    // const test = this.createCron();
-    // await test();
     const job = new CronJob(
       createCronDto.interval,
       this.createCron(),
@@ -59,6 +56,16 @@ export class CronService {
       name: createCronDto.name,
       next: job.nextDate(),
     };
+  }
+
+  /*
+   * Manual Start Cron Job
+   */
+  async manualStart() {
+    //this is test line and need to be deleted
+    const startJob = this.createCron();
+    await startJob();
+    return true;
   }
 
   /**
