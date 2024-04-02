@@ -124,6 +124,7 @@ const onPageNumberClick = (page) => {
         <TableCheckboxCell v-if="checkable" @checked="checkAll($event)" type="th" />
         <th class="w-10" />
         <th class="text-left">Group Name</th>
+        <th>Messages</th>
         <th>Added to OnlyFans</th>
         <th>Status</th>
         <th>Actions</th>
@@ -139,6 +140,9 @@ const onPageNumberClick = (page) => {
         </td>
         <td data-label="Name" class="text-left">
           {{ client.name }}
+        </td>
+        <td data-label="Messages">
+          {{ client.message_count ?? 0 }}
         </td>
         <td data-label="Added to Platform">
           {{ client.added_on_platform_at.split('T')[0] }}

@@ -45,7 +45,13 @@ export class CronService {
     //this is test line and need to be deleted
     // const test = this.createCron();
     // await test();
-    const job = new CronJob(createCronDto.interval, this.createCron());
+    const job = new CronJob(
+      createCronDto.interval,
+      this.createCron(),
+      null,
+      true,
+      'America/New_York',
+    );
     this.schedulerRegistry.addCronJob(createCronDto.name, job);
     job.start();
     this.saveCronJob(createCronDto);

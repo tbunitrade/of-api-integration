@@ -72,18 +72,22 @@ export class GroupService {
   async findAllByModelPlatform(
     model_id: number,
     platform_id: number,
-  ): Promise<Group[]> {
+  ): Promise<any> {
     try {
-      return await this.groupRepository
+      const result = await this.groupRepository
         .createQueryBuilder('group')
         .innerJoin(
           'platform_group',
           'platform_group',
           'group.id = platform_group.group_id',
         )
+        .leftJoinAndSelect('group.messages', 'messages')
+        .addSelect('COUNT(messages.id)', 'messageCount')
         .where('platform_group.platform_id = :platform_id', { platform_id })
         .andWhere('group.model_id = :model_id', { model_id })
+        .groupBy('group.id,messages.id')
         .getMany();
+      return result;
     } catch (err) {
       console.error('Group findAll error', err);
     }

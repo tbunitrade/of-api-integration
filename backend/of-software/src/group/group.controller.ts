@@ -55,6 +55,11 @@ export class GroupController {
         model_id,
         platform_id,
       );
+      result.map((it) => {
+        it['message_count'] = it.messages?.length ?? 0;
+        delete it['messages'];
+      });
+
       return result;
     } catch (error) {
       throw error;

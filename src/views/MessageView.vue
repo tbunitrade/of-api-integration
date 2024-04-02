@@ -508,7 +508,7 @@ watch(groupsInStore, () => {
                     </div>
                   </div>
                   <div class="flex-1">
-                    <FormField label="Name" help="Required. Message name">
+                    <FormField label="Message Name" help="Required. Message name">
                       <FormControl v-model="selectedMessage.name" name="name" required autocomplete="name"
                         placeholder="Input Message Name" />
                     </FormField>
@@ -531,25 +531,6 @@ watch(groupsInStore, () => {
               <div class="flex flex-1 flex-col">
                 <div class="flex gap-5 md:flex-row flex-col">
                   <div class="flex-1">
-                    <FormField label="Message List" help="Required. Message List">
-                      <FormControl v-model="selectedMessage.message_list" name="message_list" required
-                        autocomplete="message_list" placeholder="(separate with commas)" />
-                    </FormField>
-                    <div class="mb-3" v-for="error of  $mv.message_list.$errors " :key="error.$uid">
-                      <div :class="[colorsText['danger'], 'text-sm']">{{ error.$message }}</div>
-                    </div>
-                  </div>
-                  <div class="flex-1">
-                    <FormField label="Message List Exclude">
-                      <FormControl v-model="selectedMessage.message_exclude_list" name="message_exclude_list"
-                        autocomplete="message_exclude_list" />
-                    </FormField>
-
-                  </div>
-
-                </div>
-                <div class="flex gap-5 md:flex-row flex-col">
-                  <div class="flex-1">
                     <FormField label="Message Time" help="Required. Message Time">
                       <FormControl v-model="selectedMessage.message_time" name="message_time" required type="time"
                         autocomplete="message_time" />
@@ -559,21 +540,42 @@ watch(groupsInStore, () => {
                     </div>
                   </div>
                   <div class="flex-1">
-                    <FormField label="Release Form Tags" help="Required. Release Form Tags">
-                      <FormControl v-model="selectedMessage.release_form_tags" name="release_form_tags" required
-                        autocomplete="release_form_tags" placeholder="(separate with commas)" />
+                    <FormField label="Message List" help="Required. Message List">
+                      <FormControl v-model="selectedMessage.message_list" name="message_list" required
+                        autocomplete="message_list" placeholder="(separate with commas)" />
                     </FormField>
+                    <div class="mb-3" v-for="error of  $mv.message_list.$errors " :key="error.$uid">
+                      <div :class="[colorsText['danger'], 'text-sm']">{{ error.$message }}</div>
+                    </div>
                   </div>
+
+
+                </div>
+                <div class="flex gap-5 md:flex-row flex-col">
+                  <div class="flex-1">
+                    <FormField label="Message List Exclude">
+                      <FormControl v-model="selectedMessage.message_exclude_list" name="message_exclude_list"
+                        autocomplete="message_exclude_list" />
+                    </FormField>
+
+                  </div>
+                  <div class="flex-1">
+                    <FormField label="User Tags" help="Required. User Tags">
+                      <FormControl v-model="selectedMessage.release_user_tags" name="release_user_tags"
+                        autocomplete="release_user_tags" />
+                    </FormField>
+
+                  </div>
+
 
                 </div>
                 <div class="flex gap-5 md:flex-row flex-col">
 
                   <div class="flex-1">
-                    <FormField label="Release User Tags" help="Required. Release User Tags">
-                      <FormControl v-model="selectedMessage.release_user_tags" name="release_user_tags"
-                        autocomplete="release_user_tags" />
+                    <FormField label="Release Form Tags" help="Required. Release Form Tags">
+                      <FormControl v-model="selectedMessage.release_form_tags" name="release_form_tags" required
+                        autocomplete="release_form_tags" placeholder="(separate with commas)" />
                     </FormField>
-
                   </div>
                   <div class="flex-1">
                     <FormField label="Price">
