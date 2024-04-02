@@ -20,4 +20,16 @@ export class CronController {
       console.log(error);
     }
   }
+
+  @Get('get')
+  @ApiBearerAuth('jwt')
+  @UseGuards(JwtAuthGuard)
+  async get() {
+    try {
+      const result = await this.cronService.getCrons();
+      return result;
+    } catch (error) {
+      console.log(error);
+    }
+  }
 }
