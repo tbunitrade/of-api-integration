@@ -86,7 +86,7 @@ export class GroupService {
         .where('platform_group.platform_id = :platform_id', { platform_id })
         .andWhere('group.model_id = :model_id', { model_id })
         .groupBy('group.id,messages.id')
-        .orderBy('id')
+        .orderBy('group.id')
         .getMany();
       return result;
     } catch (err) {
