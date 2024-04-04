@@ -583,6 +583,10 @@ export const CONFIG = {
       value: '#app .l-header nav a[data-name="Chats"]',
     },
     {
+      type: 'waitForTime',
+      value: '10000',
+    },
+    {
       type: 'waitForSelector',
       value: '#content .b-chats__header a[href="/my/chats/send"]',
     },
@@ -771,7 +775,7 @@ export class PuppeteerUtil {
           try {
             await this._page.waitForTimeout(10000);
             await this._page.waitForSelector(_config.pageSelector, {
-              timeout: 5000,
+              timeout: 10000,
             });
             if (i > 2) {
               const cookieFileName =
@@ -1034,11 +1038,13 @@ export class PuppeteerUtil {
             break;
 
           case 'appendMedias':
+            if (!step.value || step.value?.length === 0) break;
+            const fileNameList = step.value.split(',') || [];
+
             const [fileChooser] = await Promise.all([
               this._page.waitForFileChooser(),
               this._page.$eval(step.selector, (element) => element.click()),
             ]);
-            const fileNameList = step.value.split(',') || [];
             const filePathList = fileNameList.map((it) => {
               const fileName = it.replace(/^.*[\\/]/, '');
               return `${process.env.UPLOAD_FOLDER_URL}/${fileName}`;
