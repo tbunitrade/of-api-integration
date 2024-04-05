@@ -3,6 +3,7 @@ import puppeteer from 'puppeteer-extra';
 import StealthPlugin from 'puppeteer-extra-plugin-stealth';
 import * as path from 'path';
 import { solveRecaptcha } from './nopecha';
+import { resolveCaptcha, resolveCaptchaV3 } from './anticaptcha';
 import _fs from 'fs';
 import { RecaptchaUtil } from './recaptcha';
 const fs = _fs.promises;
@@ -804,6 +805,12 @@ export class PuppeteerUtil {
             //   _config.defaultCaptchaKey,
             //   await this._page.url(),
             // );
+            // const siteUrl = await this._page.url();
+            // captchaSolution = await resolveCaptchaV3(
+            //   siteUrl,
+            //   _config.defaultCaptchaKey,
+            // );
+
             captchaSolution = await recaptchaUtil.resolveRecaptcha2(
               _config.defaultCaptchaKey,
               await this._page.url(),
@@ -866,6 +873,24 @@ export class PuppeteerUtil {
           //   siteKey,
           //   await this._page.url(),
           // );
+          const siteUrl = await this._page.url();
+          // const stoken = urlParams.get('');
+          //ar=1&k=6LddGoYgAAAAAHD275rVBjuOYXiofr1u4pFS5lHn&co=aHR0cHM6Ly9vbmx5ZmFucy5jb206NDQz&hl=en&v=rz4DvU-cY2JYCwHSTck0_qm-&theme=light&size=normal&badge=inline&sa=login&cb=odl8pjyrwaxr
+          // const additionalParams = {
+          //   action: 'login',
+          //   badge: 'inline',
+          //   theme: 'light',
+          //   ar: 1,
+          //   k: '6LddGoYgAAAAAHD275rVBjuOYXiofr1u4pFS5lHn',
+          //   co: 'aHR0cHM6Ly9vbmx5ZmFucy5jb206NDQz',
+          //   hl: 'en',
+          //   v: 'rz4DvU-cY2JYCwHSTck0_qm-',
+          //   size: 'normal',
+          //   sa: 'login',
+          //   cb: 'odl8pjyrwaxr',
+          //   s: 'aHR0cHM6Ly9vbmx5ZmFucy5jb206NDQz',
+          // };
+          // captchaSolution = await resolveCaptcha(siteUrl, siteKey);
           captchaSolution = await recaptchaUtil.resolveRecaptcha2(
             siteKey,
             await this._page.url(),

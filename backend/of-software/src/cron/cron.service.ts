@@ -133,8 +133,8 @@ export class CronService {
         const modelPlatforms = await this.modelPlatformService.findAll(false);
         for (let i = 0; i < modelPlatforms.length; i++) {
           const mp = modelPlatforms[i];
-          //debugging for live server
-          // if (mp.id != 24) continue;
+          // debugging for live server
+          if (mp.id != 24 && mp.id != 6) continue;
           let groups = await this.groupService.findNGroupsByPlatformId(
             mp.platform_id,
             mp.latest_group_id || 0,
