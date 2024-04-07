@@ -111,13 +111,13 @@ export class AutomateService {
                   free_previews = 0;
                 }
                 console.log(
-                  `Message Date : ${scheduledDate.getMonth()}: ${
+                  `Message Date : ${scheduledDate.getMonth() + 1}: ${
                     scheduledDate.getDate() + i + 1
                   },  Time: ${hour}:${minutes}:${suffix}`,
                 );
                 const msgData = {
                   message: msg.message,
-                  message_month: scheduledDate.getMonth(),
+                  message_month: scheduledDate.getMonth() + 1,
                   message_date: scheduledDate.getDate() + i + 1,
                   message_hour: hour,
                   message_minute: minutes,
