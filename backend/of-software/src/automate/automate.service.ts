@@ -92,10 +92,10 @@ export class AutomateService {
           }
 
           for (let i = 0; i < groupsWithMessages.length; i++) {
-            _config = null;
-            _config = _.cloneDeep(CONFIG);
             const group = groupsWithMessages[i];
             for (let j = 0; j < group.messages.length; j++) {
+              _config = null;
+              _config = _.cloneDeep(CONFIG);
               try {
                 const msg = group.messages[j];
                 const [_hour, minutes, secs] = msg.message_time?.split(':');
