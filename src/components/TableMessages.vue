@@ -131,9 +131,14 @@ const onPageNumberClick = (page) => {
         </th>
         <th class="text-left"> Message Name </th>
         <th class="text-right">Message Time</th>
-        <th>Price</th>
-        <th>Content Attachment</th>
+        <th class="text-right">Message List</th>
+        <th class="text-right">Message List Exclude</th>
+        <th class="text-right">User Tags</th>
         <th class="text-left">Release Form Tags</th>
+        <th>Price</th>
+        <th>Free Preview</th>
+        <th>Attachment</th>
+
         <!--<th class="text-left">Status</th>-->
         <th>Actions</th>
       </tr>
@@ -147,15 +152,28 @@ const onPageNumberClick = (page) => {
         <td data-label="Message Time" class="text-right">
           {{ convert24to12(client.message_time) }}
         </td>
+        <td data-label="Message List" class="text-left">
+          {{ client.message_list }}
+        </td>
+        <td data-label="Message List Exclude" class="text-left">
+          {{ client.message_exclude_list }}
+        </td>
+        <td data-label="User Tags" class="text-left">
+          {{ client.release_user_tags }}
+        </td>
+        <td data-label="Release From Tags" class="text-left">
+          {{ client.release_form_tags }}
+        </td>
         <td data-label="Price">
           ${{ parseFloat(client.price).toFixed(2) }}
         </td>
-        <td data-label="Content Attachment">
-          {{ client.content_attached ? 'Yes' : 'No' }}
+        <td data-label="Free Preview">
+          {{ client.free_preview }}
         </td>
-        <td data-label="Release From Tags" class="text-left">
-          {{ client.release_from_tags }}
+        <td data-label="Attachment">
+          {{ (client.content ?? '').split(',').filter(it => it.length > 0).length ?? 0 }}
         </td>
+
 
         <!--<td data-label="Status">
           {{ client.status === 1 ? 'Active' : 'Inactive' }}

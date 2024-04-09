@@ -56,20 +56,15 @@ export class MessageService {
           'group_message',
           'message.id = group_message.message_id',
         )
-        .innerJoin('group', 'group', 'group.model_id = :model_id', {
-          model_id: id,
-        })
         .innerJoin(
-          'platform_group',
-          'platform_group',
-          'platform_group.group_id = group_message.group_id',
+          'group',
+          'group',
+          'group.model_id = :model_id and group.id = group_message.group_id',
+          {
+            model_id: id,
+          },
         )
-        .innerJoin(
-          'model_platform',
-          'model_platform',
-          'model_platform.platform_id = platform_group.platform_id',
-        )
-        .where('model_platform.model_id = :model_id', { model_id: id })
+        .orderBy('message.id')
         .getMany();
     } catch (err) {
       console.error('Message findAll error', err);
