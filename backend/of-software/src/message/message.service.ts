@@ -2,7 +2,7 @@
 
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { FindOneOptions, Repository } from 'typeorm';
+import { FindOneOptions, Repository, SelectQueryBuilder } from 'typeorm';
 import { Message } from './message.entity';
 import { MessageDto } from 'src/dtos/message.dto';
 import { GroupMessage } from 'src/groupMessages/group_message.entity';
@@ -47,10 +47,11 @@ export class MessageService {
     }
   }
 
-  async findAllByModelId(id: string): Promise<Message[]> {
+  async findAllByModelId(id: string) {
     try {
-      return await this.messageRepository
+      const result = await this.messageRepository
         .createQueryBuilder('message')
+        .select(['message.*', 'group.id as group_id, group.name as group_name'])
         .innerJoin(
           'group_message',
           'group_message',
@@ -65,7 +66,8 @@ export class MessageService {
           },
         )
         .orderBy('message.id')
-        .getMany();
+        .getRawMany();
+      return result;
     } catch (err) {
       console.error('Message findAll error', err);
     }

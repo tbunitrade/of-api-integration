@@ -64,6 +64,8 @@ export class AutomateService {
     while (1) {
       try {
         let _config = _.cloneDeep(CONFIG);
+        _config['model_id'] = data.model_id;
+        _config['platform_id'] = data.platform_id;
         let isLoggedIn = false;
         if (!data.username) break;
         if (isLoginPage) {

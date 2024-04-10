@@ -445,8 +445,8 @@ watch(groupsInStore, () => {
                 <div>
                   <h1 class="font-bold text-xl">{{ selectedGroup.name }}</h1>
                 </div>
-                <TableMessages :messages="messagesInStore" @click-row="onClickEditMessage"
-                  @delete-row="onDeleteMessage" />
+                <TableMessages :messages="messagesInStore" @click-row="onClickEditMessage" @delete-row="onDeleteMessage"
+                  :showGroup="false" />
                 <div class="w-full flex justify-between">
                   <BaseButton label="Back" color="contrast" rounded small @click="onCancelAddMessage" />
                   <BaseButton label="Add Message" color="info" rounded small @click="onAddNewMessage" />
