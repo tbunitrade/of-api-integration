@@ -122,6 +122,7 @@ export class GroupService {
           .andWhere('group.id > :group_id', { group_id })
           .andWhere('group.status = 1')
           .take(count)
+          .orderBy('group.id')
           .getMany();
       } catch (err) {
         console.error('Group findGroupByPlatformId error', err);

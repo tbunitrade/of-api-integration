@@ -55,7 +55,7 @@ export class AutomateService {
     puppeteerUtil.setConfig();
     // recaptcha solving can be wrong sometime
     await puppeteerUtil.openBrowser();
-    const cookieFileName = 'user_' + data.model_id + data.platform_id;
+    const cookieFileName = 'user_' + data.model_id + '.' + data.platform_id;
     await puppeteerUtil.loadCookiesFromFile(cookieFileName);
     await puppeteerUtil.openPage('https://onlyfans.com/my/chats/send');
     const isLoginPage = await puppeteerUtil.checkLogin();

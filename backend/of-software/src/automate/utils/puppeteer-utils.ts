@@ -30,7 +30,7 @@ export const CONFIG = {
   },
   login_captcha: {
     isRecaptcha: true,
-    hasDefaultCaptcha: true,
+    hasDefaultCaptcha: false,
     captchaSelector: 'div.captcha_wrapper iframe',
     defaultCaptchaKey: '6LcvNcwdAAAAAMWAuNRXH74u3QePsEzTm6GEjx0J',
     captchaKind: 'g_recaptcha',
@@ -683,7 +683,7 @@ export class PuppeteerUtil {
       `./${fileName}_sessionstorage.json`,
       JSON.stringify(sessionStorageData),
     );
-    console.log('Cookies saved to file:', './testCookie.json');
+    console.log('Cookies saved to file:', `./${fileName}_***.json`);
   }
 
   async loadCookiesFromFile(fileName: string) {
@@ -780,7 +780,7 @@ export class PuppeteerUtil {
             });
             if (i > 2) {
               const cookieFileName =
-                'user_' + config.model_id + config.platform_id;
+                'user_' + config.model_id + '.' + config.platform_id;
               await this.saveCookieToFile(cookieFileName);
             }
             await this._page.addStyleTag({
