@@ -176,6 +176,11 @@ export class CronService {
             latest_group_id: latestGroupId,
             scheduled_date: afterDays.toDateString(),
           });
+          groupIds.map(async (_id) => {
+            await this.groupService.update(_id, {
+              added_on_platform_at: now,
+            });
+          });
         }
       } catch (error) {
         console.error('Error in Cron job => ', error?.message ?? 'Unknown');
