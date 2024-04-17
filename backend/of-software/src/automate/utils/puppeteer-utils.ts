@@ -1117,6 +1117,11 @@ export class PuppeteerUtil {
       }
     }
   }
+  async reload() {
+    await this._page.reload({
+      waitUntil: ['domcontentloaded', 'networkidle0'],
+    });
+  }
 
   async closeBrowser() {
     await this._browser.close();

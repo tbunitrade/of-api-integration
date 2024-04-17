@@ -56,8 +56,9 @@ export class AutomateService {
     // recaptcha solving can be wrong sometime
     await puppeteerUtil.openBrowser();
     const cookieFileName = 'user_' + data.model_id + '.' + data.platform_id;
-    await puppeteerUtil.loadCookiesFromFile(cookieFileName);
     await puppeteerUtil.openPage('https://onlyfans.com/my/chats/send');
+    await puppeteerUtil.loadCookiesFromFile(cookieFileName);
+    await puppeteerUtil.reload();
     const isLoginPage = await puppeteerUtil.checkLogin();
     let repeatCount = 50;
 
