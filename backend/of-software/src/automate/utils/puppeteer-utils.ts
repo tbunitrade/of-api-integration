@@ -695,7 +695,7 @@ export class PuppeteerUtil {
       if (cookiesString) {
         const cookies = JSON.parse(cookiesString);
         await this.setCookie(cookies);
-        console.log('Cookies loaded from file:', './testCookie.json');
+        console.log('Cookies loaded from file:', `./${fileName}_cookie.json`);
       }
 
       const localStorageData = await fs.readFile(
