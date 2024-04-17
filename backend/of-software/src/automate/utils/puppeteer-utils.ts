@@ -633,7 +633,7 @@ export class PuppeteerUtil {
   async openBrowser() {
     try {
       this._browser = await this._puppeteer.launch({
-        headless: false,
+        headless: true,
         slowMo: 10,
         args: [
           `--disable-extensions-except=${pathToExtension}`,
