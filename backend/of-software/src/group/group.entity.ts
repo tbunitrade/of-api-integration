@@ -10,6 +10,7 @@ import {
   UpdateDateColumn,
   ManyToMany,
   JoinTable,
+  BeforeInsert,
 } from 'typeorm';
 
 @Entity()
@@ -23,6 +24,9 @@ export class Group {
   @Column()
   model_id: number;
 
+  @Column()
+  order: number;
+
   @UpdateDateColumn({
     type: 'timestamp',
     default: () => 'CURRENT_TIMESTAMP',
@@ -32,6 +36,11 @@ export class Group {
 
   @Column({ default: 1 })
   status: number; // 0: inactive, 1: active
+
+  @BeforeInsert()
+  setOrderValue() {
+    this.order = this.id;
+  }
 
   @ManyToMany(() => Message, (message) => message.groups, {
     onDelete: 'NO ACTION',
