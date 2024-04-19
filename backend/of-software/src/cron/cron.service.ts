@@ -176,9 +176,12 @@ export class CronService {
             latest_group_id: latestGroupId,
             scheduled_date: afterDays.toDateString(),
           });
-          groupIds.map(async (_id) => {
+          groupIds.map(async (_id, idx) => {
+            const postedDate = new Date(
+              new Date(now).setDate(now.getDate() + idx),
+            );
             await this.groupService.update(_id, {
-              added_on_platform_at: afterDays,
+              added_on_platform_at: postedDate,
             });
           });
         }
