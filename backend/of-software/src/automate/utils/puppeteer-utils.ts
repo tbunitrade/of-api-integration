@@ -1091,16 +1091,19 @@ export class PuppeteerUtil {
             break;
 
           case 'type':
-            await this._page.evaluate((selector) => {
-              const ele = document.querySelector(selector);
-              if (ele) ele.value = '';
-              ele.dispatchEvent(new Event('input', { bubbles: true })); // As this is vue website, it doens't chagne state value though we set value on input box
-            }, step.selector);
-            // await this._page.type(step.selector, step.value);
-            await this._page.$eval(
-              step.selector,
-              (el) => (el.value = step.value),
+            await this._page.evaluate(
+              ({ selector, value }) => {
+                const ele = document.querySelector(selector);
+                if (ele) {
+                  ele.value = '';
+                  ele.dispatchEvent(new Event('input', { bubbles: true })); // As this is vue website, it doens't chagne state value though we set value on input box
+                  ele.value = value;
+                  ele.dispatchEvent(new Event('input', { bubbles: true })); // As this is vue website, it doens't chagne state value though we set value on input box
+                }
+              },
+              { selector: step.selector, value: step.value },
             );
+            // await this._page.type(step.selector, step.value);
             break;
           case 'clickForValue':
             await this._page.evaluate(
