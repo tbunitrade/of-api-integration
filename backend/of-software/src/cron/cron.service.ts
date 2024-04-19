@@ -178,7 +178,7 @@ export class CronService {
           });
           groupIds.map(async (_id) => {
             await this.groupService.update(_id, {
-              added_on_platform_at: now,
+              added_on_platform_at: afterDays,
             });
           });
         }
