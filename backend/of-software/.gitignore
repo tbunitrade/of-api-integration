@@ -35,5 +35,10 @@ lerna-debug.log*
 !.vscode/extensions.json
 
 /uploads
+/cookies
+*_cookie.json
+*_localstorage.json
+*_sessionstorage.json
+
 
 .env

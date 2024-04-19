@@ -1,6 +1,6 @@
 var Config = {
   default: {
-    isPluginEnabled: true,
+    isPluginEnabled: false,
     apiKey: '1f98aeffff33253bdcbe8b92bc9f7d3f',
     valute: 'USD',
     email: null,

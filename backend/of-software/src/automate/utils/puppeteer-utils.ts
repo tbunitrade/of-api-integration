@@ -1,11 +1,17 @@
 import { executablePath } from 'puppeteer';
 import puppeteer from 'puppeteer-extra';
+// import puppeteer from 'puppeteer';
 import StealthPlugin from 'puppeteer-extra-plugin-stealth';
 import * as path from 'path';
 import { solveRecaptcha } from './nopecha';
 import { resolveCaptcha, resolveCaptchaV3 } from './anticaptcha';
 import _fs from 'fs';
 import { RecaptchaUtil } from './recaptcha';
+import { Solver } from '2captcha-ts';
+const APIKEY = '1f98aeffff33253bdcbe8b92bc9f7d3f';
+
+const solver = new Solver(APIKEY);
+
 const fs = _fs.promises;
 const pathToExtension = path.join(
   __dirname + '/../../../../',
@@ -630,14 +636,14 @@ export class PuppeteerUtil {
     this._config = _config || { ...CONFIG };
   }
 
-  async openBrowser() {
+  async openBrowser(headless = true) {
     try {
       this._browser = await this._puppeteer.launch({
-        headless: true,
+        headless: headless,
         slowMo: 10,
         args: [
-          `--disable-extensions-except=${pathToExtension}`,
-          `--load-extension=${pathToExtension}`,
+          // `--disable-extensions-except=${pathToExtension}`,
+          // `--load-extension=${pathToExtension}`,
           `--window-size=1920,1080`,
         ],
         executablePath: executablePath(),
@@ -645,6 +651,27 @@ export class PuppeteerUtil {
       this._page = await this._browser.newPage();
     } catch (error) {
       console.log('Error : ', error);
+    }
+  }
+
+  async acceptCookie() {
+    try {
+      const acceptCookieWork = [
+        {
+          type: 'waitForSelector',
+          value:
+            '.b-cookies-informer__container .b-cookies-informer__nav button',
+        },
+        {
+          type: 'clickForValue',
+          value: 'Accept All',
+          selector:
+            '.b-cookies-informer__container .b-cookies-informer__nav button',
+        },
+      ];
+      await this.work(acceptCookieWork);
+    } catch (error) {
+      console.log('Error: ', error);
     }
   }
 
@@ -674,13 +701,16 @@ export class PuppeteerUtil {
     const sessionStorageData = await this._page.evaluate(() =>
       JSON.stringify(sessionStorage),
     );
-    await fs.writeFile(`./${fileName}_cookie.json`, JSON.stringify(cookies));
     await fs.writeFile(
-      `./${fileName}_localstorage.json`,
+      `./cookies/${fileName}_cookie.json`,
+      JSON.stringify(cookies),
+    );
+    await fs.writeFile(
+      `./cookies/${fileName}_localstorage.json`,
       JSON.stringify(localStorageData),
     );
     await fs.writeFile(
-      `./${fileName}_sessionstorage.json`,
+      `./cookies/${fileName}_sessionstorage.json`,
       JSON.stringify(sessionStorageData),
     );
     console.log('Cookies saved to file:', `./${fileName}_***.json`);
@@ -688,24 +718,30 @@ export class PuppeteerUtil {
 
   async loadCookiesFromFile(fileName: string) {
     try {
-      const cookiesString = await fs.readFile(`./${fileName}_cookie.json`, {
-        encoding: 'utf-8',
-      });
+      const cookiesString = await fs.readFile(
+        `./cookies/${fileName}_cookie.json`,
+        {
+          encoding: 'utf-8',
+        },
+      );
 
       if (cookiesString) {
         const cookies = JSON.parse(cookiesString);
         await this.setCookie(cookies);
-        console.log('Cookies loaded from file:', `./${fileName}_cookie.json`);
+        console.log(
+          'Cookies loaded from file:',
+          `./cookies/${fileName}_cookie.json`,
+        );
       }
 
       const localStorageData = await fs.readFile(
-        `./${fileName}_localstorage.json`,
+        `./cookies/${fileName}_localstorage.json`,
         {
           encoding: 'utf-8',
         },
       );
       const sessionStorageData = await fs.readFile(
-        `./${fileName}_sessionstorage.json`,
+        `./cookies/${fileName}_sessionstorage.json`,
         {
           encoding: 'utf-8',
         },
@@ -733,7 +769,7 @@ export class PuppeteerUtil {
 
   async openPage(pageUrl: string) {
     try {
-      await this._page.goto(pageUrl, { waitUntil: 'networkidle0' });
+      await this._page.goto(pageUrl, { timeout: 100000 });
       await this._page.addStyleTag({
         content:
           'img{-webkit-filter: blur(113px);-moz-filter: blur(113px);-o-filter: blur(113px);-ms-filter: blur(113px);filter: blur(113px);  }',
@@ -810,11 +846,11 @@ export class PuppeteerUtil {
             //   siteUrl,
             //   _config.defaultCaptchaKey,
             // );
-
+            await this._page.waitForTimeout(20000);
             captchaSolution = await recaptchaUtil.resolveRecaptcha2(
               _config.defaultCaptchaKey,
               await this._page.url(),
-              6,
+              30,
               _config.defaultCaptchaVersion,
             );
             if (_config.defaultCaptchaVersion === 2) {
@@ -890,13 +926,27 @@ export class PuppeteerUtil {
           //   cb: 'odl8pjyrwaxr',
           //   s: 'aHR0cHM6Ly9vbmx5ZmFucy5jb206NDQz',
           // };
+          // await this._page.waitForTimeout(20000);
           // captchaSolution = await resolveCaptcha(siteUrl, siteKey);
+
+          // await this._page.waitForTimeout(20000);
+          // const res = await solver.recaptcha({
+          //   pageurl: siteUrl,
+          //   googlekey: siteKey,
+          // });
+
+          // console.log(res);
+
+          // captchaSolution = res.data;
+
+          await this._page.waitForTimeout(20000);
           captchaSolution = await recaptchaUtil.resolveRecaptcha2(
             siteKey,
             await this._page.url(),
-            6,
+            30,
             _config.captchaVersion,
           );
+
           if (_config.captchaVersion === 2) {
             // this is for V2
             const recaptchaHandle = await this._page.$x(
@@ -1045,7 +1095,6 @@ export class PuppeteerUtil {
           case 'clickForValue':
             await this._page.evaluate(
               ({ selector, value }) => {
-                debugger;
                 const elements = Array.from(
                   document.querySelectorAll(selector),
                 );
@@ -1118,9 +1167,14 @@ export class PuppeteerUtil {
     }
   }
   async reload() {
-    await this._page.reload({
-      waitUntil: ['domcontentloaded', 'networkidle0'],
-    });
+    try {
+      await this._page.reload({
+        waitUntil: ['domcontentloaded', 'networkidle0'],
+      });
+      await this._page.waitForTimeout(10000);
+    } catch (err) {
+      console.log('Error in reload : ', err);
+    }
   }
 
   async closeBrowser() {

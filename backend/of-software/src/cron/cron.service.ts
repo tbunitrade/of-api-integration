@@ -63,7 +63,7 @@ export class CronService {
    */
   async manualStart() {
     //this is test line and need to be deleted
-    const startJob = this.createCron();
+    const startJob = this.createCron(true);
     await startJob();
     return true;
   }
@@ -127,7 +127,7 @@ export class CronService {
    * @param createCronDto
    * @returns
    */
-  private createCron = () => {
+  private createCron = (manualStart = false) => {
     return async () => {
       try {
         const modelPlatforms = await this.modelPlatformService.findAll(false);
@@ -166,7 +166,7 @@ export class CronService {
             await this.groupService.getGroupsWithMessages(groupIds);
           const data: any = mp;
           data.groupsWithMessages = groupsWithMessages;
-          await this.automateService.start(data);
+          await this.automateService.start(data, manualStart);
           const latestGroupId = groupIds ? groupIds[groupIds.length - 1] : 0;
           const now = new Date();
           const afterDays = new Date(

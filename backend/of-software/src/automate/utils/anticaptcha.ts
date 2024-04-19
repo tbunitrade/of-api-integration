@@ -18,7 +18,7 @@ export const resolveCaptchaV3 = async (siteUrl: string, siteKey: string) => {
     .solveRecaptchaV3Enterprise(
       siteUrl,
       siteKey,
-      0.9, //minimum score required: 0.3, 0.7 or 0.9
+      0.7, //minimum score required: 0.3, 0.7 or 0.9
       'login',
     )
     .then((gresponse) => {

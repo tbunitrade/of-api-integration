@@ -183,13 +183,18 @@ const addTableRowsMovable = () => {
             // Get the index of the target row
             var targetIndex = this.rowIndex;
             // If the source index is less than the target index
+            console.log("SourceIndex: TargetIndex", sourceIndex, targetIndex);
+            let needReOrder = [];
             if (sourceIndex < targetIndex) {
               // Insert the drag source element after the target row
               table.tBodies[0].insertBefore(dragSrcEl, this.nextSibling);
+              needReOrder = itemsPaginated.value.slice(sourceIndex - 1, targetIndex);
             } else {
               // Insert the drag source element before the target row
               table.tBodies[0].insertBefore(dragSrcEl, this);
+              needReOrder = itemsPaginated.value.slice(targetIndex - 1, sourceIndex);
             }
+            console.log("Items", needReOrder);
           }
           // Remove the border classes from all table rows
           table.querySelectorAll('.border-t-2', '.border-blue-300').forEach(function (el) {
@@ -211,7 +216,6 @@ watch(itemsPaginated, () => {
 onMounted(() => {
   addTableRowsMovable();
 });
-
 
 // ----------------- Table Drag and Drop End -----------------
 

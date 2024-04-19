@@ -10,13 +10,16 @@ export class RecaptchaUtil {
   constructor() {}
 
   async initiateCaptcha2Request(siteKey: any, pageUrl: any, version: number) {
+    console.log('googlekey', siteKey);
     const formData2 = {
       method: 'userrecaptcha',
       googlekey: siteKey,
       key: TWO_CAPTCHA_KEY,
       pageurl: pageUrl,
+      // domain: 'recaptcha.net',
       enterprise: 1,
       action: 'login',
+      // invisible: 1,
     };
     const formData3 = {
       method: 'userrecaptcha',
@@ -68,7 +71,7 @@ export class RecaptchaUtil {
         return resolve(result[1]);
       } else {
         console.log(resp);
-        return reject(resp.request);
+        return reject(resp);
       }
       // if (resp.status === 0) {
       //   console.log(resp);
@@ -95,13 +98,18 @@ export class RecaptchaUtil {
           return Promise.resolve(result);
         } catch (err) {
           console.warn(err);
-          await sleep(30000);
+          if (
+            err == 'ERROR_CAPTCHA_UNSOLVABLE' ||
+            err == 'ERROR_WRONG_CAPTCHA_ID'
+          )
+            return Promise.reject(err);
+          await sleep(10000);
         }
       }
       console.log('Captcha not found within time limit');
     } catch (err) {
       console.warn(err);
-      // Promise.reject(err);
+      return Promise.reject(err);
     }
   }
 }

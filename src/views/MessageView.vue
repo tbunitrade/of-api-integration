@@ -3,7 +3,7 @@ import { computed, onMounted, reactive, ref, watch } from "vue";
 import { mdiMessage } from '@mdi/js';
 import { useNotification } from "@kyvg/vue3-notification";
 import { ClipLoader } from "vue3-spinner";
-import { useGroupStore, useModelPlatformStore, useModelStore, usePlatformStore } from '@/stores';
+import { useGroupStore, useModelPlatformStore, useModelStore, usePlatformStore, useCronStore } from '@/stores';
 import SectionMain from '@/components/SectionMain.vue';
 import CardBox from '@/components/CardBox.vue';
 import LayoutAuthenticated from '@/layouts/LayoutAuthenticated.vue';
@@ -36,6 +36,7 @@ const fileStore = useFileStore();
 const modelStore = useModelStore();
 const platformStore = usePlatformStore();
 const modelPlatformStore = useModelPlatformStore();
+const cronStore = useCronStore();
 const { notify } = useNotification();
 
 const selectedGroup = ref({
@@ -370,6 +371,15 @@ const bulkUpdateStatus = async (ids, value) => {
   groupStore.bulkUpdateStatus(data);
 };
 
+const onStartCronJobManually = async () => {
+  cronStore.triggerCronJobManually();
+  notify({
+    title: "Success",
+    type: "success",
+    text: "Cron job started!",
+  });
+};
+
 onMounted(() => {
   if (!selectedModel.value || !selectedPlatform.value) {
     notify({
@@ -413,6 +423,7 @@ watch(groupsInStore, () => {
   <LayoutAuthenticated>
     <SectionMain>
       <SectionTitleLineWithButton :icon="mdiMessage" title="Message" main>
+        <BaseButton label="Trigger CronJob Manually" color="info" rounded small @click="onStartCronJobManually" />
       </SectionTitleLineWithButton>
       <CardBox class="mb-6">
         <TabContainer :tabs="tabs" @click-tab="onClickMessageList">
