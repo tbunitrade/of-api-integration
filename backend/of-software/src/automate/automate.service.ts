@@ -22,7 +22,7 @@ const checkIfExpired = (
   const currentDate = new Date();
   const scheduledDate = new Date(scheduled_date);
   scheduledDate.setDate(scheduledDate.getDate() + numberOfDays);
-  return currentDate >= scheduledDate;
+  return currentDate > scheduledDate;
 };
 
 @Injectable()

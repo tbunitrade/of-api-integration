@@ -122,9 +122,9 @@ export class GroupService {
           .andWhere('group.model_id = :model_id', { model_id })
           .andWhere('group.id > :group_id', { group_id })
           .andWhere('group.status = 1')
-          .take(count)
           .orderBy('group.order')
           .orderBy('group.id')
+          .take(count)
           .getMany();
       } catch (err) {
         console.error('Group findGroupByPlatformId error', err);
