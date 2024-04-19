@@ -1,7 +1,9 @@
 <template>
   <div class="w-full">
     <BaseButton label="Upload" color="info" rounded small @click="openFileInput" />
-    <input ref="fileInputRef" type="file" @change="handleFileChange" multiple accept="image/*, video/*" hidden />
+    <input ref="fileInputRef" type="file" @change="handleFileChange" multiple
+      accept=".jpg, .jpeg, .gif, .png, .heic, .mp4, .mov, .m4v, .mpg, .mpeg, .wmv, .avi, .webm, .mkv, .mp3, .wav, .ogg"
+      hidden /> <!-- image/*, video/*-->
     <div class="w-full border border-gray-300 p-3 rounded mt-2 flex min-h-32 flex-wrap gap-3 max-h-64 overflow-scroll">
       <div v-for="(file, index) in files" :key="index">
         <div class="relative">

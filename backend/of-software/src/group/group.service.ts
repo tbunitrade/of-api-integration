@@ -164,6 +164,9 @@ export class GroupService {
       const group = await this.groupRepository.find({
         where: { id: In(groupIds) },
         relations: ['messages'],
+        order: {
+          id: 'ASC',
+        },
       });
       return group;
     } catch (err) {

@@ -1138,12 +1138,39 @@ export class PuppeteerUtil {
             });
             await fileChooser.accept(filePathList);
             await this._page.waitForTimeout(500);
-            await this._page.waitForSelector(
-              'button.b-dropzone__preview__edit',
+
+            const waitForUploadDone = async () => {
+              while (1) {
+                try {
+                  await this._page.waitForFunction(
+                    () =>
+                      !document.querySelector(
+                        'span.b-dropzone__preview__progress',
+                      ),
+                    {
+                      timeout: 3000,
+                    },
+                  );
+                  break;
+                } catch (err) {
+                  console.log('Waiting for uploading done: ', err);
+                }
+              }
+            };
+            await waitForUploadDone();
+            const closeFileTypeNotAllowed = [
               {
-                timeout: 60000,
+                type: 'click',
+                value: '#ModalAlert___BV_modal_content_ footer button',
               },
-            );
+            ];
+            await this.work(closeFileTypeNotAllowed);
+            // await this._page.waitForSelector(
+            //   'button.b-dropzone__preview__edit',
+            //   {
+            //     timeout: 60000,
+            //   },
+            // );
             break;
           case 'waitForTime':
             await this._page.waitForTimeout(step.value);
