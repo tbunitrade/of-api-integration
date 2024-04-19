@@ -22,7 +22,7 @@ const pathToExtension = path.join(
  * Config variables*/
 export const CONFIG = {
   login_workflow: [
-    'check',
+    'check_page',
     'login',
     'check_page',
     'login_captcha',
