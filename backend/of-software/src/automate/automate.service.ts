@@ -98,14 +98,14 @@ export class AutomateService {
             //start cron
             console.log('----------------- Start cron -----------------');
             const groupsWithMessages = data.groupsWithMessages;
-            const scheduledDate = new Date();
-            // if (data.scheduled_date)
-            //   scheduledDate = new Date(data.scheduled_date);
-            // else {
-            //   scheduledDate = new Date();
-            // }
 
             for (let i = 0; i < groupsWithMessages.length; i++) {
+              const scheduledDate = new Date();
+              // if (data.scheduled_date)
+              //   scheduledDate = new Date(data.scheduled_date);
+              // else {
+              //   scheduledDate = new Date();
+              // }
               const group = groupsWithMessages[i];
               for (let j = 0; j < group.messages.length; j++) {
                 _config = null;
