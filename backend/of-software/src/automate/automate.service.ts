@@ -124,15 +124,17 @@ export class AutomateService {
                   if (msg.price === 0) {
                     free_previews = 0;
                   }
+
+                  scheduledDate.setDate(scheduledDate.getDate() + i + 1);
                   console.log(
-                    `Message Date : ${scheduledDate.getMonth() + 1}: ${
-                      scheduledDate.getDate() + i + 1
-                    },  Time: ${hour}:${minutes}:${suffix}`,
+                    `Message Date : ${
+                      scheduledDate.getMonth() + 1
+                    }: ${scheduledDate.getDate()},  Time: ${hour}:${minutes}:${suffix}`,
                   );
                   const msgData = {
                     message: msg.message,
                     message_month: scheduledDate.getMonth() + 1,
-                    message_date: scheduledDate.getDate() + i + 1,
+                    message_date: scheduledDate.getDate(),
                     message_hour: hour,
                     message_minute: minutes,
                     message_time_suffix: suffix,
