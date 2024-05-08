@@ -24,6 +24,9 @@ export class Model {
   @Column({ nullable: true })
   photo: string;
 
+  @Column({ default: 1 })
+  status: number; // 0: inactive, 1: active
+
   @ManyToMany(() => Platform, (platform) => platform.models, {
     onDelete: 'NO ACTION',
     onUpdate: 'NO ACTION',

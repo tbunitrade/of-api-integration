@@ -14,6 +14,7 @@ import {
 } from 'fs';
 import { GroupService } from 'src/group/group.service';
 import { AutomateService } from 'src/automate/automate.service';
+import { ModelPlatform } from 'src/modelPlatform/model_platform.entity';
 export interface IResponseCron {
   // Cron job name
   name?: string;
@@ -128,23 +129,11 @@ export class CronService {
    * @returns
    */
   private createCron = (manualStart = false) => {
+    const MaxOpeningBrowserCount = 3;
     return async () => {
       try {
         const modelPlatforms = await this.modelPlatformService.findAll(false);
-        for (let i = 0; i < modelPlatforms.length; i++) {
-          const mp = modelPlatforms[i];
-          // debugging for live server
-          // if (
-          //   // mp.id != 15
-          //   // mp.id != 24 &&
-          //   // mp.id != 6 &&
-          //   // mp.id != 9 &&
-          //   // mp.id != 10 &&
-          //   // mp.id != 22 &&
-          //   // mp.id != 23 &&
-          //   // mp.id != 11
-          // )
-          //   continue;
+        const postAMessage = async (mp: ModelPlatform, manualStart) => {
           let groups = await this.groupService.findNGroupsByPlatformId(
             mp.platform_id,
             mp.latest_group_id || 0,
@@ -184,6 +173,31 @@ export class CronService {
               added_on_platform_at: postedDate,
             });
           });
+        };
+        for (let i = 0; i < modelPlatforms.length; i++) {
+          const promises = [];
+          const limit =
+            modelPlatforms.length < i + MaxOpeningBrowserCount
+              ? modelPlatforms.length
+              : i + MaxOpeningBrowserCount;
+          for (let m = i; m < limit; m++, i++) {
+            const mp = modelPlatforms[m];
+            // debugging for live server
+            // if (
+            //   // mp.id != 15
+            //   // mp.id != 24 &&
+            //   // mp.id != 6 &&
+            //   // mp.id != 9 &&
+            //   // mp.id != 10 &&
+            //   // mp.id != 22 &&
+            //   // mp.id != 23 &&
+            //   // mp.id != 11
+            // )
+            //   continue;
+
+            promises.push(postAMessage(mp, manualStart));
+          }
+          await Promise.allSettled(promises);
         }
       } catch (error) {
         console.error('Error in Cron job => ', error?.message ?? 'Unknown');

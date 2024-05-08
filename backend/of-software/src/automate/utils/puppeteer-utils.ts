@@ -556,6 +556,7 @@ export const CONFIG = {
       type: 'waitForTime',
       value: '500',
     },
+    // { type: 'runScript', value: 'window.alert=function(){};' },
 
     {
       type: 'click', // Click Send Button
@@ -1191,6 +1192,14 @@ export class PuppeteerUtil {
             if (compareResultValue === false) {
               await this.work(conditions['no']);
             }
+            break;
+          case 'runScript':
+            await this._page.evaluate(
+              ({ value }) => {
+                eval(value);
+              },
+              { value: step.value },
+            );
             break;
           case 'waitForNavigation':
             await this._page.waitForNavigation();

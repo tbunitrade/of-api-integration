@@ -106,6 +106,7 @@ export class AutomateService {
               // else {
               //   scheduledDate = new Date();
               // }
+              scheduledDate.setDate(scheduledDate.getDate() + i + 1);
               const group = groupsWithMessages[i];
               for (let j = 0; j < group.messages.length; j++) {
                 _config = null;
@@ -125,7 +126,6 @@ export class AutomateService {
                     free_previews = 0;
                   }
 
-                  scheduledDate.setDate(scheduledDate.getDate() + i + 1);
                   console.log(
                     `Message Date : ${
                       scheduledDate.getMonth() + 1
