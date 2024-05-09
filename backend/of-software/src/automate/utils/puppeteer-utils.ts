@@ -1140,7 +1140,12 @@ export class PuppeteerUtil {
               const fileName = it.replace(/^.*[\\/]/, '');
               return `${process.env.UPLOAD_FOLDER_URL}/${fileName}`;
             });
-            await fileChooser.accept(filePathList);
+            for (let fidx = 0; fidx < filePathList.length; fidx++) {
+              await fileChooser.accept(filePathList[fidx]);
+              await this._page.waitForTimeout(100);
+            }
+
+            // await fileChooser.accept(filePathList);
             await this._page.waitForTimeout(500);
 
             const waitForUploadDone = async () => {
