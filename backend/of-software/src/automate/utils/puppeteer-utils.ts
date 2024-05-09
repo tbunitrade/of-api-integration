@@ -1192,8 +1192,7 @@ export class PuppeteerUtil {
             const conditions = step.childs;
             if (compareResultValue === true) {
               await this.work(conditions['yes']);
-            }
-            if (compareResultValue === false) {
+            } else {
               await this.work(conditions['no']);
             }
             break;
