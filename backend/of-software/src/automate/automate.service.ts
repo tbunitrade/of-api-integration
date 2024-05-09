@@ -133,7 +133,9 @@ export class AutomateService {
                   );
                   const msgData = {
                     message: msg.message,
-                    message_month: scheduledDate.getMonth() + 1,
+                    message_month: scheduledDate.toLocaleString('default', {
+                      month: 'long',
+                    }),
                     message_date: scheduledDate.getDate(),
                     message_hour: hour,
                     message_minute: minutes,

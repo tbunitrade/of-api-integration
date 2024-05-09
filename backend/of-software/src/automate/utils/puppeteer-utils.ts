@@ -1058,7 +1058,6 @@ export class PuppeteerUtil {
     for (let i = 0; i < workConfig.length; i++) {
       try {
         await this._page.waitForTimeout(1000);
-        compareResultValue = null;
         const step = workConfig[i];
         console.log(`Step: ${step.type}, Value: ${step.value}`);
         switch (step.type) {
@@ -1185,8 +1184,9 @@ export class PuppeteerUtil {
               const div = document.querySelector(selector);
               return div ? div.textContent.trim() : null;
             }, step.selector);
-            compareResultValue =
-              actualValue.toLowerCase() === step.value.toLowerCase();
+            compareResultValue = actualValue
+              .toLowerCase()
+              .includes(step.value.toLowerCase());
             break;
           case 'condition':
             const conditions = step.childs;
@@ -1195,6 +1195,7 @@ export class PuppeteerUtil {
             } else {
               await this.work(conditions['no']);
             }
+            compareResultValue = null;
             break;
           case 'runScript':
             await this._page.evaluate(
