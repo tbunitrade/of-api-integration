@@ -532,7 +532,11 @@ export const CONFIG = {
     {
       type: 'condition',
       childs: {
-        no: null,
+        no: {
+          type: 'click', // Click left bar once.
+          value:
+            '#content .b-chats__conversations .b-chats__conversations-content .m-chat-footer #make_post_form .b-make-post__main-wrapper .b-make-post__sort-btns button.b-make-post__sort-btn:nth-child(1)',
+        },
         yes: {
           type: 'click', // Click left bar once.
           value:
