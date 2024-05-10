@@ -94,6 +94,7 @@ const onPageNumberClick = (page) => {
     <thead>
       <tr>
         <th v-if="checkable" />
+        <th class="border-b-0 lg:w-6 before:hidden">Id</th>
         <th />
         <th>Name</th>
         <th>Platforms</th>
@@ -103,9 +104,13 @@ const onPageNumberClick = (page) => {
     <tbody>
       <tr v-for="client in itemsPaginated" :key="client.id">
         <TableCheckboxCell v-if="checkable" @checked="checked($event, client)" />
+        <td data-label="Id">
+          {{ client?.id }}
+        </td>
         <td class="border-b-0 lg:w-6 before:hidden">
           <UserAvatar :username="client.model?.photo || ''" class="w-24 h-24 mx-auto lg:w-6 lg:h-6" />
         </td>
+
         <td data-label="Name">
           {{ client?.name }}
         </td>
