@@ -1142,7 +1142,7 @@ export class PuppeteerUtil {
                 this._page.$eval(step.selector, (element) => element.click()),
               ]);
               const fileName = filePathList[fidx];
-              await fileChooser.accept(fileName);
+              await fileChooser.accept([fileName]);
               await this._page.waitForTimeout(100);
             }
 
