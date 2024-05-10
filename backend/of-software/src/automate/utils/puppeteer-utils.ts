@@ -1132,16 +1132,17 @@ export class PuppeteerUtil {
             if (!step.value || step.value?.length === 0) break;
             const fileNameList = step.value.split(',') || [];
 
-            const [fileChooser] = await Promise.all([
-              this._page.waitForFileChooser(),
-              this._page.$eval(step.selector, (element) => element.click()),
-            ]);
             const filePathList = fileNameList.map((it) => {
               const fileName = it.replace(/^.*[\\/]/, '');
               return `${process.env.UPLOAD_FOLDER_URL}/${fileName}`;
             });
             for (let fidx = 0; fidx < filePathList.length; fidx++) {
-              await fileChooser.accept(filePathList[fidx]);
+              const [fileChooser] = await Promise.all([
+                this._page.waitForFileChooser(),
+                this._page.$eval(step.selector, (element) => element.click()),
+              ]);
+              const fileName = filePathList[fidx];
+              await fileChooser.accept(fileName);
               await this._page.waitForTimeout(100);
             }
 
