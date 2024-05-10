@@ -528,15 +528,17 @@ export const CONFIG = {
       type: 'waitForTime',
       value: '500',
     },
+    {
+      type: 'compareValue',
+      value: '1',
+      selector:
+        '#content .b-chats__conversations .b-chats__conversations-content .m-chat-footer #make_post_form .b-make-post__main-wrapper .b-make-post__media-slider.m-paid .b-make-post__media-slider__inner .checkbox-item__inside span.checkbox-item__num',
+    },
 
     {
       type: 'condition',
       childs: {
-        no: {
-          type: 'click', // Click left bar once.
-          value:
-            '#content .b-chats__conversations .b-chats__conversations-content .m-chat-footer #make_post_form .b-make-post__main-wrapper .b-make-post__sort-btns button.b-make-post__sort-btn:nth-child(1)',
-        },
+        no: null,
         yes: {
           type: 'click', // Click left bar once.
           value:
