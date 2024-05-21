@@ -39,7 +39,13 @@ async function bootstrap() {
   });
   app.use(bodyParser.json({ limit: '10gb' }));
   app.use(bodyParser.urlencoded({ limit: '10gb', extended: true }));
-  const server = await app.listen(3000);
+  const server = app.getHttpServer();
   server.setTimeout(1 * 60 * 60 * 1000); // Timeout 1 hours
+
+  // The number of milliseconds of inactivity a server needs to wait for additional incoming data
+  server.keepAliveTimeout = 1 * 60 * 60 * 1000;
+  // Limit the amount of time the parser will wait to receive the complete HTTP headers
+  server.headersTimeout = 1 * 60 * 61 * 1000;
+  await app.listen(3000);
 }
 bootstrap();
