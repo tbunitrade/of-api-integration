@@ -118,7 +118,7 @@ export class AuthService {
 
       user.password = newPassword;
 
-      await this.userService.create(user);
+      await this.userService.update(user.id, user);
       const payload: JwtPayload = {
         sub: user.id.toString(),
         email: user.email,
@@ -135,7 +135,7 @@ export class AuthService {
     currentPassword: string,
   ): Promise<boolean> {
     try {
-      const user = await this.userService.findById(userId);
+      const user = await this.userService.findById(userId, true);
       if (user) {
         // Example: Compare the stored password hash with the currentPassword
         const isPasswordMatch = await bcrypt.compare(

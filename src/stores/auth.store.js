@@ -73,6 +73,21 @@ const useAuthStore = defineStore({
       }
     },
 
+    async changePassword(data) {
+      try {
+        const response = await axios.post(`${import.meta.env.VITE_APP_ROOT_API}/auth/change-password`, data)
+
+        if (response.data) {
+          return true;
+        }
+
+        return response.data
+      } catch (error) {
+        console.error('Login failed:', error)
+        throw error
+      }
+    },
+
     logout() {
       localStorage.removeItem('access_token')
       localStorage.removeItem('user')

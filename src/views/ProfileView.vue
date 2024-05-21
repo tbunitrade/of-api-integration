@@ -1,7 +1,7 @@
 <script setup>
-import { computed, onMounted, reactive } from 'vue';
+import { computed, onMounted, reactive, ref } from 'vue';
 import { useVuelidate } from '@vuelidate/core';
-import { required, email, minLength } from '@vuelidate/validators';
+import { required, email, minLength, sameAs } from '@vuelidate/validators';
 import { useNotification } from "@kyvg/vue3-notification";
 import { useAuthStore } from '@/stores';
 import { colorsText } from '@/colors.js';
@@ -55,12 +55,6 @@ onMounted(() => {
   fetchData();
 });
 
-const passwordForm = reactive({
-  password_current: '',
-  password: '',
-  password_confirmation: ''
-});
-
 const submitProfile = () => {
   const result = $v.value.$validate();
   result.then(async (res) => {
@@ -80,8 +74,35 @@ const submitProfile = () => {
   });
 };
 
+const passwordForm = ref({
+  password_current: '',
+  password: '',
+  password_confirmation: ''
+});
+const passwordRule = computed(() => (
+  {
+    password_current: { required, minLength: minLength(2) },
+    password: { required, minLength: minLength(2) },
+    password_confirmation: { required, sameAsPassword: sameAs(passwordForm.value?.password) }
+  }));
+const $passwordV = useVuelidate(passwordRule, passwordForm);
 const submitPass = () => {
-  //
+  const result = $passwordV.value.$validate();
+  result.then(async (res) => {
+    if (res) {
+      const update_result = await authStore.changePassword({ currentPassword: passwordForm.value.password_current, newPassword: passwordForm.value.password });
+      if (update_result) {
+        notify({
+          title: "Success",
+          type: "success",
+          text: "Password updated successfully",
+        });
+      }
+
+    }
+  }).catch((err) => {
+    console.log(err);
+  });
 };
 </script>
 
@@ -126,7 +147,6 @@ const submitPass = () => {
           <template #footer>
             <BaseButtons>
               <BaseButton color="info" type="submit" label="Submit" />
-              <BaseButton color="info" label="Options" outline />
             </BaseButtons>
           </template>
         </CardBox>
@@ -136,6 +156,9 @@ const submitPass = () => {
             <FormControl v-model="passwordForm.password_current" :icon="mdiAsterisk" name="password_current"
               type="password" required autocomplete="current-password" />
           </FormField>
+          <div class="mb-3" v-for="error of  $passwordV.password_current.$errors " :key="error.$uid">
+            <div :class="[colorsText['danger'], 'text-sm']">{{ error.$message }}</div>
+          </div>
 
           <BaseDivider />
 
@@ -143,16 +166,21 @@ const submitPass = () => {
             <FormControl v-model="passwordForm.password" :icon="mdiFormTextboxPassword" name="password" type="password"
               required autocomplete="new-password" />
           </FormField>
+          <div class="mb-3" v-for="error of  $passwordV.password.$errors " :key="error.$uid">
+            <div :class="[colorsText['danger'], 'text-sm']">{{ error.$message }}</div>
+          </div>
 
           <FormField label="Confirm password" help="Required. New password one more time">
             <FormControl v-model="passwordForm.password_confirmation" :icon="mdiFormTextboxPassword"
               name="password_confirmation" type="password" required autocomplete="new-password" />
           </FormField>
+          <div class="mb-3" v-for="error of  $passwordV.password_confirmation.$errors " :key="error.$uid">
+            <div :class="[colorsText['danger'], 'text-sm']">{{ error.$message }}</div>
+          </div>
 
           <template #footer>
             <BaseButtons>
               <BaseButton type="submit" color="info" label="Submit" />
-              <BaseButton color="info" label="Options" outline />
             </BaseButtons>
           </template>
         </CardBox>

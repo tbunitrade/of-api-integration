@@ -48,7 +48,9 @@ export class UserService {
         queryBuilder.addSelect('user.password');
       }
 
-      return queryBuilder.where('user.email = :email', { email }).getOne();
+      return await queryBuilder
+        .where('user.email = :email', { email })
+        .getOne();
     } catch (err) {
       console.error('User findByEmail error', err);
     }
@@ -62,14 +64,18 @@ export class UserService {
     }
   }
 
-  async findById(id: number): Promise<User> {
+  async findById(id: number, includePassword = false): Promise<User> {
     try {
-      const options: FindOneOptions<User> = {
-        where: { id },
-      };
-      return await this.userRepository.findOne(options);
+      const queryBuilder = this.userRepository.createQueryBuilder('user');
+
+      // Optionally include the password based on the parameter
+      if (includePassword) {
+        queryBuilder.addSelect('user.password');
+      }
+
+      return await queryBuilder.where('user.id = :id', { id }).getOne();
     } catch (err) {
-      console.error('User findById error', err);
+      console.error('User findByEmail error', err);
     }
   }
 

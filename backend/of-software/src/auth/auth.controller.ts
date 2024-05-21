@@ -5,9 +5,9 @@ import {
   Body,
   Controller,
   Post,
+  Request,
   UseGuards,
 } from '@nestjs/common';
-import { AuthGuard } from '@nestjs/passport';
 import { ValidationPipe } from '@nestjs/common';
 import { AuthService } from './auth.service';
 
@@ -15,7 +15,8 @@ import { ChangePasswordDto } from 'src/dtos/change-password.dto';
 import { LoginDto } from 'src/dtos/login.dto';
 import { UserDto } from 'src/dtos/user.dto';
 import { UserResponseDto } from 'src/dtos/user-response.dto';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { JwtAuthGuard } from './jwt-auth.guard';
 
 @Controller('auth')
 @ApiTags('auth')
@@ -47,24 +48,28 @@ export class AuthController {
   }
 
   @Post('change-password')
-  @UseGuards(AuthGuard('local'))
+  @ApiBearerAuth('jwt')
+  @UseGuards(JwtAuthGuard)
   async changePassword(
     @Body() body: ChangePasswordDto,
-    user: any,
+    @Request() req,
   ): Promise<boolean> {
     try {
       const { currentPassword, newPassword } = body;
 
       // Verify the current password
       const isCurrentPasswordValid =
-        await this.authService.verifyCurrentPassword(user.id, currentPassword);
+        await this.authService.verifyCurrentPassword(
+          req.user.id,
+          currentPassword,
+        );
 
       if (!isCurrentPasswordValid) {
         throw new BadRequestException('Invalid current password');
       }
 
       // Update the password
-      await this.authService.updatePassword(user.id, newPassword);
+      await this.authService.updatePassword(req.user.id, newPassword);
       return true;
     } catch (error) {
       throw error;
