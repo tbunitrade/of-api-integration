@@ -40,6 +40,6 @@ async function bootstrap() {
   app.use(bodyParser.json({ limit: '10gb' }));
   app.use(bodyParser.urlencoded({ limit: '10gb', extended: true }));
   const server = await app.listen(3000);
-  server.setTimeout(24 * 60 * 60 * 1000); // Timeout 24 hours
+  server.setTimeout(1 * 60 * 60 * 1000); // Timeout 1 hours
 }
 bootstrap();
