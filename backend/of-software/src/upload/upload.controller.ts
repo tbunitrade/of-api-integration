@@ -10,6 +10,8 @@ import { ApiBearerAuth, ApiConsumes, ApiTags } from '@nestjs/swagger';
 import { FilesInterceptor } from '@nestjs/platform-express/multer';
 import { FileUploadService } from './upload.service';
 import { MessageService } from 'src/message/message.service';
+import { diskStorage } from 'multer';
+import { mkdirSync } from 'fs';
 
 @Controller('upload')
 @ApiTags('upload')
@@ -22,7 +24,13 @@ export class FileUploadController {
   @Post()
   @ApiConsumes('multipart/form-data')
   @ApiBearerAuth('jwt')
-  @UseInterceptors(FilesInterceptor('files'))
+  @UseInterceptors(
+    FilesInterceptor('files', 10, {
+      limits: {
+        fileSize: 10 * 1024 * 1024 * 1024,
+      },
+    }),
+  )
   async uploadFiles(
     @UploadedFiles() uploaded_files: Express.Multer.File[],
   ): Promise<string[]> {
