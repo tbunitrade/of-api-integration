@@ -4,6 +4,7 @@ import { CorsOptions } from '@nestjs/common/interfaces/external/cors-options.int
 import { NestExpressApplication } from '@nestjs/platform-express';
 
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import * as bodyParser from 'body-parser';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
@@ -36,6 +37,8 @@ async function bootstrap() {
   app.useStaticAssets('uploads', {
     prefix: '/uploads',
   });
+  app.use(bodyParser.json({ limit: '10gb' }));
+  app.use(bodyParser.urlencoded({ limit: '10gb', extended: true }));
   const server = await app.listen(3000);
   server.setTimeout(24 * 60 * 60 * 1000); // Timeout 24 hours
 }
