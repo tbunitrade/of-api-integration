@@ -87,7 +87,7 @@ export class UserService {
       // Exclude sensitive information like password from being updated
 
       if (updateUserDto.password) {
-        const hashedPassword = await this.hashPassword(user.password);
+        const hashedPassword = await this.hashPassword(updateUserDto.password);
         delete updateUserDto.password;
         updateUserDto.password = hashedPassword;
       }
