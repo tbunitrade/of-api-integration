@@ -1,14 +1,21 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module } from '@nestjs/common';
 import { FileUploadController } from './upload.controller';
 import { FileUploadService } from './upload.service';
 import { MessageService } from 'src/message/message.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Message } from 'src/message/message.entity';
 import { GroupMessage } from 'src/groupMessages/group_message.entity';
+import { ConnectTimeoutMiddleware } from '@nest-middlewares/connect-timeout';
 
 @Module({
   imports: [TypeOrmModule.forFeature([Message, GroupMessage])], // Assuming you're using TypeORM and have a User
   controllers: [FileUploadController],
   providers: [FileUploadService, MessageService],
 })
-export class FileUploadModule {}
+export class FileUploadModule {
+  configure(consumer: MiddlewareConsumer) {
+    // IMPORTANT! Call Middleware.configure BEFORE using it for routes
+    ConnectTimeoutMiddleware.configure('3000s');
+    consumer.apply(ConnectTimeoutMiddleware).forRoutes('upload');
+  }
+}
