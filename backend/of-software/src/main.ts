@@ -43,9 +43,10 @@ async function bootstrap() {
   server.setTimeout(1 * 60 * 60 * 1000); // Timeout 1 hours
 
   // The number of milliseconds of inactivity a server needs to wait for additional incoming data
-  server.keepAliveTimeout = 1 * 60 * 60 * 1000;
+  // server.keepAliveTimeout = 1 * 60 * 60 * 1000;
   // Limit the amount of time the parser will wait to receive the complete HTTP headers
-  server.headersTimeout = 1 * 60 * 61 * 1000;
+  // server.headersTimeout = 1 * 60 * 61 * 1000;
+  // server.requestTimeout =
   await app.listen(3000);
 }
 bootstrap();
