@@ -158,7 +158,9 @@ export class CronService {
           const result = await this.automateService.start(data, manualStart);
           if (result) {
             const latestGroupId = groupIds ? groupIds[groupIds.length - 1] : 0;
-            const now = new Date();
+            const now = manualStart
+              ? data.scheduled_date || new Date()
+              : new Date();
             const afterDays = new Date(
               new Date(now).setDate(now.getDate() + mp.number_of_days),
             );
