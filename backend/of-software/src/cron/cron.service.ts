@@ -134,6 +134,7 @@ export class CronService {
       try {
         const modelPlatforms = await this.modelPlatformService.findAll(false);
         const postAMessage = async (mp: ModelPlatform, manualStart) => {
+          if (mp.number_of_days === 0) return;
           let groups = await this.groupService.findNGroupsByPlatformId(
             mp.platform_id,
             mp.latest_group_id || 0,
