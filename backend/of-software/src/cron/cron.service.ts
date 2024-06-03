@@ -155,24 +155,26 @@ export class CronService {
             await this.groupService.getGroupsWithMessages(groupIds);
           const data: any = mp;
           data.groupsWithMessages = groupsWithMessages;
-          await this.automateService.start(data, manualStart);
-          const latestGroupId = groupIds ? groupIds[groupIds.length - 1] : 0;
-          const now = new Date();
-          const afterDays = new Date(
-            new Date(now).setDate(now.getDate() + mp.number_of_days),
-          );
-          await this.modelPlatformService.update(mp.id, {
-            latest_group_id: latestGroupId,
-            scheduled_date: afterDays.toDateString(),
-          });
-          groupIds.map(async (_id, idx) => {
-            const postedDate = new Date(
-              new Date(now).setDate(now.getDate() + idx),
+          const result = await this.automateService.start(data, manualStart);
+          if (result) {
+            const latestGroupId = groupIds ? groupIds[groupIds.length - 1] : 0;
+            const now = new Date();
+            const afterDays = new Date(
+              new Date(now).setDate(now.getDate() + mp.number_of_days),
             );
-            await this.groupService.update(_id, {
-              added_on_platform_at: postedDate,
+            await this.modelPlatformService.update(mp.id, {
+              latest_group_id: latestGroupId,
+              scheduled_date: afterDays.toDateString(),
             });
-          });
+            groupIds.map(async (_id, idx) => {
+              const postedDate = new Date(
+                new Date(now).setDate(now.getDate() + idx),
+              );
+              await this.groupService.update(_id, {
+                added_on_platform_at: postedDate,
+              });
+            });
+          }
         };
         for (let i = 0; i < modelPlatforms.length; i++) {
           const promises = [];

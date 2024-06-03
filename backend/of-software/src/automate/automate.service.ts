@@ -53,7 +53,7 @@ export class AutomateService {
         data.number_of_days,
         data.scheduled_date,
       );
-      if (!isExpired) return;
+      if (!isExpired && !manualStart) return false;
       // Test recaptcha v2 enterprise Start
       // await testRecaptchaSolver();
       // return;
@@ -100,12 +100,12 @@ export class AutomateService {
             const groupsWithMessages = data.groupsWithMessages;
 
             for (let i = 0; i < groupsWithMessages.length; i++) {
-              const scheduledDate = new Date();
-              // if (data.scheduled_date)
-              //   scheduledDate = new Date(data.scheduled_date);
-              // else {
-              //   scheduledDate = new Date();
-              // }
+              let scheduledDate = new Date();
+              if (data.scheduled_date && manualStart)
+                scheduledDate = new Date(data.scheduled_date);
+              else {
+                scheduledDate = new Date();
+              }
               scheduledDate.setDate(scheduledDate.getDate() + i + 1);
               const group = groupsWithMessages[i];
               for (let j = 0; j < group.messages.length; j++) {
@@ -171,6 +171,7 @@ export class AutomateService {
             }
 
             console.log('Work Finished');
+            return true;
             break;
           } else {
             continue;
@@ -183,8 +184,10 @@ export class AutomateService {
         }
       }
       await puppeteerUtil.closeBrowser();
+      return false;
     } catch (err) {
       console.error('Error: ', err);
+      return false;
     }
   }
 }
