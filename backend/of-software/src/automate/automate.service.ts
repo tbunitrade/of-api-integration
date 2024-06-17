@@ -48,6 +48,7 @@ export class AutomateService {
   //   ],
   // };
   async start(data: any = {}, manualStart = false) {
+    let scheduledCount = 0;
     try {
       const isExpired = checkIfExpired(
         data.number_of_days,
@@ -102,7 +103,10 @@ export class AutomateService {
             for (let i = 0; i < groupsWithMessages.length; i++) {
               let scheduledDate = new Date();
               if (data.scheduled_date && manualStart)
-                scheduledDate = new Date(data.scheduled_date);
+                scheduledDate =
+                  manualStart && new Date(data.scheduled_date) > new Date()
+                    ? new Date(data.scheduled_date)
+                    : new Date();
               else {
                 scheduledDate = new Date();
               }
@@ -163,6 +167,13 @@ export class AutomateService {
                     return { ...c };
                   });
                   await puppeteerUtil.work(config);
+                  scheduledCount++;
+                  if (
+                    j === group.messages.length - 1 &&
+                    scheduledCount !== group.messages.length
+                  ) {
+                    scheduledCount = group.messages.length;
+                  }
                 } catch (error) {
                   console.log('Error : ', error);
                   continue;
@@ -172,8 +183,7 @@ export class AutomateService {
 
             console.log('Work Finished');
             await puppeteerUtil.closeBrowser();
-            return true;
-            break;
+            return scheduledCount;
           } else {
             continue;
           }
@@ -185,10 +195,10 @@ export class AutomateService {
         }
       }
       await puppeteerUtil.closeBrowser();
-      return false;
+      return scheduledCount;
     } catch (err) {
       console.error('Error: ', err);
-      return false;
+      return scheduledCount;
     }
   }
 }

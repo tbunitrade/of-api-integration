@@ -158,7 +158,7 @@ export class CronService {
           data.groupsWithMessages = groupsWithMessages;
           const result = await this.automateService.start(data, manualStart);
           if (result) {
-            const latestGroupId = groupIds ? groupIds[groupIds.length - 1] : 0;
+            const latestGroupId = groupIds ? Math.max(...groupIds) : 0;
             const now =
               manualStart && new Date(data.scheduled_date) > new Date()
                 ? new Date(data.scheduled_date)
