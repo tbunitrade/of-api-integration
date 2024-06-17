@@ -129,7 +129,7 @@ export class CronService {
    * @returns
    */
   private createCron = (manualStart = false) => {
-    const MaxOpeningBrowserCount = 3;
+    const MaxOpeningBrowserCount = 5;
     return async () => {
       try {
         const modelPlatforms = await this.modelPlatformService.findAll(false);
@@ -159,9 +159,10 @@ export class CronService {
           const result = await this.automateService.start(data, manualStart);
           if (result) {
             const latestGroupId = groupIds ? groupIds[groupIds.length - 1] : 0;
-            const now = manualStart
-              ? new Date(data.scheduled_date) || new Date()
-              : new Date();
+            const now =
+              manualStart && new Date(data.scheduled_date) > new Date()
+                ? new Date(data.scheduled_date)
+                : new Date();
             const afterDays = new Date(
               new Date(now).setDate(now.getDate() + mp.number_of_days),
             );
