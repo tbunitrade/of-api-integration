@@ -171,6 +171,7 @@ export class AutomateService {
             }
 
             console.log('Work Finished');
+            await puppeteerUtil.closeBrowser();
             return true;
             break;
           } else {
