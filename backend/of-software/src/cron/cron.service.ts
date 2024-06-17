@@ -172,7 +172,7 @@ export class CronService {
             });
             groupIds.map(async (_id, idx) => {
               const postedDate = new Date(
-                new Date(now).setDate(now.getDate() + idx),
+                new Date(now).setDate(now.getDate() + idx + 1),
               );
               await this.groupService.update(_id, {
                 added_on_platform_at: postedDate,
