@@ -167,13 +167,13 @@ export class AutomateService {
                     return { ...c };
                   });
                   await puppeteerUtil.work(config);
-                  scheduledCount++;
-                  if (
-                    j === group.messages.length - 1 &&
-                    scheduledCount !== group.messages.length
-                  ) {
-                    scheduledCount = group.messages.length;
-                  }
+                  // scheduledCount++;
+                  // if (
+                  //   j === group.messages.length - 1 &&
+                  //   scheduledCount !== group.messages.length
+                  // ) {
+                  //   scheduledCount = group.messages.length;
+                  // }
                 } catch (error) {
                   console.log('Error : ', error);
                   continue;
@@ -183,7 +183,7 @@ export class AutomateService {
 
             console.log('Work Finished');
             await puppeteerUtil.closeBrowser();
-            return scheduledCount;
+            return true;
           } else {
             continue;
           }
@@ -195,10 +195,10 @@ export class AutomateService {
         }
       }
       await puppeteerUtil.closeBrowser();
-      return scheduledCount;
+      return true;
     } catch (err) {
       console.error('Error: ', err);
-      return scheduledCount;
+      return false;
     }
   }
 }
