@@ -250,7 +250,7 @@ onMounted(() => {
           {{ client.message_count ?? 0 }}
         </td>
         <td data-label="Added to Platform">
-          {{ client.added_on_platform_at.split('T')[0] }}
+          {{ client.added_on_platform_at?.split('T')[0] || '' }}
         </td>
         <td data-label="Status">
           {{ client.status === 1 ? 'Active' : 'Inactive' }}

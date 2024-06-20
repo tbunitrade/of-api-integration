@@ -29,8 +29,6 @@ export class Group {
 
   @UpdateDateColumn({
     type: 'timestamp',
-    default: () => 'CURRENT_TIMESTAMP',
-    onUpdate: 'CURRENT_TIMESTAMP',
   })
   added_on_platform_at: Date;
 
