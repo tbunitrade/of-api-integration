@@ -9,12 +9,16 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { FindOneOptions, Repository } from 'typeorm';
 import { ModelPlatform } from './model_platform.entity';
 import { ModelPlatformDto } from 'src/dtos/model_platform.dto';
+import { Post } from 'src/post/post.entity';
+import { PostDto } from 'src/dtos/post.dto';
 
 @Injectable()
 export class ModelPlatformService {
   constructor(
     @InjectRepository(ModelPlatform)
     private readonly modelPlatformRepository: Repository<ModelPlatform>,
+    @InjectRepository(Post)
+    private readonly postRepository: Repository<Post>,
   ) {}
 
   async create(modelPlatform: ModelPlatformDto): Promise<ModelPlatform> {
@@ -28,7 +32,22 @@ export class ModelPlatformService {
       }
       const newPlatform = this.modelPlatformRepository.create(modelPlatform);
       const result = await this.modelPlatformRepository.save(newPlatform);
-      const _result = this.findById(result.id);
+      // confirm postId
+      await this.modelPlatformRepository.save(result);
+
+      const _result = await this.findById(result.id);
+      const prevPostOption: FindOneOptions<Post> = {
+        where: { model_platform_id: _result.id },
+      };
+      const prevPost = await this.postRepository.findOne(prevPostOption);
+      if (prevPost) {
+        await this.postRepository.remove(prevPost);
+      }
+      const newPostOption: PostDto = {
+        model_platform_id: _result.id,
+      };
+      const newPost = this.postRepository.create(newPostOption);
+      await this.postRepository.save(newPost);
       return _result;
     } catch (err) {
       console.error('ModelPlatform create error', err);

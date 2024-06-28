@@ -5,6 +5,12 @@ import { ApiProperty } from '@nestjs/swagger';
 export class ModelPlatformDto {
   @ApiProperty({
     type: 'number',
+    required: false,
+  })
+  post_id?: number;
+
+  @ApiProperty({
+    type: 'number',
     required: true,
   })
   model_id: number;

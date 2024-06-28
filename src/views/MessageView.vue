@@ -19,10 +19,10 @@ import TabContent from "@/components/TabContent.vue";
 import TableMessageGroup from "@/components/TableMessageGroup.vue";
 import BaseButton from "@/components/BaseButton.vue";
 import TableMessages from "@/components/TableMessages.vue";
-import ImageVideoUpload from "@/components/ImageVideoUpload.vue";
 import { useMessageStore } from "@/stores/message.store";
 import { useFileStore } from "@/stores/files.store";
 import { colorsText } from "@/colors";
+import ImageVideoUpload from "@/components/ImageVideoUpload.vue";
 
 const tabs = ref([
   { id: 1, title: 'Schedule' },

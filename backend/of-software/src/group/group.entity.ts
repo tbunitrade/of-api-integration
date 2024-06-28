@@ -24,11 +24,14 @@ export class Group {
   @Column()
   model_id: number;
 
-  @Column()
+  @Column({
+    nullable: true,
+  })
   order: number;
 
   @UpdateDateColumn({
     type: 'timestamp',
+    nullable: true,
   })
   added_on_platform_at: Date;
 

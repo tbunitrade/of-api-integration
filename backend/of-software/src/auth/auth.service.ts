@@ -27,30 +27,30 @@ export class AuthService {
   async login(
     login: LoginDto,
   ): Promise<{ access_token: string; user: UserResponseDto }> {
-    try {
-      // Validate the user's credentials
-      const { email, password } = login;
+    // try {
+    // Validate the user's credentials
+    const { email, password } = login;
 
-      const user = await this.userService.findByEmail(email, true);
+    const user = await this.userService.findByEmail(email, true);
 
-      if (!user) {
-        // Credentials are not valid
-        throw new UnauthorizedException('Invalid credentials');
-      }
-      const isMatch = await this.comparePasswords(password, user.password);
-      if (!isMatch) {
-        throw new UnauthorizedException('Invalid credentials');
-      }
-      const payload: JwtPayload = {
-        sub: user.id.toString(),
-        email: user.email,
-      };
-      const access_token = this.jwtService.sign(payload, { expiresIn: '100y' });
-      delete user['password'];
-      return { access_token, user };
-    } catch (err) {
-      console.error('Auth login error', err);
+    if (!user) {
+      // Credentials are not valid
+      throw new UnauthorizedException('Invalid credentials');
     }
+    const isMatch = await this.comparePasswords(password, user.password);
+    if (!isMatch) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+    const payload: JwtPayload = {
+      sub: user.id.toString(),
+      email: user.email,
+    };
+    const access_token = this.jwtService.sign(payload, { expiresIn: '100y' });
+    delete user['password'];
+    return { access_token, user };
+    // } catch (err) {
+    //   console.error('Auth login error', err);
+    // }
   }
 
   async register({
@@ -60,74 +60,77 @@ export class AuthService {
     email,
     password,
   }: UserDto): Promise<{ access_token: string; user: UserResponseDto }> {
-    try {
-      // Check if the email is already taken
-      const existingUser = await this.userService.findByEmail(email);
+    // try {
+    // Check if the email is already taken
+    const existingUser = await this.userService.findByEmail(email);
 
-      if (existingUser) {
-        throw new UnauthorizedException('Email is already taken');
-      }
-
-      // Hash the password before saving it
-      const hashedPassword = await this.hashPassword(password);
-
-      // Create a new user
-      const newUser = await this.userService.create({
-        firstName,
-        lastName,
-        photo,
-        email,
-        password: hashedPassword,
-      });
-      const result = instanceToPlain(newUser) as UserResponseDto;
-      const payload: JwtPayload = {
-        sub: result.id.toString(),
-        email: result.email,
-      };
-      const access_token = this.jwtService.sign(payload);
-      delete newUser['password'];
-      return { access_token, user: newUser };
-    } catch (err) {
-      console.error('Auth register error', err);
+    if (existingUser) {
+      throw new UnauthorizedException('Email is already taken');
     }
+
+    // Hash the password before saving it
+    // const hashedPassword = await this.hashPassword(password);
+
+    // Create a new user
+    const newUser = await this.userService.create({
+      firstName,
+      lastName,
+      photo,
+      email,
+      password,
+    });
+    const result = instanceToPlain(newUser) as UserResponseDto;
+    const payload: JwtPayload = {
+      sub: result.id.toString(),
+      email: result.email,
+    };
+    const access_token = this.jwtService.sign(payload);
+    delete newUser['password'];
+    return { access_token, user: newUser };
+    // } catch (err) {
+    //   console.error('Auth register error', err);
+    // }
   }
 
   private async comparePasswords(
     plainTextPassword: string,
     hashedPassword: string,
   ): Promise<boolean> {
-    return await bcrypt.compare(plainTextPassword, hashedPassword);
+    const isMatch = await bcrypt.compare(plainTextPassword, hashedPassword);
+    return isMatch;
   }
 
   private async hashPassword(password: string): Promise<string> {
-    const saltRounds = 10;
-    return await bcrypt.hash(password, saltRounds);
+    const saltRounds: number = 10;
+    const result = await bcrypt.hash(password, saltRounds);
+
+    return result;
   }
 
   async updatePassword(
     userId: number,
     newPassword: string,
   ): Promise<{ access_token: string }> {
-    try {
-      // Retrieve user from the database
-      const user = await this.userService.findById(userId);
+    // try {
+    // Retrieve user from the database
+    const user = await this.userService.findById(userId);
 
-      if (!user) {
-        return { access_token: null };
-      }
-
-      user.password = newPassword;
-
-      await this.userService.update(user.id, user);
-      const payload: JwtPayload = {
-        sub: user.id.toString(),
-        email: user.email,
-      };
-      const access_token = this.jwtService.sign(payload);
-      return { access_token };
-    } catch (err) {
-      console.error('Auth updatePassword error', err);
+    if (!user) {
+      return { access_token: null };
     }
+
+    user.password = newPassword;
+
+    await this.userService.update(user.id, user);
+    const payload: JwtPayload = {
+      sub: user.id.toString(),
+      email: user.email,
+    };
+    const access_token = this.jwtService.sign(payload);
+    return { access_token };
+    // } catch (err) {
+    //   console.error('Auth updatePassword error', err);
+    // }
   }
 
   async verifyCurrentPassword(

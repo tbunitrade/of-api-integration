@@ -149,11 +149,12 @@ if (props.ctrlKFocus) {
         {{ option.label ?? option }}
       </option>
     </select>
-    <textarea v-else-if="computedType === 'textarea'" :id="id" v-model="computedValue" :class="inputElClass" :name="name"
-      :maxlength="maxlength" :placeholder="placeholder" :required="required" :disabled="disabled" />
+    <textarea v-else-if="computedType === 'textarea'" :id="id" v-model="computedValue" :class="inputElClass"
+      :name="name" :maxlength="maxlength" :placeholder="placeholder" :required="required" :disabled="disabled"
+      @change="onChange($event.target.value)" />
     <input v-else :id="id" ref="inputEl" v-model="computedValue" :name="name" :maxlength="maxlength"
       :inputmode="inputmode" :autocomplete="autocomplete" :required="required" :placeholder="placeholder"
-      :type="computedType" :class="inputElClass" :disabled="disabled" />
+      :type="computedType" :class="inputElClass" :disabled="disabled" @change="onChange($event.target.value)" />
     <FormControlIcon v-if="icon" :icon="icon" :h="controlIconH" />
   </div>
 </template>

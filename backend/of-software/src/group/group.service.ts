@@ -114,21 +114,17 @@ export class GroupService {
     count: number,
   ): Promise<Group[]> {
     try {
-      try {
-        const queryBuilder = this.groupRepository.createQueryBuilder('group');
-        return await queryBuilder
-          .innerJoin('group.platforms', 'platform')
-          .where('platform.id = :platform_id', { platform_id })
-          .andWhere('group.model_id = :model_id', { model_id })
-          .andWhere('group.id > :group_id', { group_id })
-          .andWhere('group.status = 1')
-          .orderBy('group.order')
-          .orderBy('group.id')
-          .take(count)
-          .getMany();
-      } catch (err) {
-        console.error('Group findGroupByPlatformId error', err);
-      }
+      const queryBuilder = this.groupRepository.createQueryBuilder('group');
+      return await queryBuilder
+        .innerJoin('group.platforms', 'platform')
+        .where('platform.id = :platform_id', { platform_id })
+        .andWhere('group.model_id = :model_id', { model_id })
+        .andWhere('group.id > :group_id', { group_id })
+        .andWhere('group.status = 1')
+        .orderBy('group.order')
+        .orderBy('group.id')
+        .take(count)
+        .getMany();
     } catch (err) {
       console.error('Group findGroupByPlatformId error', err);
     }

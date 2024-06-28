@@ -14,7 +14,11 @@ import { FileUploadModule } from './upload/upload.module';
 import { PlatformGroupModule } from './platformGroup/platform_group.module';
 import { AutomateModule } from './automate/automate.module';
 import { CronModule } from './cron/cron.module';
+import { PostModule } from './post/post.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { PostTimeModule } from './postTime/post_time.module';
+import { PostCaptionModule } from './postCaption/post_caption.module';
+import { PostFileModule } from './postFile/post_file.module';
 
 @Module({
   imports: [
@@ -45,6 +49,10 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
     PlatformGroupModule,
     AutomateModule,
     CronModule,
+    PostModule,
+    PostTimeModule,
+    PostCaptionModule,
+    PostFileModule,
   ],
 })
 export class AppModule {}

@@ -9,9 +9,12 @@ import { GroupService } from 'src/group/group.service';
 import { AutomateService } from 'src/automate/automate.service';
 import { SchedulerRegistry } from '@nestjs/schedule';
 import { PlatformGroup } from 'src/platformGroup/platform_group.entity';
+import { Post } from 'src/post/post.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([ModelPlatform, Group, PlatformGroup])],
+  imports: [
+    TypeOrmModule.forFeature([ModelPlatform, Group, PlatformGroup, Post]),
+  ],
   controllers: [CronController],
   providers: [
     CronService,

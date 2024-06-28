@@ -2,6 +2,7 @@
 
 import { Model } from 'src/model/model.entity';
 import { Platform } from 'src/platform/platform.entity';
+import { Post } from 'src/post/post.entity';
 import {
   Entity,
   Column,
@@ -11,12 +12,18 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   PrimaryColumn,
+  OneToOne,
+  BeforeInsert,
+  AfterInsert,
 } from 'typeorm';
 
 @Entity()
 export class ModelPlatform {
   @PrimaryGeneratedColumn()
   id: number;
+
+  @Column({ nullable: true })
+  post_id: number;
 
   @PrimaryColumn()
   model_id: number;
@@ -33,7 +40,7 @@ export class ModelPlatform {
   @Column({ nullable: true })
   site_url: string;
 
-  @Column({ default: 1 })
+  @Column({ default: 0 })
   number_of_days: number;
 
   @Column({ default: null })
@@ -57,6 +64,10 @@ export class ModelPlatform {
   @JoinColumn([{ name: 'platform_id', referencedColumnName: 'id' }])
   platforms: Platform[];
 
+  @OneToOne(() => Post, (post) => post.model_platform)
+  @JoinColumn([{ name: 'post_id', referencedColumnName: 'id' }])
+  post: Post;
+
   @CreateDateColumn({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   created_at: Date;
 
@@ -66,4 +77,16 @@ export class ModelPlatform {
     onUpdate: 'CURRENT_TIMESTAMP',
   })
   updated_at: Date;
+
+  @BeforeInsert()
+  async setPostId() {
+    this.post_id = this.id;
+  }
+
+  @AfterInsert()
+  async setAfterPostId() {
+    if (!this.post_id) {
+      this.post_id = this.id;
+    }
+  }
 }

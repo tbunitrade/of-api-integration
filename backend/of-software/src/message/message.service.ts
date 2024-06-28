@@ -2,7 +2,7 @@
 
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { FindOneOptions, Repository, SelectQueryBuilder } from 'typeorm';
+import { FindOneOptions, Repository } from 'typeorm';
 import { Message } from './message.entity';
 import { MessageDto } from 'src/dtos/message.dto';
 import { GroupMessage } from 'src/groupMessages/group_message.entity';

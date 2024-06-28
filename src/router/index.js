@@ -60,6 +60,14 @@ const routes = [
   },
   {
     meta: {
+      title: 'Post'
+    },
+    path: '/posts',
+    name: 'posts',
+    component: () => import('@/views/PostView.vue')
+  },
+  {
+    meta: {
       title: 'Tables'
     },
     path: '/tables',

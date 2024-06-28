@@ -43,6 +43,8 @@ const props = defineProps({
   },
   small: Boolean,
   outline: Boolean,
+  transparent: Boolean,
+  noBorder: Boolean,
   active: Boolean,
   disabled: Boolean,
   roundedFull: Boolean
@@ -87,6 +89,8 @@ const componentClass = computed(() => {
     'border',
     props.disabled ? 'cursor-not-allowed' : 'cursor-pointer',
     props.roundedFull ? 'rounded-full' : 'rounded',
+    props.transparent ? 'background-none' : '',
+    props.noBorder ? 'border-none' : '',
     getButtonColor(props.color, props.outline, !props.disabled, props.active)
   ];
 

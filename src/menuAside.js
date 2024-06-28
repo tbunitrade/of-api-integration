@@ -21,7 +21,7 @@ export default [
     label: 'Dashboard'
   },
   {
-    to: '/tables',
+    to: '/posts',
     label: 'Post',
     icon: mdiTable
   },

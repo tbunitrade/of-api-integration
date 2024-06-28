@@ -4,14 +4,16 @@ import {
   Post,
   Query,
   UploadedFiles,
+  UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiConsumes, ApiTags } from '@nestjs/swagger';
 import { FilesInterceptor } from '@nestjs/platform-express/multer';
 import { FileUploadService } from './upload.service';
 import { MessageService } from 'src/message/message.service';
-import { diskStorage } from 'multer';
-import { mkdirSync } from 'fs';
+// import { diskStorage } from 'multer';
+// import { mkdirSync } from 'fs';
+import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 
 @Controller('upload')
 @ApiTags('upload')
@@ -53,6 +55,17 @@ export class FileUploadController {
       }
 
       return await this.fileUploadService.deleteFile(filePath);
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  @Get('get-all')
+  @ApiBearerAuth('jwt')
+  @UseGuards(JwtAuthGuard)
+  async getAllFiles(): Promise<string[]> {
+    try {
+      return await this.fileUploadService.getAllFiles();
     } catch (error) {
       throw error;
     }
