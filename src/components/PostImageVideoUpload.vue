@@ -9,7 +9,7 @@
         <div class="relative">
           <img v-if="isImage(file.url)" :src="file.url" alt="Preview" class="w-32 h-32 object-cover rounded" />
           <video v-else-if="isVideo(file.url)" controls alt="Preview" class="w-32 h-32 object-cover rounded">
-            <source :src="file" type="video/mp4">
+            <source :src="file.url" type="video/mp4">
             Your browser does not support the video tag.
           </video>
           <BaseButton :icon="mdiClose" color="danger" outline small rounded-full
