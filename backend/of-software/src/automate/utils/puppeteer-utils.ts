@@ -615,6 +615,157 @@ export const CONFIG = {
       value: '#content .b-chats__header a[href="/my/chats/send"]',
     },
   ],
+  post: [
+    {
+      type: 'waitForTime',
+      value: '30000',
+    },
+    {
+      type: 'waitForSelector',
+      value: '#content .b-feed',
+    },
+    {
+      type: 'waitForSelector', // New message => Send To => View All
+      value: '.b-feed .b-make-post__actions button#attach_file_photo',
+    },
+    {
+      type: 'appendMedias', // click add image button and add images
+      key: 'content',
+      value: '$value', // url list separted by ','. Ex: http://example.com/upload/aaa.png,http://example.com/upload/bbb.svg,http://example.com/upload/ccc.jpg
+      selector: '.b-feed .b-make-post__actions button#attach_file_photo',
+    },
+    {
+      type: 'waitForTime',
+      value: '1000',
+    },
+    {
+      type: 'type',
+      key: 'message',
+      selector:
+        '.b-feed #make_post_form .b-make-post__main-wrapper .b-make-post__textarea-wrapper textarea#new_post_text_input',
+      value: '$value',
+    },
+    {
+      type: 'waitForTime',
+      value: '500',
+    },
+    {
+      type: 'click', // Schedule Btn
+      value: '.b-feed .b-make-post__actions button.b-make-post__datepicker-btn',
+    },
+    {
+      type: 'waitForTime',
+      value: '500',
+    },
+    {
+      type: 'waitForSelector',
+      value: '.b-make-post__datepicker-input .vdatetime-popup',
+    },
+    {
+      type: 'compareValue',
+      key: 'message_month',
+      value: '$value',
+      selector:
+        '.b-make-post__datepicker-input .vdatetime-calendar__current--month',
+    },
+    {
+      type: 'condition',
+      childs: {
+        yes: null,
+        no: {
+          type: 'click',
+          value:
+            '.b-make-post__datepicker-input .vdatetime-calendar__navigation--next',
+        },
+      },
+    },
+    {
+      type: 'waitForTime',
+      value: '1000',
+    },
+    {
+      type: 'clickForValue',
+      key: 'message_date',
+      selector:
+        '.b-make-post__datepicker-input .vdatetime-calendar .vdatetime-calendar__month__day',
+      value: '$value',
+    },
+    {
+      type: 'click',
+      value: '.b-make-post__datepicker-input .vdatetime-popup__tab.time',
+    },
+    {
+      type: 'waitForTime',
+      value: '500',
+    },
+    {
+      type: 'clickForValue',
+      key: 'message_hour',
+      selector:
+        '.b-make-post__datepicker-input .vdatetime-time-picker__list.vdatetime-time-picker__list--hours .vdatetime-time-picker__item',
+      value: '$value',
+    },
+
+    {
+      type: 'clickForValue',
+      key: 'message_minute',
+      selector:
+        '.b-make-post__datepicker-input .vdatetime-time-picker__list.vdatetime-time-picker__list--minutes .vdatetime-time-picker__item',
+      value: '$value',
+    },
+    {
+      type: 'clickForValue',
+      key: 'message_time_suffix',
+      value: '$value',
+      selector:
+        '.b-make-post__datepicker-input .vdatetime-time-picker__list.vdatetime-time-picker__list--suffix .vdatetime-time-picker__item',
+    },
+    {
+      type: 'waitForTime',
+      value: '1000',
+    },
+    {
+      type: 'click',
+      value:
+        '.b-make-post__datepicker-input .vdatetime-popup__actions .vdatetime-popup__actions__button--confirm button',
+    },
+    {
+      type: 'waitForTime',
+      value: '500',
+    },
+
+    {
+      type: 'click', // Click schedule button
+      value: '.b-feed .g-page__header button[at-attr="submit_post"]',
+    },
+    {
+      type: 'waitForTime',
+      value: '1000',
+    },
+    {
+      type: 'click', // Click calendar nav button in case message not posted automatically.
+      value: '.l-header a[href="/"]',
+    },
+    {
+      type: 'waitForTime',
+      value: '1000',
+    },
+    {
+      type: 'waitForTime',
+      value: '30000',
+    },
+    {
+      type: 'waitForSelector',
+      value: '.queue-main',
+    },
+
+    // 'waitForSelector: #content .b-feed ',
+    // 'waitandclickforappendmedia: .b-feed .b-make-post__actions button#attach_file_photo',
+    // 'addtext: .b-feed #make_post_form .b-make-post__main-wrapper .b-make-post__textarea-wrapper textarea#new_post_text_input',
+    // 'waitandclick: .b-feed .b-make-post__actions button.b-make-post__datepicker-btn',
+    // 'waitforDateTimePicker: .b-make-post__datepicker-input', //same for otehr datetimepicker
+    // 'clickScheduleBtn: .b-feed .g-page__header button[at-attr="submit_post"]',
+  ],
 };
 
 /*

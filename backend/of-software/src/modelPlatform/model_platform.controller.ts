@@ -32,6 +32,7 @@ export class ModelPlatformController {
           model_id: modelId,
           platforms: [],
           model: item.models,
+          id: item.id,
         };
       }
       const _platform = {

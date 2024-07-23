@@ -9,7 +9,7 @@ export class AutomateController {
 
   @Get('start')
   async start() {
-    await this.automateService.start();
+    await this.automateService.startMessage();
     return true;
   }
 }

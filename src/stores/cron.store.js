@@ -16,6 +16,14 @@ const useCronStore = defineStore({
         throw error
       }
     },
+    async triggerPostCronJobManually() {
+      try {
+        axios.get(`${import.meta.env.VITE_APP_ROOT_API}/cron/manual-start?isPost=true`);
+      } catch (error) {
+        console.error('Cronjob start failed:', error)
+        throw error
+      }
+    },
   }
 })
 export { useCronStore }

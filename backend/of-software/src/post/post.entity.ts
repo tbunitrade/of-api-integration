@@ -24,6 +24,9 @@ export class Post {
   @Column({ default: 0 })
   number_of_days: number;
 
+  @Column({ default: null })
+  scheduled_date: string;
+
   @OneToOne(() => ModelPlatform, (modelPlatform) => modelPlatform.post)
   model_platform: ModelPlatform;
 

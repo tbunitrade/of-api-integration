@@ -14,7 +14,7 @@ import BaseDivider from '@/components/BaseDivider.vue';
 import BaseButtons from '@/components/BaseButtons.vue';
 import CardBoxModal from '@/components/CardBoxModal.vue';
 import { computed, onMounted, ref } from 'vue';
-import { useModelStore, usePostStore, usePlatformStore, usePostTimeStore, usePostCaptionStore } from '@/stores';
+import { useModelStore, usePostStore, usePlatformStore, usePostTimeStore, usePostCaptionStore, useCronStore } from '@/stores';
 
 import PostImageVideoUpload from '@/components/PostImageVideoUpload.vue';
 import { useNotification } from '@kyvg/vue3-notification';
@@ -28,7 +28,7 @@ const postCaptionStore = usePostCaptionStore();
 const { notify } = useNotification();
 const modelStore = useModelStore();
 const platformStore = usePlatformStore();
-
+const cronStore = useCronStore();
 
 
 const selectedModel = computed(() => modelStore.selectedModel);
@@ -284,6 +284,16 @@ const fetchData = async () => {
   }
 };
 
+const onStartCronJobManually = async () => {
+  cronStore.triggerPostCronJobManually();
+  notify({
+    title: "Success",
+    type: "success",
+    text: "Cron job started!",
+  });
+};
+
+
 onMounted(() => {
   if (!selectedModel.value || !selectedPlatform.value) {
     notify({
@@ -303,7 +313,7 @@ onMounted(() => {
   <LayoutAuthenticated>
     <SectionMain>
       <SectionTitleLineWithButton :icon="mdiTableBorder" title="Post" main>
-        <BaseButton label="Trigger CronJob Manually" color="info" rounded small />
+        <BaseButton label="Trigger CronJob Manually" color="info" rounded small @click="onStartCronJobManually" />
       </SectionTitleLineWithButton>
 
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">

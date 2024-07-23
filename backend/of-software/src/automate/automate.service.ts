@@ -2,6 +2,10 @@ import { Injectable } from '@nestjs/common';
 import { PuppeteerUtil, CONFIG } from './utils/puppeteer-utils';
 import * as _ from 'lodash';
 import testRecaptchaSolver from './utils/test-recaptcha-solver';
+import { getRandomNumber } from 'src/cron/utils';
+import { ModelPlatform } from 'src/modelPlatform/model_platform.entity';
+import { PostTime } from 'src/postTime/post_time.entity';
+import { PostFile } from 'src/postFile/post_file.entity';
 
 /* Logic of login_captcha
 The OnlyFans website has 2 captcha google recaptcha v2 and v3. (v2 enterprise, v3 enterprise)
@@ -47,7 +51,7 @@ export class AutomateService {
   //     },
   //   ],
   // };
-  async start(data: any = {}, manualStart = false) {
+  async startMessage(data: any = {}, manualStart = false) {
     let scheduledCount = 0;
     try {
       const isExpired = checkIfExpired(
@@ -174,6 +178,145 @@ export class AutomateService {
                   // ) {
                   //   scheduledCount = group.messages.length;
                   // }
+                } catch (error) {
+                  console.log('Error : ', error);
+                  continue;
+                }
+              }
+            }
+
+            console.log('Work Finished');
+            await puppeteerUtil.closeBrowser();
+            return true;
+          } else {
+            continue;
+          }
+        } catch (error) {
+          console.log('Error: ', error);
+          repeatCount--; // IF error occurs over 50 times, break and exit;
+          if (repeatCount < 0) break;
+          continue;
+        }
+      }
+      await puppeteerUtil.closeBrowser();
+      return true;
+    } catch (err) {
+      console.error('Error: ', err);
+      return false;
+    }
+  }
+
+  async startPost(
+    allData: {
+      modelPlatform: ModelPlatform;
+      postTimesWithCaption: PostTime[];
+      postFiles: PostFile[];
+      scheduledDate: string;
+      numberOfDays: number;
+    },
+    manualStart = false,
+  ) {
+    const {
+      modelPlatform,
+      postTimesWithCaption,
+      postFiles,
+      scheduledDate,
+      numberOfDays,
+    } = allData;
+    try {
+      const isExpired = checkIfExpired(
+        modelPlatform.number_of_days,
+        modelPlatform.scheduled_date,
+      );
+      if (!isExpired && !manualStart) return false;
+      // Test recaptcha v2 enterprise Start
+      // await testRecaptchaSolver();
+      // return;
+      // Test recaptcha v2 enterprise End
+
+      const puppeteerUtil = new PuppeteerUtil();
+      puppeteerUtil.initialize();
+      puppeteerUtil.setConfig();
+      // recaptcha solving can be wrong sometime
+      const headless = !manualStart;
+      await puppeteerUtil.openBrowser(headless);
+      const cookieFileName =
+        'user_' + modelPlatform.model_id + '.' + modelPlatform.platform_id;
+      await puppeteerUtil.openPage('https://onlyfans.com/posts/create');
+      await puppeteerUtil.acceptCookie();
+      await puppeteerUtil.loadCookiesFromFile(cookieFileName);
+      await puppeteerUtil.reload();
+      const isLoginPage = await puppeteerUtil.checkLogin();
+      let repeatCount = 50;
+
+      while (1) {
+        try {
+          let _config = _.cloneDeep(CONFIG);
+          _config['model_id'] = modelPlatform.model_id;
+          _config['platform_id'] = modelPlatform.platform_id;
+          let isLoggedIn = false;
+          if (!modelPlatform.username) break;
+          if (isLoginPage) {
+            _config.login.idValue = _config.login.idValue.replace(
+              '$value',
+              modelPlatform.username,
+            );
+            _config.login.passwordValue = _config.login.passwordValue.replace(
+              '$value',
+              modelPlatform.password,
+            );
+            isLoggedIn = await puppeteerUtil.login(_config);
+          } else {
+            console.log('----------------- Login Success -----------------');
+            isLoggedIn = true;
+          }
+          if (isLoggedIn) {
+            //start cron
+            console.log('----------------- Start cron -----------------');
+
+            let scheduledDt = new Date();
+            if (scheduledDate && manualStart)
+              scheduledDt =
+                manualStart && new Date(scheduledDate) > new Date()
+                  ? new Date(scheduledDate)
+                  : new Date();
+            else {
+              scheduledDt = new Date();
+            }
+            for (let i = 0; i < numberOfDays; i++) {
+              scheduledDt.setDate(scheduledDt.getDate() + i + 1);
+              for (let j = 0; j < postTimesWithCaption.length; j++) {
+                try {
+                  const ptWithC = postTimesWithCaption[j];
+                  if (!ptWithC.captions) continue;
+                  const [_hour, minutes, secs] = ptWithC.time?.split(':');
+                  const hour =
+                    ((parseInt(_hour) % 13) + parseInt(_hour) / 13) | 0;
+                  const suffix = parseInt(_hour) >= 12 ? 'pm' : 'am';
+                  const randNumber = getRandomNumber(postFiles.length ?? 0);
+                  const postFile = postFiles[randNumber]?.url;
+                  const randNC = getRandomNumber(ptWithC.captions.length ?? 0);
+                  const postCaption = ptWithC.captions[randNC];
+                  const msgData = {
+                    content: postFile,
+                    message: postCaption,
+                    message_month: scheduledDt.toLocaleString('default', {
+                      month: 'long',
+                    }),
+                    message_date: scheduledDt.getDate(),
+                    message_hour: hour,
+                    message_minute: minutes,
+                    message_time_suffix: suffix,
+                    idValue: modelPlatform.username,
+                    passwordValue: modelPlatform.password,
+                  };
+                  const config = _config.post.map((c) => {
+                    if (c['key']) {
+                      c.value = c.value.replace('$value', msgData[c['key']]);
+                    }
+                    return { ...c };
+                  });
+                  await puppeteerUtil.work(config);
                 } catch (error) {
                   console.log('Error : ', error);
                   continue;

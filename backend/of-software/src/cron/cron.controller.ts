@@ -36,9 +36,9 @@ export class CronController {
   @Get('manual-start')
   @ApiBearerAuth('jwt')
   @UseGuards(JwtAuthGuard)
-  async manualStart() {
+  async manualStart(@Query() isPost: boolean) {
     try {
-      const result = await this.cronService.manualStart();
+      const result = await this.cronService.manualStart(!!isPost);
       return result;
     } catch (error) {
       console.log(error);

@@ -15,6 +15,10 @@ import {
 import { GroupService } from 'src/group/group.service';
 import { AutomateService } from 'src/automate/automate.service';
 import { ModelPlatform } from 'src/modelPlatform/model_platform.entity';
+import { PostService } from 'src/post/post.service';
+import { PostFileService } from 'src/postFile/post_file.service';
+import { PostTimeService } from 'src/postTime/post_time.service';
+import { PostTime } from 'src/postTime/post_time.entity';
 export interface IResponseCron {
   // Cron job name
   name?: string;
@@ -28,6 +32,9 @@ export class CronService {
     private schedulerRegistry: SchedulerRegistry,
     private modelPlatformService: ModelPlatformService,
     private groupService: GroupService,
+    private postService: PostService,
+    private postFileService: PostFileService,
+    private postTimeService: PostTimeService,
     private automateService: AutomateService,
   ) {
     const cronJobConfigs = this.getCronJobConfigs();
@@ -62,9 +69,9 @@ export class CronService {
   /*
    * Manual Start Cron Job
    */
-  async manualStart() {
+  async manualStart(isPost = false) {
     //this is test line and need to be deleted
-    const startJob = this.createCron(true);
+    const startJob = this.createCron(isPost, true);
     await startJob();
     return true;
   }
@@ -128,12 +135,12 @@ export class CronService {
    * @param createCronDto
    * @returns
    */
-  private createCron = (manualStart = false) => {
+  private createCron = (isPost = false, manualStart = false) => {
     const MaxOpeningBrowserCount = 5;
     return async () => {
       try {
         const modelPlatforms = await this.modelPlatformService.findAll(false);
-        const postAMessage = async (mp: ModelPlatform, manualStart) => {
+        const sendAMessage = async (mp: ModelPlatform, manualStart) => {
           if (mp.number_of_days === 0) return;
           let groups = await this.groupService.findNGroupsByPlatformId(
             mp.platform_id,
@@ -156,7 +163,10 @@ export class CronService {
             await this.groupService.getGroupsWithMessages(groupIds);
           const data: any = mp;
           data.groupsWithMessages = groupsWithMessages;
-          const result = await this.automateService.start(data, manualStart);
+          const result = await this.automateService.startMessage(
+            data,
+            manualStart,
+          );
           if (result) {
             const latestGroupId = groupIds ? Math.max(...groupIds) : 0;
             const now =
@@ -180,30 +190,69 @@ export class CronService {
             });
           }
         };
-        for (let i = 0; i < modelPlatforms.length; i++) {
-          const promises = [];
-          const limit =
-            modelPlatforms.length < i + MaxOpeningBrowserCount
-              ? modelPlatforms.length
-              : i + MaxOpeningBrowserCount;
-          for (let m = i; m < limit; m++, i++) {
-            const mp = modelPlatforms[m];
-            // debugging for live server
-            // if (
-            //   // mp.id != 15
-            //   // mp.id != 24 &&
-            //   // mp.id != 6 &&
-            //   // mp.id != 9 &&
-            //   // mp.id != 10 &&
-            //   // mp.id != 22 &&
-            //   // mp.id != 23 &&
-            //   // mp.id != 11
-            // )
-            //   continue;
+        const postAPost = async (mp: ModelPlatform, manualStart) => {
+          const postWithTimes = await this.postService.findById(mp.id);
 
-            promises.push(postAMessage(mp, manualStart));
+          if (postWithTimes.number_of_days === 0) return;
+
+          const postFiles = await this.postFileService.findByPostId(
+            postWithTimes.id,
+          );
+
+          const postTimesWithCaption: PostTime[] = [];
+          for (const postTime of postWithTimes.post_times || []) {
+            const postTimeWithCaptions = await this.postTimeService.findById(
+              postTime.id,
+            );
+            if (!postTimeWithCaptions.captions) continue;
+            if (postTimeWithCaptions.captions.length === 0) continue;
+
+            postTimesWithCaption.push(postTime);
           }
-          await Promise.allSettled(promises);
+          const data = {
+            modelPlatform: mp,
+            postTimesWithCaption,
+            scheduledDate: postWithTimes.scheduled_date,
+            numberOfDays: postWithTimes.number_of_days,
+            postFiles,
+          };
+          const result = await this.automateService.startPost(
+            data,
+            manualStart,
+          );
+          if (result) {
+            const now =
+              manualStart && new Date(data.scheduledDate) > new Date()
+                ? new Date(data.scheduledDate)
+                : new Date();
+            const afterDays = new Date(
+              new Date(now).setDate(now.getDate() + data.numberOfDays),
+            );
+            await this.postService.update(postWithTimes.id, {
+              scheduled_date: afterDays.toDateString(),
+            });
+          }
+        };
+
+        let i = 0;
+        let promises = [];
+        for (;;) {
+          const mp = modelPlatforms[i];
+          if (isPost) {
+            promises.push(postAPost(mp, manualStart));
+          } else {
+            promises.push(sendAMessage(mp, manualStart));
+          }
+
+          if (i >= modelPlatforms.length) break;
+          if (
+            (i + 1) % MaxOpeningBrowserCount === 0 ||
+            i === modelPlatforms.length - 1
+          ) {
+            await Promise.allSettled(promises);
+            promises = [];
+          }
+          i++;
         }
       } catch (error) {
         console.error('Error in Cron job => ', error?.message ?? 'Unknown');
