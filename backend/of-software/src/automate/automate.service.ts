@@ -251,7 +251,7 @@ export class AutomateService {
 
       while (1) {
         try {
-          let _config = _.cloneDeep(CONFIG);
+          const _config = _.cloneDeep(CONFIG);
           _config['model_id'] = modelPlatform.model_id;
           _config['platform_id'] = modelPlatform.platform_id;
           let isLoggedIn = false;
