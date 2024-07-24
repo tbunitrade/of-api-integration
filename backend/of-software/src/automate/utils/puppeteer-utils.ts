@@ -973,16 +973,20 @@ export class PuppeteerUtil {
         const _config = config[_configKey];
         const recaptchaUtil = new RecaptchaUtil();
         if (_config.isCheckPage) {
+          console.log('isCheckPage1');
           try {
             await this._page.waitForTimeout(10000);
+            console.log('isCheckPage2');
             await this._page.waitForSelector(_config.pageSelector, {
               timeout: 10000,
             });
+            console.log('isCheckPage3');
             if (i > 2) {
               const cookieFileName =
                 'user_' + config.model_id + '.' + config.platform_id;
               await this.saveCookieToFile(cookieFileName);
             }
+            console.log('isCheckPage4');
             await this._page.addStyleTag({
               content:
                 'img{-webkit-filter: blur(113px);-moz-filter: blur(113px);-o-filter: blur(113px);-ms-filter: blur(113px);filter: blur(113px);  }',
@@ -1168,9 +1172,11 @@ export class PuppeteerUtil {
           );
           await this._page.click(_config.submitSelector);
         } else {
+          console.log('is Login Page: 1');
           await this._page.waitForSelector(_config.pageSelector, {
             timeout: 10000,
           });
+          console.log('is Login Page: 2');
           await this._page.evaluate(
             ({ idSelector }) => {
               const ele = document.querySelector(idSelector);
@@ -1179,6 +1185,7 @@ export class PuppeteerUtil {
             },
             { idSelector: _config.idSelector },
           );
+          console.log('is Login Page: 3');
           await this._page.evaluate(
             ({ passwordSelector }) => {
               const ele = document.querySelector(passwordSelector);
@@ -1187,11 +1194,13 @@ export class PuppeteerUtil {
             },
             { passwordSelector: _config.passwordSelector },
           );
+          console.log('is Login Page: 4');
           await this._page.type(_config.idSelector, _config.idValue);
           await this._page.type(
             _config.passwordSelector,
             _config.passwordValue,
           );
+          console.log('is Login Page: 5');
           await this._page.click(_config.submitSelector);
           await this._page.waitForTimeout(5000);
         }
