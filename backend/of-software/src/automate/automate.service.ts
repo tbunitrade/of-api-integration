@@ -299,7 +299,7 @@ export class AutomateService {
                   const postCaption = ptWithC.captions[randNC];
                   const msgData = {
                     content: postFile,
-                    message: postCaption,
+                    message: postCaption.caption,
                     message_month: scheduledDt.toLocaleString('default', {
                       month: 'long',
                     }),
