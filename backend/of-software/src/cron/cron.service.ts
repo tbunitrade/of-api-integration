@@ -191,6 +191,7 @@ export class CronService {
           }
         };
         const postAPost = async (mp: ModelPlatform, manualStart) => {
+          return;
           const postWithTimes = await this.postService.findById(mp.id);
 
           if (postWithTimes.number_of_days === 0) return;
@@ -237,6 +238,7 @@ export class CronService {
         let i = 0;
         let promises = [];
         for (;;) {
+          if (i >= modelPlatforms.length) break;
           const mp = modelPlatforms[i];
           if (isPost) {
             promises.push(postAPost(mp, manualStart));
@@ -244,7 +246,6 @@ export class CronService {
             promises.push(sendAMessage(mp, manualStart));
           }
 
-          if (i >= modelPlatforms.length) break;
           if (
             (i + 1) % MaxOpeningBrowserCount === 0 ||
             i === modelPlatforms.length - 1
