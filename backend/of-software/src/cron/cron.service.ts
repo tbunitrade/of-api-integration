@@ -191,7 +191,6 @@ export class CronService {
           }
         };
         const postAPost = async (mp: ModelPlatform, manualStart) => {
-          return;
           const postWithTimes = await this.postService.findById(mp.id);
 
           if (postWithTimes.number_of_days === 0) return;
