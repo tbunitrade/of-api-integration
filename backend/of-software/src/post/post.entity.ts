@@ -1,6 +1,7 @@
 // src/post/post.entity.ts
 
 import { ModelPlatform } from 'src/modelPlatform/model_platform.entity';
+import { PostCaption } from 'src/postCaption/post_caption.entity';
 import { PostFile } from 'src/postFile/post_file.entity';
 import { PostTime } from 'src/postTime/post_time.entity';
 import {
@@ -29,6 +30,9 @@ export class Post {
 
   @OneToOne(() => ModelPlatform, (modelPlatform) => modelPlatform.post)
   model_platform: ModelPlatform;
+
+  @OneToMany(() => PostCaption, (postCaption) => postCaption.post)
+  captions: PostCaption[];
 
   @OneToMany(() => PostTime, (postTime) => postTime.post)
   post_times: PostTime[];

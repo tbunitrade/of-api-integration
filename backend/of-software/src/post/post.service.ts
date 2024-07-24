@@ -21,7 +21,7 @@ export class PostService {
   async findAll(rel: boolean = true): Promise<Post[]> {
     try {
       return await this.postRepository.find(
-        rel ? { relations: ['post_times'] } : {},
+        rel ? { relations: ['post_times', 'captions'] } : {},
       );
       // return await this.modelPlatformRepository
       //   .createQueryBuilder('model_platform')
@@ -34,10 +34,12 @@ export class PostService {
     }
   }
 
-  async getPostTimesForModelPlatform(model_platform_id: number): Promise<Post> {
+  async getPostTimesAndCaptionsForModelPlatform(
+    post_id: number,
+  ): Promise<Post> {
     const options: FindOneOptions<Post> = {
-      where: { model_platform_id: model_platform_id },
-      relations: ['post_times'],
+      where: { model_platform_id: post_id },
+      relations: ['post_times', 'captions'],
     };
     return await this.postRepository.findOne(options);
   }
@@ -46,7 +48,7 @@ export class PostService {
     try {
       const options: FindOneOptions<Post> = {
         where: { id },
-        relations: ['post_times'],
+        relations: ['post_times', 'captions'],
       };
       return await this.postRepository.findOne(options);
     } catch (err) {
@@ -71,7 +73,7 @@ export class PostService {
       }
       const postOptions: FindOneOptions<Post> = {
         where: { model_platform_id: modelPlatform.id },
-        relations: ['post_times'],
+        relations: ['post_times', 'captions'],
       };
       const post = await this.postRepository.findOne(postOptions);
       if (!post) {

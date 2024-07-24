@@ -33,6 +33,7 @@ export class ModelPlatformService {
       const newPlatform = this.modelPlatformRepository.create(modelPlatform);
       const result = await this.modelPlatformRepository.save(newPlatform);
       // confirm postId
+      result.post_id = result.id;
       await this.modelPlatformRepository.save(result);
 
       const _result = await this.findById(result.id);
@@ -44,6 +45,7 @@ export class ModelPlatformService {
         await this.postRepository.remove(prevPost);
       }
       const newPostOption: PostDto = {
+        id: _result.id,
         model_platform_id: _result.id,
       };
       const newPost = this.postRepository.create(newPostOption);

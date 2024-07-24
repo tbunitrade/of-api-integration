@@ -8,10 +8,8 @@ import {
   UpdateDateColumn,
   ManyToOne,
   JoinColumn,
-  OneToMany,
 } from 'typeorm';
 import { Post } from '../post/post.entity';
-import { PostCaption } from 'src/postCaption/post_caption.entity';
 
 @Entity()
 export class PostTime {
@@ -33,9 +31,6 @@ export class PostTime {
   })
   @JoinColumn([{ name: 'post_id', referencedColumnName: 'id' }])
   post: Post;
-
-  @OneToMany(() => PostCaption, (postCaption) => postCaption.post_time)
-  captions: PostCaption[];
 
   @Column({ default: 1 })
   status: number; // 0: inactive, 1: active

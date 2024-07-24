@@ -9,10 +9,10 @@ const usePostCaptionStore = defineStore({
     post_captions: []
   }),
   actions: {
-    async getPostCaptions(post_time_id) {
+    async getPostCaptions(post_id) {
       try {
         const response = await axios.get(
-          `${import.meta.env.VITE_APP_ROOT_API}/post_time/${post_time_id}/post_captions`
+          `${import.meta.env.VITE_APP_ROOT_API}/post/${post_id}/post-captions`
         )
 
         if (response.data) {
@@ -84,7 +84,27 @@ const usePostCaptionStore = defineStore({
         this.isLoading = false
         throw error
       }
-    }
+    },
+    async uploadFiles(data, post_id) {
+      try {
+        this.isLoading = true
+        const response = await axios.post(`${import.meta.env.VITE_APP_ROOT_API}/post_caption/post/${post_id}/upload`, data, {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
+        })
+        if (response.data) {
+          const postCaption = response.data
+          this.post_captions = [...this.post_captions, ...postCaption]
+        }
+        this.isLoading = false
+        return response.data
+      } catch (error) {
+        console.error('File upload failed:', error)
+        this.isLoading = false
+        throw error
+      }
+    },
   }
 })
 

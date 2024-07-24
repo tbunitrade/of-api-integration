@@ -14,11 +14,10 @@ import BaseDivider from '@/components/BaseDivider.vue';
 import BaseButtons from '@/components/BaseButtons.vue';
 import CardBoxModal from '@/components/CardBoxModal.vue';
 import { computed, onMounted, ref } from 'vue';
-import { useModelStore, usePostStore, usePlatformStore, usePostTimeStore, usePostCaptionStore, useCronStore } from '@/stores';
+import { useModelStore, usePostStore, usePlatformStore, usePostTimeStore, usePostCaptionStore, usePostFileStore, useCronStore } from '@/stores';
 
 import PostImageVideoUpload from '@/components/PostImageVideoUpload.vue';
 import { useNotification } from '@kyvg/vue3-notification';
-import { usePostFileStore } from '@/stores';
 
 
 const postStore = usePostStore();
@@ -34,9 +33,10 @@ const cronStore = useCronStore();
 const selectedModel = computed(() => modelStore.selectedModel);
 const selectedPlatform = computed(() => platformStore.selectedPlatform);
 
-
+const fileInputRef = ref(null);
 const isContentModalActive = ref(false);
 const isCaptionsModalActive = ref(false);
+const isTimeModalActive = ref(false);
 const isCaptionModalActive = ref(false);
 const isModalDangerActive = ref(false);
 const deleteCallback = ref({});
@@ -49,7 +49,7 @@ const selectedPostTime = ref({
 });
 const selectedPostCaption = ref({
   id: null,
-  post_time_id: null,
+  post_id: null,
   caption: "",
   isEdit: false
 });
@@ -58,17 +58,8 @@ const selectedPostCaption = ref({
 const postInStore = computed(() => postStore.post);
 const postTimesInStore = computed(() => postTimeStore.post_times);
 const postCaptionsInStore = computed(() => postCaptionStore.post_captions);
-const postFilesInStore = computed(() => postFileStore.post_files);
 
 const onSubmitPostContent = async () => {
-  if (!selectedPostTime.value?.id) {
-    notify({
-      title: "Error",
-      type: "Error",
-      text: "Please select post time first!",
-    });
-    return;
-  }
 
   if ((selectedPostCaption.value?.caption?.length ?? 0) <= 3) {
     notify({
@@ -81,7 +72,6 @@ const onSubmitPostContent = async () => {
   if (selectedPostCaption.value?.isEdit) {
     const data = {
       id: selectedPostCaption.value.id,
-      post_time_id: selectedPostTime.value.id,
       caption: selectedPostCaption.value.caption,
 
     };
@@ -95,7 +85,7 @@ const onSubmitPostContent = async () => {
     }
   } else {
     const data = {
-      post_time_id: selectedPostTime.value.id,
+      post_id: postInStore.value.id,
       caption: selectedPostCaption.value.caption,
     };
     const result = await postCaptionStore.addPostCaption(data);
@@ -124,18 +114,36 @@ const onViewImages = async () => {
   const result = await postFileStore.getPostFiles(postStore.post.id);
 };
 
-const onAddTime = () => {
-  selectedPostTime.value = {};
-  postCaptionStore.post_captions = [];
-  isCaptionsModalActive.value = true;
-};
-
-const onAddCaption = () => {
-  if (!selectedPostTime.value.isEdit && !selectedPostTime.value.time) {
+const onViewCaptions = async () => {
+  if (!postStore.post?.id) {
     notify({
       title: "Error",
       type: "Error",
-      text: "Please add PostTime first!",
+      text: "Post is not created yet for this model!",
+    });
+    return;
+  }
+  isCaptionsModalActive.value = true;
+  const result = await postCaptionStore.getPostCaptions(postStore.post.id);
+};
+
+const onAddTime = () => {
+  selectedPostTime.value = {};
+  selectedPostTime.value.isEdit = false;
+  postCaptionStore.post_captions = [];
+  isTimeModalActive.value = true;
+};
+
+const onAddTimeDone = () => {
+  isTimeModalActive.value = false;
+};
+
+const onAddCaption = () => {
+  if (!postStore.post?.id) {
+    notify({
+      title: "Error",
+      type: "Error",
+      text: "Post is not created yet for this model!",
     });
     return;
   }
@@ -260,8 +268,8 @@ const confirmDelete = async () => {
 
 const clickRow = (id) => {
   selectedPostTime.value = postTimesInStore.value?.find(it => it.id === id);
-  isCaptionsModalActive.value = true;
-  postCaptionStore.getPostCaptions(id);
+  selectedPostTime.value.isEdit = true;
+  isTimeModalActive.value = true;
 };
 
 const clickCaptionRow = (id) => {
@@ -293,6 +301,34 @@ const onStartCronJobManually = async () => {
   });
 };
 
+const openFileInput = () => {
+  fileInputRef.value.click();
+};
+
+const handleFileChange = (event) => {
+  if (!event.target.files) return;
+  const selectedFiles = event.target.files;
+
+  processFiles(selectedFiles);
+};
+
+const processFiles = async (selectedFiles) => {
+  const formData = new FormData();
+  for (let i = 0; i < selectedFiles.length; i++) {
+
+    formData.append(`files`, selectedFiles[i]);
+
+  }
+
+  const result = await postCaptionStore.uploadFiles(formData, postStore.post.id);
+  if (result) {
+    notify({
+      title: "Success",
+      type: "success",
+      text: "File uploaded successfully",
+    });
+  }
+};
 
 onMounted(() => {
   if (!selectedModel.value || !selectedPlatform.value) {
@@ -326,6 +362,9 @@ onMounted(() => {
           </div>
           <div class="w-full text-right">
             <BaseButton label="View Images" color="info" rounded small @click="onViewImages" />
+          </div>
+          <div class="w-full text-right mt-5">
+            <BaseButton label="View Captions" color="info" rounded small @click="onViewCaptions" />
           </div>
 
           <div class="mt-10">
@@ -366,9 +405,8 @@ onMounted(() => {
       </CardBoxModal>
 
 
-      <CardBoxModal v-model="isCaptionsModalActive" title="Captions"
-        size="xxl:!w-8/12 xl:!w-8/12 md:w-4/5 lg:w-4/5 w-4/5" :buttonLabel="'Add Caption'" hasCancel="true"
-        @confirm="onAddCaption">
+      <CardBoxModal v-model="isTimeModalActive" title="Time" size="xxl:!w-8/12 xl:!w-8/12 md:w-4/5 lg:w-4/5 w-4/5"
+        :buttonLabel="selectedPostTime.isEdit ? 'Update Time' : 'Add Time'" @confirm="onAddTimeDone" has-cancel="true">
         <CardBox is-form>
           <div class="flex flex-col">
             <div class="flex flex-wrap">
@@ -377,6 +415,21 @@ onMounted(() => {
                   autocomplete="post_time" @change="onChangePostTime" />
               </FormField>
             </div>
+          </div>
+        </CardBox>
+      </CardBoxModal>
+
+      <CardBoxModal v-model="isCaptionsModalActive" title="Captions"
+        size="xxl:!w-8/12 xl:!w-8/12 md:w-4/5 lg:w-4/5 w-4/5" :buttonLabel="'Add Caption'" hasCancel="true"
+        @confirm="onAddCaption">
+        <CardBox is-form>
+          <div class="flex flex-col">
+            <div class="flex mt-5 mb-1 justify-end">
+              <BaseButton label="Upload" color="info" rounded small @click="openFileInput" />
+              <input ref="fileInputRef" type="file" @change="handleFileChange" accept=".xlsx, .xls" hidden />
+              <!-- image/*, video/*-->
+            </div>
+
             <div class="flex border-b mt-5 mb-1">
               <label class="flex-1">Caption</label>
               <label>Actions</label>

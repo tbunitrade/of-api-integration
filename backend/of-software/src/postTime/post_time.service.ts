@@ -15,11 +15,9 @@ export class PostTimeService {
     private readonly postTimeRepository: Repository<PostTime>,
   ) {}
 
-  async findAll(rel: boolean = true): Promise<PostTime[]> {
+  async findAll(): Promise<PostTime[]> {
     // try {
-    return await this.postTimeRepository.find(
-      rel ? { relations: ['captions'] } : {},
-    );
+    return await this.postTimeRepository.find();
     // } catch (err) {
     //   console.error('PostTime findAll error', err);
     // }
@@ -29,7 +27,6 @@ export class PostTimeService {
     // try {
     const options: FindOneOptions<PostTime> = {
       where: { id },
-      relations: ['captions'],
     };
     return this.postTimeRepository.findOne(options);
     // } catch (err) {
@@ -37,31 +34,31 @@ export class PostTimeService {
     // }
   }
 
-  async findAllByModelPlatform(
-    model_id: number,
-    platform_id: number,
-  ): Promise<any> {
-    // try {
-    const result = await this.postTimeRepository
-      .createQueryBuilder('group')
-      .innerJoin(
-        'platform_group',
-        'platform_group',
-        'group.id = platform_group.group_id',
-      )
-      .leftJoinAndSelect('group.messages', 'messages')
-      .addSelect('COUNT(messages.id)', 'messageCount')
-      .where('platform_group.platform_id = :platform_id', { platform_id })
-      .andWhere('group.model_id = :model_id', { model_id })
-      .groupBy('group.id,messages.id')
-      .orderBy('group.order')
-      .addOrderBy('group.id')
-      .getMany();
-    return result;
-    // } catch (err) {
-    //   console.error('Group findAll error', err);
-    // }
-  }
+  // async findAllByModelPlatform(
+  //   model_id: number,
+  //   platform_id: number,
+  // ): Promise<any> {
+  //   // try {
+  //   const result = await this.postTimeRepository
+  //     .createQueryBuilder('group')
+  //     .innerJoin(
+  //       'platform_group',
+  //       'platform_group',
+  //       'group.id = platform_group.group_id',
+  //     )
+  //     .leftJoinAndSelect('group.messages', 'messages')
+  //     .addSelect('COUNT(messages.id)', 'messageCount')
+  //     .where('platform_group.platform_id = :platform_id', { platform_id })
+  //     .andWhere('group.model_id = :model_id', { model_id })
+  //     .groupBy('group.id,messages.id')
+  //     .orderBy('group.order')
+  //     .addOrderBy('group.id')
+  //     .getMany();
+  //   return result;
+  //   // } catch (err) {
+  //   //   console.error('Group findAll error', err);
+  //   // }
+  // }
 
   async create(postTime: PostTimeDto): Promise<PostTime> {
     // try {
@@ -126,7 +123,6 @@ export class PostTimeService {
   async getPostCaptionForPostTime(post_time_id: number): Promise<PostTime> {
     const options: FindOneOptions<PostTime> = {
       where: { id: post_time_id },
-      relations: ['captions'],
     };
     return await this.postTimeRepository.findOne(options);
   }

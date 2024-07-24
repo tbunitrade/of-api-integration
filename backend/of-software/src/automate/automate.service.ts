@@ -6,6 +6,7 @@ import { getRandomNumber } from 'src/cron/utils';
 import { ModelPlatform } from 'src/modelPlatform/model_platform.entity';
 import { PostTime } from 'src/postTime/post_time.entity';
 import { PostFile } from 'src/postFile/post_file.entity';
+import { Post } from 'src/post/post.entity';
 
 /* Logic of login_captcha
 The OnlyFans website has 2 captcha google recaptcha v2 and v3. (v2 enterprise, v3 enterprise)
@@ -209,7 +210,7 @@ export class AutomateService {
   async startPost(
     allData: {
       modelPlatform: ModelPlatform;
-      postTimesWithCaption: PostTime[];
+      postWithTimesAndCaptions: Post;
       postFiles: PostFile[];
       scheduledDate: string;
       numberOfDays: number;
@@ -218,7 +219,7 @@ export class AutomateService {
   ) {
     const {
       modelPlatform,
-      postTimesWithCaption,
+      postWithTimesAndCaptions,
       postFiles,
       scheduledDate,
       numberOfDays,
@@ -285,18 +286,25 @@ export class AutomateService {
             }
             for (let i = 0; i < numberOfDays; i++) {
               scheduledDt.setDate(scheduledDt.getDate() + i + 1);
-              for (let j = 0; j < postTimesWithCaption.length; j++) {
+              for (
+                let j = 0;
+                j < postWithTimesAndCaptions.post_times.length;
+                j++
+              ) {
                 try {
-                  const ptWithC = postTimesWithCaption[j];
-                  if (!ptWithC.captions) continue;
-                  const [_hour, minutes, secs] = ptWithC.time?.split(':');
+                  const postTime = postWithTimesAndCaptions.post_times[j];
+                  const postCaptions = postWithTimesAndCaptions.captions;
+                  if (!postCaptions) return;
+                  if (postCaptions.length === 0) return;
+                  if (!postTime) continue;
+                  const [_hour, minutes, secs] = postTime.time?.split(':');
                   const hour =
                     ((parseInt(_hour) % 13) + parseInt(_hour) / 13) | 0;
                   const suffix = parseInt(_hour) >= 12 ? 'pm' : 'am';
                   const randNumber = getRandomNumber(postFiles.length ?? 0);
                   const postFile = postFiles[randNumber]?.url;
-                  const randNC = getRandomNumber(ptWithC.captions.length ?? 0);
-                  const postCaption = ptWithC.captions[randNC];
+                  const randNC = getRandomNumber(postCaptions.length ?? 0);
+                  const postCaption = postCaptions[randNC];
                   const msgData = {
                     content: postFile,
                     message: postCaption.caption,

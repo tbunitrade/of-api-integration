@@ -44,21 +44,6 @@ export class PostTimeController {
     }
   }
 
-  @Get(':id/post_captions')
-  @ApiBearerAuth('jwt')
-  @UseGuards(JwtAuthGuard)
-  async getPostCaptions(@Param('id') id: string) {
-    try {
-      const result = await this.postTimeService.getPostCaptionForPostTime(+id);
-      if (result) {
-        return result.captions ?? [];
-      }
-      return [];
-    } catch (err) {
-      throw err;
-    }
-  }
-
   @Post('add')
   @ApiBearerAuth('jwt')
   @UseGuards(JwtAuthGuard)

@@ -1,5 +1,6 @@
 // src/post/post_caption.entity.ts
 
+import { Post } from 'src/post/post.entity';
 import {
   Entity,
   Column,
@@ -9,7 +10,6 @@ import {
   ManyToOne,
   JoinColumn,
 } from 'typeorm';
-import { PostTime } from '../postTime/post_time.entity';
 
 @Entity()
 export class PostCaption {
@@ -17,17 +17,17 @@ export class PostCaption {
   id: number;
 
   @Column()
-  post_time_id: number;
+  post_id: number;
 
   @Column()
   caption: string;
 
-  @ManyToOne(() => PostTime, (post_time) => post_time.captions, {
+  @ManyToOne(() => Post, (post) => post.captions, {
     onDelete: 'NO ACTION',
     onUpdate: 'NO ACTION',
   })
-  @JoinColumn([{ name: 'post_time_id', referencedColumnName: 'id' }])
-  post_time: PostTime;
+  @JoinColumn([{ name: 'post_id', referencedColumnName: 'id' }])
+  post: Post;
 
   @Column({ default: 1 })
   status: number; // 0: inactive, 1: active

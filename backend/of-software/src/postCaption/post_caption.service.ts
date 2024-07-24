@@ -3,6 +3,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { FindOneOptions, Repository } from 'typeorm';
 import { PostCaption } from './post_caption.entity';
 import { PostCaptionDto } from 'src/dtos/post-caption.dto';
+import { uploadFile } from 'src/utils/upload';
+import * as XLSX from 'xlsx';
 
 @Injectable()
 export class PostCaptionService {
@@ -80,6 +82,40 @@ export class PostCaptionService {
       return await this.postCaptionRepository.remove(post);
     } catch (err) {
       console.error('PostCaption deletePostCaption error', err);
+    }
+  }
+
+  async uploadFiles(
+    file: Express.Multer.File,
+    post_id: number,
+  ): Promise<PostCaption[]> {
+    try {
+      // Create the uploads directory if it doesn't exist
+      const workbook = XLSX.read(file.buffer, { type: 'buffer' });
+      const firstSheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[firstSheetName];
+      const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+      // Access a specific field from the first row
+      const specificField = jsonData;
+      if (!specificField) return [];
+      if (specificField.length === 0) return [];
+      const allCaptions: PostCaptionDto[] = [];
+      for (let i = 0; i < specificField.length; i++) {
+        const caption: string = Object.keys(specificField[i])[0];
+        const postCaption: PostCaptionDto = {
+          post_id: post_id,
+          caption,
+          status: 1,
+        };
+        allCaptions.push(postCaption);
+      }
+
+      const result = await this.postCaptionRepository.save(allCaptions);
+
+      return result;
+    } catch (err) {
+      console.error('File Upload  error', err);
     }
   }
 }

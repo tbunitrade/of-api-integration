@@ -191,29 +191,23 @@ export class CronService {
           }
         };
         const postAPost = async (mp: ModelPlatform, manualStart) => {
-          const postWithTimes = await this.postService.findById(mp.id);
-
-          if (postWithTimes.number_of_days === 0) return;
-
-          const postFiles = await this.postFileService.findByPostId(
-            postWithTimes.id,
+          const postWithTimesAndCaptions = await this.postService.findById(
+            mp.id,
           );
 
-          const postTimesWithCaption: PostTime[] = [];
-          for (const postTime of postWithTimes.post_times || []) {
-            const postTimeWithCaptions = await this.postTimeService.findById(
-              postTime.id,
-            );
-            if (!postTimeWithCaptions.captions) continue;
-            if (postTimeWithCaptions.captions.length === 0) continue;
+          if (postWithTimesAndCaptions.number_of_days === 0) return;
 
-            postTimesWithCaption.push(postTimeWithCaptions);
-          }
+          const postFiles = await this.postFileService.findByPostId(
+            postWithTimesAndCaptions.id,
+          );
+          if (!postWithTimesAndCaptions.post_times) return;
+          if (!postWithTimesAndCaptions.captions) return;
+
           const data = {
             modelPlatform: mp,
-            postTimesWithCaption,
-            scheduledDate: postWithTimes.scheduled_date,
-            numberOfDays: postWithTimes.number_of_days,
+            postWithTimesAndCaptions,
+            scheduledDate: postWithTimesAndCaptions.scheduled_date,
+            numberOfDays: postWithTimesAndCaptions.number_of_days,
             postFiles,
           };
           const result = await this.automateService.startPost(
@@ -228,7 +222,7 @@ export class CronService {
             const afterDays = new Date(
               new Date(now).setDate(now.getDate() + data.numberOfDays),
             );
-            await this.postService.update(postWithTimes.id, {
+            await this.postService.update(postWithTimesAndCaptions.id, {
               scheduled_date: afterDays.toDateString(),
             });
           }

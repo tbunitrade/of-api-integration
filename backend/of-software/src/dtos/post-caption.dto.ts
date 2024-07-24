@@ -7,7 +7,7 @@ export class PostCaptionDto {
     type: 'number',
     required: true,
   })
-  post_time_id: number;
+  post_id: number;
 
   @ApiProperty({
     type: 'string',

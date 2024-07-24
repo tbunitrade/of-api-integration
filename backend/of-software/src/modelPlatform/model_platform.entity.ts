@@ -78,15 +78,15 @@ export class ModelPlatform {
   })
   updated_at: Date;
 
-  @BeforeInsert()
-  async setPostId() {
-    this.post_id = this.id;
-  }
+  // @BeforeInsert()
+  // async setPostId() {
+  //   this.post_id = this.id;
+  // }
 
-  @AfterInsert()
-  async setAfterPostId() {
-    if (!this.post_id) {
-      this.post_id = this.id;
-    }
-  }
+  // @AfterInsert()
+  // async setAfterPostId() {
+  //   if (!this.post_id) {
+  //     this.post_id = this.id;
+  //   }
+  // }
 }

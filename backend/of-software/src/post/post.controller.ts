@@ -37,7 +37,8 @@ export class PostController {
   @UseGuards(JwtAuthGuard)
   async getPost(@Param('id') id: string) {
     try {
-      const result = await this.postService.getPostTimesForModelPlatform(+id);
+      const result =
+        await this.postService.getPostTimesAndCaptionsForModelPlatform(+id);
       return result;
     } catch (err) {
       throw err;
@@ -49,9 +50,26 @@ export class PostController {
   @UseGuards(JwtAuthGuard)
   async getPostTimes(@Param('id') id: string) {
     try {
-      const result = await this.postService.getPostTimesForModelPlatform(+id);
+      const result =
+        await this.postService.getPostTimesAndCaptionsForModelPlatform(+id);
       if (result) {
         return result.post_times ?? [];
+      }
+      return [];
+    } catch (err) {
+      throw err;
+    }
+  }
+
+  @Get(':id/post-captions')
+  @ApiBearerAuth('jwt')
+  @UseGuards(JwtAuthGuard)
+  async getPostCaptions(@Param('id') id: string) {
+    try {
+      const result =
+        await this.postService.getPostTimesAndCaptionsForModelPlatform(+id);
+      if (result) {
+        return result.captions ?? [];
       }
       return [];
     } catch (err) {
