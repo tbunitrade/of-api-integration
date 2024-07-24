@@ -224,11 +224,11 @@ export class AutomateService {
       numberOfDays,
     } = allData;
     try {
-      const isExpired = checkIfExpired(
-        modelPlatform.number_of_days,
-        modelPlatform.scheduled_date,
-      );
-      if (!isExpired && !manualStart) return false;
+      // const isExpired = checkIfExpired(
+      //   modelPlatform.number_of_days,
+      //   modelPlatform.scheduled_date,
+      // );
+      // if (!isExpired && !manualStart) return false;
       // Test recaptcha v2 enterprise Start
       // await testRecaptchaSolver();
       // return;
