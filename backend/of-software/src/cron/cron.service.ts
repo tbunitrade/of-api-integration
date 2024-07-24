@@ -207,7 +207,7 @@ export class CronService {
             if (!postTimeWithCaptions.captions) continue;
             if (postTimeWithCaptions.captions.length === 0) continue;
 
-            postTimesWithCaption.push(postTime);
+            postTimesWithCaption.push(postTimeWithCaptions);
           }
           const data = {
             modelPlatform: mp,
