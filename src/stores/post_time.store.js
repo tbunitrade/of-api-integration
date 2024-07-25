@@ -16,8 +16,7 @@ const usePostTimeStore = defineStore({
         )
 
         if (response.data) {
-          const postTimes = response.data
-          this.post_times = postTimes
+          this.post_times = response.data
         }
 
         return response.data

@@ -374,7 +374,8 @@ onMounted(() => {
             </div>
             <BaseDivider class="border-gray-500 mx-0 mt-1" />
             <div class="row ">
-              <div v-for="postTime of postTimesInStore" :key="postTime.id" class="col flex justify-between ">
+              <div v-for="postTime of postTimesInStore.sort((a, b) => a.time.localeCompare(b.time))" :key="postTime.id"
+                class="col flex justify-between ">
                 <label class="cursor-pointer" @click="clickRow(postTime.id)">{{ postTime.time }}</label>
                 <div>
                   <BaseButtons type="justify-start lg:justify-end" no-wrap>

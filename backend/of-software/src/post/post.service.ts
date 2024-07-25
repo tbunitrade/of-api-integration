@@ -23,6 +23,7 @@ export class PostService {
       return await this.postRepository.find(
         rel ? { relations: ['post_times', 'captions'] } : {},
       );
+
       // return await this.modelPlatformRepository
       //   .createQueryBuilder('model_platform')
       //   .select('model_platform.model_id', 'model_id')
