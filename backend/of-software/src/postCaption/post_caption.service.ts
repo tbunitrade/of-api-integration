@@ -91,18 +91,20 @@ export class PostCaptionService {
   ): Promise<PostCaption[]> {
     try {
       // Create the uploads directory if it doesn't exist
-      const workbook = XLSX.read(file.buffer, { type: 'buffer' });
+      const workbook = XLSX.read(file.buffer, { type: 'buffer', raw: true });
       const firstSheetName = workbook.SheetNames[0];
       const worksheet = workbook.Sheets[firstSheetName];
-      const jsonData = XLSX.utils.sheet_to_json(worksheet);
-
+      const jsonData = XLSX.utils.sheet_to_json(worksheet, {
+        header: ['caption'],
+        raw: true,
+      });
       // Access a specific field from the first row
       const specificField = jsonData;
       if (!specificField) return [];
       if (specificField.length === 0) return [];
       const allCaptions: PostCaptionDto[] = [];
       for (let i = 0; i < specificField.length; i++) {
-        const caption: string = Object.keys(specificField[i])[0];
+        const caption: string = specificField[i]['caption'];
         const postCaption: PostCaptionDto = {
           post_id: post_id,
           caption,
