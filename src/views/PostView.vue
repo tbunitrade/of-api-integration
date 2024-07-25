@@ -349,7 +349,7 @@ onMounted(() => {
   <LayoutAuthenticated>
     <SectionMain>
       <SectionTitleLineWithButton :icon="mdiTableBorder" title="Post" main>
-        <BaseButton label="Trigger CronJob Manually" color="info" rounded small @click="onStartCronJobManually" />
+        <!-- <BaseButton label="Trigger CronJob Manually" color="info" rounded small @click="onStartCronJobManually" /> -->
       </SectionTitleLineWithButton>
 
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
