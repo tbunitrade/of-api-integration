@@ -71,7 +71,6 @@ export class CronService {
    */
   async manualStart(isPost = false) {
     //this is test line and need to be deleted
-    console.log('Manual start: ', isPost);
     const startJob = this.createCron(isPost, true);
     await startJob();
     return true;
@@ -142,7 +141,6 @@ export class CronService {
       try {
         const modelPlatforms = await this.modelPlatformService.findAll(false);
         const sendAMessage = async (mp: ModelPlatform, manualStart) => {
-          console.log('Here 1');
           if (mp.number_of_days === 0) return;
           let groups = await this.groupService.findNGroupsByPlatformId(
             mp.platform_id,
@@ -165,7 +163,6 @@ export class CronService {
             await this.groupService.getGroupsWithMessages(groupIds);
           const data: any = mp;
           data.groupsWithMessages = groupsWithMessages;
-          console.log('Here 2');
           const result = await this.automateService.startMessage(
             data,
             manualStart,

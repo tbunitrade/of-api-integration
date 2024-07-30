@@ -3,6 +3,7 @@ import { CronService } from './cron.service';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { CreateCronDto } from 'src/dtos/create-cron.dto';
+import { ManualStartDto } from 'src/dtos/manual-start.dto';
 
 @Controller('cron')
 @ApiTags('cron')
@@ -36,9 +37,8 @@ export class CronController {
   @Get('manual-start')
   @ApiBearerAuth('jwt')
   @UseGuards(JwtAuthGuard)
-  async manualStart(@Query() isPost: boolean) {
+  async manualStart(@Query() { isPost = false }: ManualStartDto) {
     try {
-      console.log('Manual start0: ', isPost);
       const result = await this.cronService.manualStart(!!isPost);
       return result;
     } catch (error) {
