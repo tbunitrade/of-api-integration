@@ -275,16 +275,16 @@ export class AutomateService {
             //start cron
             console.log('----------------- Start cron -----------------');
 
-            let scheduledDt = new Date();
-            if (scheduledDate && manualStart)
-              scheduledDt =
-                manualStart && new Date(scheduledDate) > new Date()
-                  ? new Date(scheduledDate)
-                  : new Date();
-            else {
-              scheduledDt = new Date();
-            }
             for (let i = 0; i < numberOfDays; i++) {
+              let scheduledDt = new Date();
+              if (scheduledDate && manualStart)
+                scheduledDt =
+                  manualStart && new Date(scheduledDate) > new Date()
+                    ? new Date(scheduledDate)
+                    : new Date();
+              else {
+                scheduledDt = new Date();
+              }
               _config = _.cloneDeep(CONFIG);
               scheduledDt.setDate(scheduledDt.getDate() + i + 1);
               for (
