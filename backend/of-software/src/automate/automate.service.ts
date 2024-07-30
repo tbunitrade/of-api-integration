@@ -294,10 +294,17 @@ export class AutomateService {
               ) {
                 try {
                   const postTime = postWithTimesAndCaptions.post_times[j];
+                  console.log(
+                    'PostTime:::: ',
+                    postWithTimesAndCaptions.post_times,
+                  );
+                  console.log('PostTime:::: ', postTime);
+                  console.log('PostTime Index :::: ', j);
                   const postCaptions = postWithTimesAndCaptions.captions;
                   if (!postCaptions) return;
                   if (postCaptions.length === 0) return;
                   if (!postTime) continue;
+                  console.log('PostTime:::: ', postTime.time);
                   const [_hour, minutes, secs] = postTime.time?.split(':');
                   const hour =
                     ((parseInt(_hour) % 13) + parseInt(_hour) / 13) | 0;
