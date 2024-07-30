@@ -252,7 +252,7 @@ export class AutomateService {
 
       while (1) {
         try {
-          const _config = _.cloneDeep(CONFIG);
+          let _config = _.cloneDeep(CONFIG);
           _config['model_id'] = modelPlatform.model_id;
           _config['platform_id'] = modelPlatform.platform_id;
           let isLoggedIn = false;
@@ -285,6 +285,7 @@ export class AutomateService {
               scheduledDt = new Date();
             }
             for (let i = 0; i < numberOfDays; i++) {
+              _config = _.cloneDeep(CONFIG);
               scheduledDt.setDate(scheduledDt.getDate() + i + 1);
               for (
                 let j = 0;
