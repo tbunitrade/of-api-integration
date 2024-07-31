@@ -275,6 +275,16 @@ export class AutomateService {
             //start cron
             console.log('----------------- Start cron -----------------');
 
+            let captionIndexes = Array.from(
+              { length: postWithTimesAndCaptions.captions.length || 0 },
+              (_, i) => i + 1,
+            );
+
+            let fileIndexes = Array.from(
+              { length: postFiles.length || 0 },
+              (_, i) => i + 1,
+            );
+
             for (let i = 0; i < numberOfDays; i++) {
               let scheduledDt = new Date();
               if (scheduledDate && manualStart)
@@ -292,6 +302,18 @@ export class AutomateService {
                 j++
               ) {
                 try {
+                  if (captionIndexes.length === 0) {
+                    captionIndexes = Array.from(
+                      { length: postWithTimesAndCaptions.captions.length || 0 },
+                      (_, i) => i + 1,
+                    );
+                  }
+                  if (fileIndexes.length === 0) {
+                    fileIndexes = Array.from(
+                      { length: postFiles.length || 0 },
+                      (_, i) => i + 1,
+                    );
+                  }
                   _config = _.cloneDeep(CONFIG);
                   const postTime = postWithTimesAndCaptions.post_times[j];
                   const postCaptions = postWithTimesAndCaptions.captions;
@@ -302,10 +324,12 @@ export class AutomateService {
                   const hour =
                     ((parseInt(_hour) % 13) + parseInt(_hour) / 13) | 0;
                   const suffix = parseInt(_hour) >= 12 ? 'pm' : 'am';
-                  const randNumber = getRandomNumber(postFiles.length ?? 0);
-                  const postFile = postFiles[randNumber]?.url;
-                  const randNC = getRandomNumber(postCaptions.length ?? 0);
-                  const postCaption = postCaptions[randNC];
+                  const randNumber = getRandomNumber(fileIndexes.length ?? 0);
+                  const postFile = postFiles[fileIndexes[randNumber]]?.url;
+                  fileIndexes.splice(randNumber, 1);
+                  const randNC = getRandomNumber(captionIndexes.length ?? 0);
+                  const postCaption = postCaptions[captionIndexes[randNC]];
+                  captionIndexes.splice(randNC, 1);
                   const msgData = {
                     content: postFile,
                     message: postCaption.caption,
