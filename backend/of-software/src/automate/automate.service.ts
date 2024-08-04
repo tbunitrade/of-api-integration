@@ -305,13 +305,13 @@ export class AutomateService {
                   if (captionIndexes.length === 0) {
                     captionIndexes = Array.from(
                       { length: postWithTimesAndCaptions.captions.length || 0 },
-                      (_, i) => i + 1,
+                      (_, ii) => ii + 1,
                     );
                   }
                   if (fileIndexes.length === 0) {
                     fileIndexes = Array.from(
                       { length: postFiles.length || 0 },
-                      (_, i) => i + 1,
+                      (_, ii) => ii + 1,
                     );
                   }
                   _config = _.cloneDeep(CONFIG);

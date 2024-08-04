@@ -750,14 +750,6 @@ export const CONFIG = {
       type: 'waitForTime',
       value: '1000',
     },
-    {
-      type: 'waitForTime',
-      value: '30000',
-    },
-    {
-      type: 'waitForSelector',
-      value: '.queue-main',
-    },
 
     // 'waitForSelector: #content .b-feed ',
     // 'waitandclickforappendmedia: .b-feed .b-make-post__actions button#attach_file_photo',
