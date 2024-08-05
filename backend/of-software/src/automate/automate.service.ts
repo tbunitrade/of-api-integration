@@ -275,8 +275,12 @@ export class AutomateService {
             //start cron
             console.log('----------------- Start cron -----------------');
 
+            const postCaptions = postWithTimesAndCaptions.captions;
+
+            if (!postCaptions) return;
+            if (postCaptions.length === 0) return;
             let captionIndexes = Array.from(
-              { length: postWithTimesAndCaptions.captions.length || 0 },
+              { length: postCaptions.length || 0 },
               (_, i) => i + 1,
             );
 
@@ -301,10 +305,14 @@ export class AutomateService {
                 j < postWithTimesAndCaptions.post_times.length;
                 j++
               ) {
+                console.log(
+                  'PostTimeS~~~~~~~~~~~~~~~~~~~~ : ',
+                  postWithTimesAndCaptions.post_times,
+                );
                 try {
                   if (captionIndexes.length === 0) {
                     captionIndexes = Array.from(
-                      { length: postWithTimesAndCaptions.captions.length || 0 },
+                      { length: postCaptions.length || 0 },
                       (_, ii) => ii + 1,
                     );
                   }
@@ -316,9 +324,8 @@ export class AutomateService {
                   }
                   _config = _.cloneDeep(CONFIG);
                   const postTime = postWithTimesAndCaptions.post_times[j];
-                  const postCaptions = postWithTimesAndCaptions.captions;
-                  if (!postCaptions) return;
-                  if (postCaptions.length === 0) return;
+                  console.log('JJJ ~~~~~~~~~: ', j);
+                  console.log('postTime ~~~~~~ : ', postTime);
                   if (!postTime) continue;
                   const [_hour, minutes, secs] = postTime.time?.split(':');
                   const hour =
