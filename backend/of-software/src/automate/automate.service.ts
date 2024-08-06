@@ -281,12 +281,12 @@ export class AutomateService {
             if (postCaptions.length === 0) return;
             let captionIndexes = Array.from(
               { length: postCaptions.length || 0 },
-              (_, i) => i + 1,
+              (_, i) => i,
             );
 
             let fileIndexes = Array.from(
               { length: postFiles.length || 0 },
-              (_, i) => i + 1,
+              (_, i) => i,
             );
 
             for (let i = 0; i < numberOfDays; i++) {
@@ -309,13 +309,13 @@ export class AutomateService {
                   if (captionIndexes.length === 0) {
                     captionIndexes = Array.from(
                       { length: postCaptions.length || 0 },
-                      (_, ii) => ii + 1,
+                      (_, ii) => ii,
                     );
                   }
                   if (fileIndexes.length === 0) {
                     fileIndexes = Array.from(
                       { length: postFiles.length || 0 },
-                      (_, ii) => ii + 1,
+                      (_, ii) => ii,
                     );
                   }
                   _config = _.cloneDeep(CONFIG);
@@ -350,9 +350,7 @@ export class AutomateService {
                     }
                     return { ...c };
                   });
-                  console.log('I: ', i);
-                  console.log('J: ', j, postTime);
-                  // await puppeteerUtil.work(config);
+                  await puppeteerUtil.work(config);
                 } catch (error) {
                   console.log('Error : ', error);
                   continue;
