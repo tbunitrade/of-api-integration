@@ -305,10 +305,6 @@ export class AutomateService {
                 j < postWithTimesAndCaptions.post_times.length;
                 j++
               ) {
-                console.log(
-                  'PostTimeS~~~~~~~~~~~~~~~~~~~~ : ',
-                  postWithTimesAndCaptions.post_times,
-                );
                 try {
                   if (captionIndexes.length === 0) {
                     captionIndexes = Array.from(
@@ -324,8 +320,6 @@ export class AutomateService {
                   }
                   _config = _.cloneDeep(CONFIG);
                   const postTime = postWithTimesAndCaptions.post_times[j];
-                  console.log('JJJ ~~~~~~~~~: ', j);
-                  console.log('postTime ~~~~~~ : ', postTime);
                   if (!postTime) continue;
                   const [_hour, minutes, secs] = postTime.time?.split(':');
                   const hour =
@@ -356,7 +350,9 @@ export class AutomateService {
                     }
                     return { ...c };
                   });
-                  await puppeteerUtil.work(config);
+                  console.log('I: ', i);
+                  console.log('J: ', j);
+                  // await puppeteerUtil.work(config);
                 } catch (error) {
                   console.log('Error : ', error);
                   continue;
