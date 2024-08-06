@@ -351,7 +351,7 @@ export class AutomateService {
                     return { ...c };
                   });
                   console.log('I: ', i);
-                  console.log('J: ', j);
+                  console.log('J: ', j, postTime);
                   // await puppeteerUtil.work(config);
                 } catch (error) {
                   console.log('Error : ', error);
