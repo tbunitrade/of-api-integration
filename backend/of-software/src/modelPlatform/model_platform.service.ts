@@ -32,9 +32,6 @@ export class ModelPlatformService {
       }
       const newPlatform = this.modelPlatformRepository.create(modelPlatform);
       const result = await this.modelPlatformRepository.save(newPlatform);
-      // confirm postId
-      result.post_id = result.id;
-      await this.modelPlatformRepository.save(result);
 
       const _result = await this.findById(result.id);
       const prevPostOption: FindOneOptions<Post> = {
@@ -50,7 +47,12 @@ export class ModelPlatformService {
       };
       const newPost = this.postRepository.create(newPostOption);
       await this.postRepository.save(newPost);
-      return _result;
+
+      // confirm postId
+      result.post_id = result.id;
+      const _rst = await this.modelPlatformRepository.save(result);
+
+      return _rst;
     } catch (err) {
       console.error('ModelPlatform create error', err);
     }
