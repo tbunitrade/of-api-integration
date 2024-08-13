@@ -46,19 +46,13 @@ export class ModelPlatformService {
       const newPost = this.postRepository.create(newPostOption);
       const postResult = await this.postRepository.save(newPost);
 
-      const options: FindOneOptions<ModelPlatform> = {
-        where: { id: result.id },
-      };
-      const updatedModelPlatform =
-        await this.modelPlatformRepository.findOne(options);
+      const data = { post_id: postResult.id };
+      const _rst = await this.modelPlatformRepository.update(
+        { id: result.id },
+        data,
+      );
 
-      const data = {
-        ...updatedModelPlatform,
-        ...{ post_id: postResult.id },
-      };
-      const _rst = await this.modelPlatformRepository.save(data);
-
-      return _rst;
+      return result;
     } catch (err) {
       console.error('ModelPlatform create error', err);
     }
