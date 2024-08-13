@@ -42,7 +42,6 @@ export class ModelPlatformService {
         await this.postRepository.remove(prevPost);
       }
       const newPostOption: PostDto = {
-        id: _result.id,
         model_platform_id: _result.id,
       };
       const newPost = this.postRepository.create(newPostOption);
