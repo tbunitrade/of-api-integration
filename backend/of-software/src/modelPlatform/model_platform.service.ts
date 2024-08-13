@@ -33,23 +33,30 @@ export class ModelPlatformService {
       const newPlatform = this.modelPlatformRepository.create(modelPlatform);
       const result = await this.modelPlatformRepository.save(newPlatform);
 
-      const _result = await this.findById(result.id);
       const prevPostOption: FindOneOptions<Post> = {
-        where: { model_platform_id: _result.id },
+        where: { model_platform_id: result.id },
       };
       const prevPost = await this.postRepository.findOne(prevPostOption);
       if (prevPost) {
         await this.postRepository.remove(prevPost);
       }
       const newPostOption: PostDto = {
-        model_platform_id: _result.id,
+        model_platform_id: result.id,
       };
       const newPost = this.postRepository.create(newPostOption);
-      await this.postRepository.save(newPost);
+      const postResult = await this.postRepository.save(newPost);
 
-      // confirm postId
-      result.post_id = result.id;
-      const _rst = await this.modelPlatformRepository.save(result);
+      const options: FindOneOptions<ModelPlatform> = {
+        where: { id: result.id },
+      };
+      const updatedModelPlatform =
+        await this.modelPlatformRepository.findOne(options);
+
+      const data = {
+        ...updatedModelPlatform,
+        ...{ post_id: postResult.id },
+      };
+      const _rst = await this.modelPlatformRepository.save(data);
 
       return _rst;
     } catch (err) {
