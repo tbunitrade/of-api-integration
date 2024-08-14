@@ -27,7 +27,7 @@ export class FileUploadController {
   @ApiConsumes('multipart/form-data')
   @ApiBearerAuth('jwt')
   @UseInterceptors(
-    FilesInterceptor('files', 10, {
+    FilesInterceptor('files', 10000, {
       limits: {
         fileSize: 10 * 1024 * 1024 * 1024,
       },
