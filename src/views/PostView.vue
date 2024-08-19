@@ -178,6 +178,58 @@ const onChangeNumberOfDays = async (e) => {
 
 };
 
+const onChangeUserTags = async (e) => {
+
+  try {
+    const data = {
+      id: postStore.post.id,
+      user_tags: e.target.value
+    };
+    const result = await postStore.updatePost(data);
+    if (result) {
+      notify({
+        title: "Success",
+        type: "success",
+        text: "User Tags updated successfully",
+      });
+    }
+
+  } catch (err) {
+    notify({
+      title: "Error",
+      type: "error",
+      text: err?.toString(),
+    });
+  }
+
+};
+
+const onChangeFormTags = async (e) => {
+
+  try {
+    const data = {
+      id: postStore.post.id,
+      form_tags: e.target.value
+    };
+    const result = await postStore.updatePost(data);
+    if (result) {
+      notify({
+        title: "Success",
+        type: "success",
+        text: "Release Form Tags updated successfully",
+      });
+    }
+
+  } catch (err) {
+    notify({
+      title: "Error",
+      type: "error",
+      text: err?.toString(),
+    });
+  }
+
+};
+
 const onChangePostTime = async (val) => {
   if (selectedPostTime.value.id) {
     const data = {
@@ -359,6 +411,16 @@ onMounted(() => {
             <label class="block text-sm">Number of Days Scheduled</label>
             <input class="w-full mb-5 rounded" type="number" :value="postInStore?.number_of_days || 0"
               @change="onChangeNumberOfDays" />
+          </div>
+          <div>
+            <label class="block text-sm">User Tags</label>
+            <input class="w-full mb-5 rounded" type="text" :value="postInStore?.user_tags || ''"
+              @change="onChangeUserTags" />
+          </div>
+          <div>
+            <label class="block text-sm">Release Form Tags</label>
+            <input class="w-full mb-5 rounded" type="text" :value="postInStore?.form_tags || ''"
+              @change="onChangeFormTags" />
           </div>
           <div class="w-full text-right">
             <BaseButton label="View Images" color="info" rounded small @click="onViewImages" />

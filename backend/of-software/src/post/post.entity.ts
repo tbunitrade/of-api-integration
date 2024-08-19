@@ -22,6 +22,16 @@ export class Post {
   @Column()
   model_platform_id: number;
 
+  @Column({
+    nullable: true,
+  })
+  form_tags: string;
+
+  @Column({
+    nullable: true,
+  })
+  user_tags: string;
+
   @Column({ default: 0 })
   number_of_days: number;
 

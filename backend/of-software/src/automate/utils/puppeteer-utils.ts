@@ -735,6 +735,145 @@ export const CONFIG = {
     },
 
     {
+      type: 'click', // Release tags
+      value:
+        '.b-page-content form#make_post_form .b-make-post__actions button[at-attr="release_forms_btn"]',
+    },
+    {
+      type: 'waitForTime',
+      value: '1000',
+    },
+    {
+      type: 'waitForSelector',
+      value:
+        '#ReleaseFormsModal___BV_modal_content_ #ReleaseFormsModal___BV_modal_body_ .b-release-form--items',
+    },
+    {
+      type: 'waitForSelector',
+      value:
+        '#ReleaseFormsModal___BV_modal_content_ #ReleaseFormsModal___BV_modal_header_ .b-content-filter__group-btns>button',
+    },
+    {
+      type: 'click',
+      value:
+        '#ReleaseFormsModal___BV_modal_content_ #ReleaseFormsModal___BV_modal_header_ .b-content-filter__group-btns>button',
+    },
+    {
+      type: 'loop',
+      key: 'release_user_tags',
+      value: '$value',
+      childs: [
+        {
+          type: 'waitForTime',
+          value: '500',
+        },
+        {
+          type: 'type',
+          value: '$value',
+          selector:
+            '#ReleaseFormsModal___BV_modal_content_ #ReleaseFormsModal___BV_modal_body_ .b-release-form--items .b-search-form .b-search-form__input',
+        },
+        {
+          type: 'click',
+          value:
+            '#ReleaseFormsModal___BV_modal_content_ #ReleaseFormsModal___BV_modal_body_ .b-release-form--items .b-search-form button[type="submit"]',
+        },
+
+        {
+          type: 'waitForTime',
+          value: '5000',
+        },
+        {
+          type: 'click',
+          value:
+            '#ReleaseFormsModal___BV_modal_content_ #ReleaseFormsModal___BV_modal_body_ .b-release-form__docs .b-rows-lists .b-rows-lists__item__label',
+        },
+      ],
+    },
+
+    {
+      type: 'waitForTime',
+      value: '500',
+    },
+
+    {
+      type: 'click', //click "add" button on release form/user tags.
+      value:
+        '#ReleaseFormsModal___BV_modal_content_ #ReleaseFormsModal___BV_modal_body_ .b-release-form--items .b-tabs__nav button.b-tabs__nav__item:not(.m-current)',
+    },
+
+    {
+      type: 'waitForTime',
+      value: '5000',
+    },
+
+    {
+      type: 'loop',
+      key: 'release_form_tags',
+      value: '$value',
+      childs: [
+        // {
+        //   type: 'waitForSelector', // wait for search button.
+        //   value:
+        //     '#ReleaseFormsModal___BV_modal_content_ #ReleaseFormsModal___BV_modal_header_ .b-content-filter__group-btns>button',
+        // },
+        // {
+        //   type: 'click', // click search button.
+        //   value:
+        //     '#ReleaseFormsModal___BV_modal_content_ #ReleaseFormsModal___BV_modal_header_ .b-content-filter__group-btns>button',
+        // },
+        {
+          type: 'waitForTime',
+          value: '500',
+        },
+        {
+          type: 'type', // type search string.
+          value: '$value',
+          selector:
+            '#ReleaseFormsModal___BV_modal_content_ #ReleaseFormsModal___BV_modal_body_ .b-release-form--items .b-search-form .b-search-form__input',
+        },
+        {
+          type: 'click', //click search button again after typing.
+          value:
+            '#ReleaseFormsModal___BV_modal_content_ #ReleaseFormsModal___BV_modal_body_ .b-release-form--items .b-search-form button[type="submit"]',
+        },
+
+        {
+          type: 'waitForTime',
+          value: '5000',
+        },
+        {
+          type: 'clickForValue', //click label including value from search result.
+          value: '$value',
+          selector:
+            '#ReleaseFormsModal___BV_modal_content_ #ReleaseFormsModal___BV_modal_body_ .b-release-form__docs .b-rows-lists .b-rows-lists__item__label',
+        },
+      ],
+    },
+
+    {
+      type: 'waitForTime',
+      value: '500',
+    },
+
+    {
+      type: 'click', //click "add" button on release form/user tags.
+      value:
+        '#ReleaseFormsModal___BV_modal_content_ #ReleaseFormsModal___BV_modal_body_ .b-placeholder-item-selected .b-wrapper-selected .b-row-selected__controls button',
+    },
+
+    {
+      type: 'click', //click "close" button on release form/user tags if not exist add button.
+      value:
+        '#ReleaseFormsModal___BV_modal_content_ #ReleaseFormsModal___BV_modal_footer_ button[type="button"]',
+    },
+
+    {
+      type: 'waitForTime',
+      value: '500',
+    },
+
+    {
       type: 'click', // Click schedule button
       value: '.b-feed .g-page__header button[at-attr="submit_post"]',
     },

@@ -15,6 +15,18 @@ export class PostDto {
   model_platform_id: number;
 
   @ApiProperty({
+    type: 'string',
+    required: false,
+  })
+  form_tags?: string;
+
+  @ApiProperty({
+    type: 'string',
+    required: false,
+  })
+  user_tags?: string;
+
+  @ApiProperty({
     type: 'number',
     required: false,
   })
