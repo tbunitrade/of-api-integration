@@ -341,6 +341,8 @@ export class AutomateService {
                     message_hour: hour,
                     message_minute: minutes,
                     message_time_suffix: suffix,
+                    release_user_tags: postWithTimesAndCaptions.user_tags || '',
+                    release_form_tags: postWithTimesAndCaptions.form_tags || '',
                     idValue: modelPlatform.username,
                     passwordValue: modelPlatform.password,
                   };
