@@ -47,9 +47,9 @@ export class MessageService {
     }
   }
 
-  async findAllByModelId(id: string) {
+  async findAllByModelId(id: string, searchStr?: string) {
     try {
-      const result = await this.messageRepository
+      const findQuery = await this.messageRepository
         .createQueryBuilder('message')
         .select(['message.*', 'group.id as group_id, group.name as group_name'])
         .innerJoin(
@@ -64,9 +64,15 @@ export class MessageService {
           {
             model_id: id,
           },
-        )
-        .orderBy('message.id')
-        .getRawMany();
+        );
+
+      if (searchStr) {
+        findQuery.where('message.message LIKE :searchStr ', {
+          searchStr: `%${searchStr}%`,
+        });
+      }
+
+      const result = findQuery.orderBy('message.id').getRawMany();
       return result;
     } catch (err) {
       console.error('Message findAll error', err);

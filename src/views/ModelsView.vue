@@ -183,8 +183,15 @@ const onClickEditModelPlatform = (id) => {
     }
     isPlatformModelActive.value = true;
   }
-
-
+};
+const onClickEditModel = (id) => {
+  const model = (modelStore.models || []).find(it => it.id === id);
+  if (model) {
+    selectedModel.value.id = model.id;
+    selectedModel.value.name = model.name;
+    selectedModel.value.isEdit = true;
+    isModalActive.value = true;
+  }
 };
 
 const onDeleteModelPlatform = (id) => {
@@ -271,7 +278,7 @@ const onChangePlatform = (value) => {
 
       <CardBox class="mb-6" has-table>
         <TableModelPlatforms checkable :models="modelStore.models" @click-row="onClickEditModelPlatform"
-          @delete-row="onDeleteModelPlatform" />
+          @delete-row="onDeleteModelPlatform" @edit-model="onClickEditModel" />
         <ClipLoader class="absolute top-0 left-0 w-full h-full flex justify-center items-center" color="info"
           v-if="modelStore.isLoading" />
       </CardBox>
@@ -334,8 +341,8 @@ const onChangePlatform = (value) => {
         <ClipLoader class="absolute w-full h-full top-0 left-0 flex justify-center items-center" color="info"
           v-if="modelPlatformStore.isLoading" />
       </CardBoxModal>
-      <CardBoxModal v-model="isModalDangerActive" title="Please confirm" button="danger" button-label="Delete" has-cancel
-        @confirm="deleteCallback">
+      <CardBoxModal v-model="isModalDangerActive" title="Please confirm" button="danger" button-label="Delete"
+        has-cancel @confirm="deleteCallback">
         <p>Are you sure you want to delete? </p>
       </CardBoxModal>
     </SectionMain>

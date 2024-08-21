@@ -239,6 +239,12 @@ const onClickEditMessage = (id) => {
 
 };
 
+const onChangeSearchString = (e) => {
+  if (selectedModel.value && e.target) {
+    messageStore.getMessagesByModel(selectedModel.value.id, e.target.value);
+  }
+};
+
 const onViewGroup = (id) => {
 
   selectedGroup.value = groupStore.groups.filter((it) => it.id === id)[0];
@@ -466,8 +472,9 @@ watch(groupsInStore, () => {
             </TabContent>
             <TabContent :show="openTab === 2">
               <div>
-                <div>
+                <div class="w-full flex justify-between">
                   <h1 class="font-bold text-xl">Message List</h1>
+                  <input class="rounded" type="text" @change="onChangeSearchString" placeholder="Search Message" />
                 </div>
                 <TableMessages :messages="messagesInStore" @click-row="onClickEditMessage"
                   @delete-row="onDeleteMessage" />

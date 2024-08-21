@@ -47,7 +47,7 @@ export class ModelService {
     try {
       return await this.modelRepository.find({
         order: {
-          id: 'ASC',
+          name: 'ASC',
         },
         relations: ['platforms'],
       });

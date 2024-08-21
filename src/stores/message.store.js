@@ -26,9 +26,12 @@ const useMessageStore = defineStore({
       }
     },
 
-    async getMessagesByModel(id) {
+    async getMessagesByModel(id, searchStr) {
       try {
-        const response = await axios.get(`${import.meta.env.VITE_APP_ROOT_API}/message/model/${id}`)
+        const response = await axios.get(
+          `${import.meta.env.VITE_APP_ROOT_API}/message/model/${id}`,
+          searchStr ? { params: { searchStr: searchStr } } : {}
+        )
         if (response.data) {
           const messages = response.data
           this.messages = messages

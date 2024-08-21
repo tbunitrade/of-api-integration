@@ -1,6 +1,6 @@
 <script setup>
 import { computed, ref } from 'vue';
-import { mdiEye, mdiTrashCan } from '@mdi/js';
+import { mdiEye, mdiTrashCan, mdiPen } from '@mdi/js';
 import CardBoxModal from '@/components/CardBoxModal.vue';
 import TableCheckboxCell from '@/components/TableCheckboxCell.vue';
 import BaseLevel from '@/components/BaseLevel.vue';
@@ -62,12 +62,16 @@ const checked = (isChecked, client) => {
   }
 };
 
-const emit = defineEmits(['click-row']);
+const emit = defineEmits(['click-row', 'delete-row', 'edit-model']);
 const clickRow = (id) => {
   emit('click-row', id);
 };
 const deleteRow = (id) => {
   emit('delete-row', id);
+};
+const onEditModelName = (id) => {
+  console.log("ID", id);
+  emit('edit-model', id);
 };
 
 const onPerPageChange = (e) => {
@@ -112,7 +116,10 @@ const onPageNumberClick = (page) => {
         </td>
 
         <td data-label="Name">
-          {{ client?.name }}
+          <span class="min-w-[100px] inline-block">{{ client?.name }}</span>
+          <BaseButton transparent="true" no-border="true" rounded-full="true" small="true" :icon="mdiPen"
+            @click="onEditModelName(client?.id)" />
+
         </td>
         <td data-label="Platform">
           <!-- {{ client.name }} -->

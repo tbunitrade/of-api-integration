@@ -395,6 +395,25 @@ onMounted(() => {
 
 });
 
+const convertTo12HourFormat = (timeStr) => {
+  // Split the time string into hours, minutes, and seconds
+  let [hours, minutes, seconds] = timeStr.split(':').map(Number);
+
+  // Determine AM or PM suffix
+  const period = hours >= 12 ? 'PM' : 'AM';
+
+  // Convert hours from 24-hour to 12-hour format
+  hours = hours % 12 || 12; // If hour is 0 or 12, it should be converted to 12
+
+  // Format the hours, minutes, and seconds with leading zeros if necessary
+  const formattedHours = hours.toString().padStart(2, '0');
+  const formattedMinutes = minutes.toString().padStart(2, '0');
+  const formattedSeconds = seconds.toString().padStart(2, '0');
+
+  // Combine into the final time string
+  return `${formattedHours}:${formattedMinutes}:${formattedSeconds} ${period}`;
+}
+
 </script>
 
 <template>
@@ -438,7 +457,8 @@ onMounted(() => {
             <div class="row ">
               <div v-for="postTime of postTimesInStore.sort((a, b) => a.time.localeCompare(b.time))" :key="postTime.id"
                 class="col flex justify-between ">
-                <label class="cursor-pointer" @click="clickRow(postTime.id)">{{ postTime.time }}</label>
+                <label class="cursor-pointer" @click="clickRow(postTime.id)">{{ convertTo12HourFormat(postTime.time)
+                  }}</label>
                 <div>
                   <BaseButtons type="justify-start lg:justify-end" no-wrap>
                     <BaseButton transparent no-border color="grey" :icon="mdiPen" @click="clickRow(postTime.id)" />

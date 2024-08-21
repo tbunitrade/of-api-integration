@@ -11,12 +11,14 @@ import {
   Patch,
   Delete,
   UsePipes,
+  Query,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Message } from './message.entity';
 import { MessageService } from './message.service';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { MessageDto } from 'src/dtos/message.dto';
+import { SearchRequestDto } from 'src/dtos/search-request.dto';
 
 @Controller('message')
 @ApiTags('message')
@@ -51,9 +53,15 @@ export class MessageController {
   @ApiBearerAuth('jwt')
   @UseGuards(JwtAuthGuard)
   @UsePipes(new ValidationPipe({ transform: true }))
-  async findMessagesByModelId(@Param('id') id: string) {
+  async findMessagesByModelId(
+    @Param('id') id: string,
+    @Query() searchRequestDto: SearchRequestDto,
+  ) {
     try {
-      const result = await this.messageService.findAllByModelId(id);
+      const result = await this.messageService.findAllByModelId(
+        id,
+        searchRequestDto.searchStr,
+      );
       return result;
     } catch (error) {
       throw error;
