@@ -248,7 +248,7 @@ export class AutomateService {
       await puppeteerUtil.loadCookiesFromFile(cookieFileName);
       await puppeteerUtil.reload();
       const isLoginPage = await puppeteerUtil.checkLogin();
-      let repeatCount = 5;
+      let repeatCount = 10;
 
       while (1) {
         try {
@@ -364,6 +364,8 @@ export class AutomateService {
             await puppeteerUtil.closeBrowser();
             return true;
           } else {
+            repeatCount--;
+            if (repeatCount < 0) break;
             continue;
           }
         } catch (error) {
