@@ -46,7 +46,8 @@ export class ModelPlatformService {
       const newPost = this.postRepository.create(newPostOption);
       const postResult = await this.postRepository.save(newPost);
 
-      const data = { post_id: postResult.id };
+      const data: ModelPlatformDto = new ModelPlatformDto();
+      data.post_id = postResult.id;
       const _rst = await this.modelPlatformRepository.update(
         { id: result.id },
         data,
