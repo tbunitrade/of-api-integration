@@ -174,7 +174,7 @@ export class CronService {
                 ? new Date(data.scheduled_date)
                 : new Date();
             const afterDays = new Date(
-              new Date(now).setDate(now.getDate() + mp.number_of_days),
+              new Date(now).setDate(now.getDate() + result),
             );
             await this.modelPlatformService.update(mp.id, {
               latest_group_id: latestGroupId,
@@ -220,7 +220,7 @@ export class CronService {
                 ? new Date(data.scheduledDate)
                 : new Date();
             const afterDays = new Date(
-              new Date(now).setDate(now.getDate() + data.numberOfDays),
+              new Date(now).setDate(now.getDate() + result),
             );
             await this.postService.update(postWithTimesAndCaptions.id, {
               scheduled_date: afterDays.toDateString(),

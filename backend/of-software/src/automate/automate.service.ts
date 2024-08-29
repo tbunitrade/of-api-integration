@@ -172,13 +172,13 @@ export class AutomateService {
                     return { ...c };
                   });
                   await puppeteerUtil.work(config);
-                  // scheduledCount++;
-                  // if (
-                  //   j === group.messages.length - 1 &&
-                  //   scheduledCount !== group.messages.length
-                  // ) {
-                  //   scheduledCount = group.messages.length;
-                  // }
+                  scheduledCount++;
+                  if (
+                    j === group.messages.length - 1 &&
+                    scheduledCount !== group.messages.length
+                  ) {
+                    scheduledCount = group.messages.length;
+                  }
                 } catch (error) {
                   console.log('Error : ', error);
                   continue;
@@ -188,7 +188,7 @@ export class AutomateService {
 
             console.log('Work Finished');
             await puppeteerUtil.closeBrowser();
-            return true;
+            return scheduledCount;
           } else {
             continue;
           }
@@ -200,7 +200,7 @@ export class AutomateService {
         }
       }
       await puppeteerUtil.closeBrowser();
-      return true;
+      return scheduledCount;
     } catch (err) {
       console.error('Error: ', err);
       return false;
@@ -217,6 +217,7 @@ export class AutomateService {
     },
     manualStart = false,
   ) {
+    let scheduledCount = 0;
     const {
       modelPlatform,
       postWithTimesAndCaptions,
@@ -353,6 +354,14 @@ export class AutomateService {
                     return { ...c };
                   });
                   await puppeteerUtil.work(config);
+                  scheduledCount++;
+                  if (
+                    j === postWithTimesAndCaptions.post_times.length - 1 &&
+                    scheduledCount !==
+                      postWithTimesAndCaptions.post_times.length
+                  ) {
+                    scheduledCount = postWithTimesAndCaptions.post_times.length;
+                  }
                 } catch (error) {
                   console.log('Error : ', error);
                   continue;
@@ -362,7 +371,7 @@ export class AutomateService {
 
             console.log('Work Finished');
             await puppeteerUtil.closeBrowser();
-            return true;
+            return scheduledCount;
           } else {
             repeatCount--;
             if (repeatCount < 0) break;
@@ -376,10 +385,10 @@ export class AutomateService {
         }
       }
       await puppeteerUtil.closeBrowser();
-      return true;
+      return scheduledCount;
     } catch (err) {
       console.error('Error: ', err);
-      return false;
+      return 0;
     }
   }
 }
