@@ -172,17 +172,17 @@ export class AutomateService {
                     return { ...c };
                   });
                   await puppeteerUtil.work(config);
-                  scheduledCount++;
-                  if (
-                    j === group.messages.length - 1 &&
-                    scheduledCount !== group.messages.length
-                  ) {
-                    scheduledCount = group.messages.length;
-                  }
                 } catch (error) {
                   console.log('Error : ', error);
                   continue;
                 }
+              }
+              scheduledCount++;
+              if (
+                i === groupsWithMessages.length - 1 &&
+                scheduledCount !== groupsWithMessages.length
+              ) {
+                scheduledCount = groupsWithMessages.length;
               }
             }
 
@@ -354,18 +354,14 @@ export class AutomateService {
                     return { ...c };
                   });
                   await puppeteerUtil.work(config);
-                  scheduledCount++;
-                  if (
-                    j === postWithTimesAndCaptions.post_times.length - 1 &&
-                    scheduledCount !==
-                      postWithTimesAndCaptions.post_times.length
-                  ) {
-                    scheduledCount = postWithTimesAndCaptions.post_times.length;
-                  }
                 } catch (error) {
                   console.log('Error : ', error);
                   continue;
                 }
+              }
+              scheduledCount++;
+              if (i === numberOfDays - 1 && scheduledCount !== numberOfDays) {
+                scheduledCount = numberOfDays;
               }
             }
 
