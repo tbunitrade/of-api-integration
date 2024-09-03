@@ -158,7 +158,7 @@ export class CronService {
               );
             groups = [...groups, ...additionalGroups];
           }
-          const groupIds = groups.map((g) => g.id);
+          const groupIds = groups.map((g) => g.id).sort();
           const groupsWithMessages =
             await this.groupService.getGroupsWithMessages(groupIds);
           const data: any = mp;
@@ -168,7 +168,7 @@ export class CronService {
             manualStart,
           );
           if (result) {
-            const latestGroupId = groupIds ? Math.max(...groupIds) : 0;
+            const latestGroupId = groupIds ? groupIds[result - 1] : 0;
             const now =
               manualStart && new Date(data.scheduled_date) > new Date()
                 ? new Date(data.scheduled_date)

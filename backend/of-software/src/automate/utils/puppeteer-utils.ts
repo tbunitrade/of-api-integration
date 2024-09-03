@@ -1332,6 +1332,10 @@ export class PuppeteerUtil {
     }
     return false;
   }
+  async isBrowserClosed() {
+    const procInfo = await this._browser.process();
+    return !!procInfo.signalCode;
+  }
   async work(_config: any = null) {
     //wait for page loaded
     let compareResultValue = null;
@@ -1341,6 +1345,7 @@ export class PuppeteerUtil {
     }
     for (let i = 0; i < workConfig.length; i++) {
       try {
+        if (this.isBrowserClosed()) return 'browser_closed';
         await this._page.waitForTimeout(1000);
         const step = workConfig[i];
         console.log(`Step: ${step.type}, Value: ${step.value}`);

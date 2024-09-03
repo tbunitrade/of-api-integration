@@ -171,7 +171,10 @@ export class AutomateService {
                     }
                     return { ...c };
                   });
-                  await puppeteerUtil.work(config);
+                  const result = await puppeteerUtil.work(config);
+                  if (result === 'browser_closed') {
+                    return scheduledCount;
+                  }
                 } catch (error) {
                   console.log('Error : ', error);
                   continue;
