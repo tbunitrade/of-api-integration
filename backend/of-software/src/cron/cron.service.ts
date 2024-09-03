@@ -158,9 +158,12 @@ export class CronService {
               );
             groups = [...groups, ...additionalGroups];
           }
-          const groupIds = groups.map((g) => g.id).sort();
-          const groupsWithMessages =
+          const groupIds = groups.map((g) => g.id);
+          const unsortedGroupsWithMessages =
             await this.groupService.getGroupsWithMessages(groupIds);
+          const groupsWithMessages = unsortedGroupsWithMessages.sort((a, b) => {
+            return groupIds.indexOf(a.id) - groupIds.indexOf(b.id);
+          });
           const data: any = mp;
           data.groupsWithMessages = groupsWithMessages;
           const result = await this.automateService.startMessage(
