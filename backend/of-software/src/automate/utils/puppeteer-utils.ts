@@ -1334,6 +1334,7 @@ export class PuppeteerUtil {
   }
   async isBrowserClosed() {
     const procInfo = await this._browser.process();
+    console.log('ProcInfo: ', !!procInfo.signalCode);
     return !!procInfo.signalCode;
   }
   async work(_config: any = null) {
