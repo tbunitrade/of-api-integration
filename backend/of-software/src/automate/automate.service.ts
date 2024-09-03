@@ -174,7 +174,6 @@ export class AutomateService {
                   const result = await puppeteerUtil.work(config);
                   if (result === 'browser_closed') {
                     console.log('Browser Closed');
-                    await puppeteerUtil.closeBrowser();
                     return scheduledCount;
                   }
                 } catch (error) {

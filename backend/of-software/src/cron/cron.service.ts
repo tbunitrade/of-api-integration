@@ -170,6 +170,7 @@ export class CronService {
             data,
             manualStart,
           );
+          console.log('Posted Date Result: ', result);
           if (result) {
             const latestGroupId = groupIds ? groupIds[result - 1] : 0;
             const now =
