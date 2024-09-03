@@ -76,7 +76,7 @@ export const CONFIG = {
     },
     {
       type: 'waitForTime',
-      value: '1000',
+      value: '500',
     },
     {
       type: 'waitForSelector',
@@ -134,7 +134,7 @@ export const CONFIG = {
     },
     {
       type: 'waitForTime',
-      value: '1000',
+      value: '500',
     },
 
     {
@@ -144,7 +144,7 @@ export const CONFIG = {
     },
     {
       type: 'waitForTime',
-      value: '1000',
+      value: '500',
     },
     {
       type: 'waitForSelector',
@@ -201,7 +201,7 @@ export const CONFIG = {
     },
     {
       type: 'waitForTime',
-      value: '1000',
+      value: '500',
     },
     {
       type: 'type',
@@ -217,7 +217,7 @@ export const CONFIG = {
     },
     {
       type: 'waitForTime',
-      value: '1000',
+      value: '500',
     },
     {
       type: 'waitForSelector',
@@ -243,7 +243,7 @@ export const CONFIG = {
     },
     {
       type: 'waitForTime',
-      value: '1000',
+      value: '500',
     },
     {
       type: 'clickForValue',
@@ -284,7 +284,7 @@ export const CONFIG = {
     },
     {
       type: 'waitForTime',
-      value: '1000',
+      value: '500',
     },
     {
       type: 'click',
@@ -303,7 +303,7 @@ export const CONFIG = {
     },
     {
       type: 'waitForTime',
-      value: '1000',
+      value: '500',
     },
     {
       type: 'waitForSelector',
@@ -366,7 +366,7 @@ export const CONFIG = {
 
     {
       type: 'waitForTime',
-      value: '5000',
+      value: '1000',
     },
 
     {
@@ -580,7 +580,7 @@ export const CONFIG = {
     },
     {
       type: 'waitForTime',
-      value: '1000',
+      value: '500',
     },
     {
       type: 'click', // Click calendar nav button in case message not posted automatically.
@@ -588,11 +588,11 @@ export const CONFIG = {
     },
     {
       type: 'waitForTime',
-      value: '1000',
+      value: '500',
     },
     {
       type: 'waitForTime',
-      value: '30000',
+      value: '15000',
     },
     {
       type: 'waitForSelector',
@@ -604,7 +604,7 @@ export const CONFIG = {
     },
     {
       type: 'waitForTime',
-      value: '10000',
+      value: '5000',
     },
     {
       type: 'waitForSelector',
@@ -914,12 +914,14 @@ export class PuppeteerUtil {
   private _browser;
   private _page;
   private _config;
+  private _isclosed;
 
   constructor() {
     this._puppeteer = null;
     this._browser = null;
     this._page = null;
     this._config = null;
+    this._isclosed = false;
   }
 
   initialize() {
@@ -942,6 +944,9 @@ export class PuppeteerUtil {
           `--window-size=1920,1080`,
         ],
         executablePath: executablePath(),
+      });
+      this._browser.on('disconnected', () => {
+        this._isclosed = true;
       });
       this._page = await this._browser.newPage();
     } catch (error) {
@@ -1332,9 +1337,8 @@ export class PuppeteerUtil {
     }
     return false;
   }
-  async isBrowserClosed() {
-    const procInfo = await this._browser.process();
-    return !!procInfo.signalCode;
+  isBrowserClosed() {
+    return this._isclosed;
   }
   async work(_config: any = null) {
     //wait for page loaded
@@ -1345,7 +1349,7 @@ export class PuppeteerUtil {
     }
     for (let i = 0; i < workConfig.length; i++) {
       try {
-        const browserClosed = await this.isBrowserClosed();
+        const browserClosed = this.isBrowserClosed();
         console.log('BrowserClosed', browserClosed);
         if (browserClosed) return 'browser_closed';
         await this._page.waitForTimeout(1000);
