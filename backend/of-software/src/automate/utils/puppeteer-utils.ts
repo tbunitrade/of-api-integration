@@ -25,7 +25,7 @@ export const CONFIG = {
     'check_page',
     'login',
     'check_page',
-    'login_captcha',
+    // 'login_captcha',
     'check_page',
   ],
   login: {
