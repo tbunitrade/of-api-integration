@@ -1097,9 +1097,9 @@ export class PuppeteerUtil {
         const recaptchaUtil = new RecaptchaUtil();
         if (_config.isCheckPage) {
           try {
-            await this._page.waitForTimeout(10000);
+            await this._page.waitForTimeout(30000);
             await this._page.waitForSelector(_config.pageSelector, {
-              timeout: 10000,
+              timeout: 30000,
             });
             if (i > 2) {
               const cookieFileName =
@@ -1119,7 +1119,7 @@ export class PuppeteerUtil {
           }
         } else if (_config.isRecaptcha) {
           await this._page.waitForSelector(_config.pageSelector, {
-            timeout: 10000,
+            timeout: 30000,
           });
           let captchaSolution: any = null;
           if (_config.hasDefaultCaptcha) {
