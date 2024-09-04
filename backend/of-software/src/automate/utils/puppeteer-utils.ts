@@ -934,45 +934,36 @@ export class PuppeteerUtil {
   }
 
   async openBrowser(headless = true) {
-    try {
-      this._browser = await this._puppeteer.launch({
-        headless: headless,
-        slowMo: 10,
-        args: [
-          // `--disable-extensions-except=${pathToExtension}`,
-          // `--load-extension=${pathToExtension}`,
-          `--window-size=1920,1080`,
-        ],
-        executablePath: executablePath(),
-      });
-      this._browser.on('disconnected', () => {
-        this._isclosed = true;
-      });
-      this._page = await this._browser.newPage();
-    } catch (error) {
-      console.log('Error : ', error);
-    }
+    this._browser = await this._puppeteer.launch({
+      headless: headless,
+      slowMo: 10,
+      args: [
+        // `--disable-extensions-except=${pathToExtension}`,
+        // `--load-extension=${pathToExtension}`,
+        `--window-size=1920,1080`,
+      ],
+      executablePath: executablePath(),
+    });
+    this._browser.on('disconnected', () => {
+      this._isclosed = true;
+    });
+    this._page = await this._browser.newPage();
   }
 
   async acceptCookie() {
-    try {
-      const acceptCookieWork = [
-        {
-          type: 'waitForSelector',
-          value:
-            '.b-cookies-informer__container .b-cookies-informer__nav button',
-        },
-        {
-          type: 'clickForValue',
-          value: 'Accept All',
-          selector:
-            '.b-cookies-informer__container .b-cookies-informer__nav button',
-        },
-      ];
-      await this.work(acceptCookieWork);
-    } catch (error) {
-      console.log('Error: ', error);
-    }
+    const acceptCookieWork = [
+      {
+        type: 'waitForSelector',
+        value: '.b-cookies-informer__container .b-cookies-informer__nav button',
+      },
+      {
+        type: 'clickForValue',
+        value: 'Accept All',
+        selector:
+          '.b-cookies-informer__container .b-cookies-informer__nav button',
+      },
+    ];
+    await this.work(acceptCookieWork);
   }
 
   async setCookie(cookies?: any) {
@@ -1068,15 +1059,11 @@ export class PuppeteerUtil {
   }
 
   async openPage(pageUrl: string) {
-    try {
-      await this._page.goto(pageUrl, { timeout: 100000 });
-      await this._page.addStyleTag({
-        content:
-          'img{-webkit-filter: blur(113px);-moz-filter: blur(113px);-o-filter: blur(113px);-ms-filter: blur(113px);filter: blur(113px);  }',
-      });
-    } catch (error) {
-      console.log('Error : ', error);
-    }
+    await this._page.goto(pageUrl, { timeout: 100000 });
+    await this._page.addStyleTag({
+      content:
+        'img{-webkit-filter: blur(113px);-moz-filter: blur(113px);-o-filter: blur(113px);-ms-filter: blur(113px);filter: blur(113px);  }',
+    });
   }
 
   async checkLogin() {
