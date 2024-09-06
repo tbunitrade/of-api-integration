@@ -1,6 +1,7 @@
 import axios from 'axios';
 
-const TWO_CAPTCHA_KEY = '1f98aeffff33253bdcbe8b92bc9f7d3f';
+// const TWO_CAPTCHA_KEY = '1f98aeffff33253bdcbe8b92bc9f7d3f';
+const TWO_CAPTCHA_KEY = '4139ef9e17d37224db52e4c427275af1';
 
 const sleep = (ms: number): Promise<void> => {
   return new Promise((resolve) => setTimeout(resolve, ms));
