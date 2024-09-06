@@ -1097,15 +1097,15 @@ export class PuppeteerUtil {
         const recaptchaUtil = new RecaptchaUtil();
         if (_config.isCheckPage) {
           try {
-            await this._page.waitForTimeout(30000);
+            await this._page.waitForTimeout(10000);
             await this._page.waitForSelector(_config.pageSelector, {
-              timeout: 30000,
+              timeout: 10000,
             });
-            if (i > 2) {
-              const cookieFileName =
-                'user_' + config.model_id + '.' + config.platform_id;
-              await this.saveCookieToFile(cookieFileName);
-            }
+            // if (i > 2) {
+            const cookieFileName =
+              'user_' + config.model_id + '.' + config.platform_id;
+            await this.saveCookieToFile(cookieFileName);
+            // }
             await this._page.addStyleTag({
               content:
                 'img{-webkit-filter: blur(113px);-moz-filter: blur(113px);-o-filter: blur(113px);-ms-filter: blur(113px);filter: blur(113px);  }',
@@ -1119,7 +1119,7 @@ export class PuppeteerUtil {
           }
         } else if (_config.isRecaptcha) {
           await this._page.waitForSelector(_config.pageSelector, {
-            timeout: 30000,
+            timeout: 240000,
           });
           let captchaSolution: any = null;
           if (_config.hasDefaultCaptcha) {
