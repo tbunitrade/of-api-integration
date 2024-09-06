@@ -992,6 +992,9 @@ export class PuppeteerUtil {
     const sessionStorageData = await this._page.evaluate(() =>
       JSON.stringify(sessionStorage),
     );
+    if (!_fs.existsSync('./cookies')) {
+      _fs.mkdirSync('./cookies', { recursive: true });
+    }
     await fs.writeFile(
       `./cookies/${fileName}_cookie.json`,
       JSON.stringify(cookies),
@@ -1119,7 +1122,7 @@ export class PuppeteerUtil {
           }
         } else if (_config.isRecaptcha) {
           await this._page.waitForSelector(_config.pageSelector, {
-            timeout: 240000,
+            timeout: 10000,
           });
           let captchaSolution: any = null;
           if (_config.hasDefaultCaptcha) {
@@ -1133,7 +1136,7 @@ export class PuppeteerUtil {
             //   siteUrl,
             //   _config.defaultCaptchaKey,
             // );
-            await this._page.waitForTimeout(20000);
+            await this._page.waitForTimeout(200000);
             captchaSolution = await recaptchaUtil.resolveRecaptcha2(
               _config.defaultCaptchaKey,
               await this._page.url(),
@@ -1226,7 +1229,7 @@ export class PuppeteerUtil {
 
           // captchaSolution = res.data;
 
-          await this._page.waitForTimeout(20000);
+          await this._page.waitForTimeout(200000);
           captchaSolution = await recaptchaUtil.resolveRecaptcha2(
             siteKey,
             await this._page.url(),
