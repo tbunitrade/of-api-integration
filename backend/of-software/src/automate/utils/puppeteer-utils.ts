@@ -13,9 +13,14 @@ const APIKEY = '1f98aeffff33253bdcbe8b92bc9f7d3f';
 const solver = new Solver(APIKEY);
 
 const fs = _fs.promises;
-const pathToExtension = path.join(
+const twoCaptchaSolverExtPath = path.join(
   __dirname + '/../../../../',
   '2captcha-solver',
+);
+
+const captchaSolverExtPath = path.join(
+  __dirname + '/../../../../',
+  'captcha-solver',
 );
 
 /**
@@ -938,8 +943,8 @@ export class PuppeteerUtil {
       headless: headless,
       slowMo: 10,
       args: [
-        // `--disable-extensions-except=${pathToExtension}`,
-        // `--load-extension=${pathToExtension}`,
+        `--disable-extensions-except=${twoCaptchaSolverExtPath}, ${captchaSolverExtPath}`,
+        `--load-extension=${twoCaptchaSolverExtPath}, ${captchaSolverExtPath}`,
         `--window-size=1920,1080`,
       ],
       executablePath: executablePath(),

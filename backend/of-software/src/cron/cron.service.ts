@@ -141,7 +141,6 @@ export class CronService {
       try {
         const modelPlatforms = await this.modelPlatformService.findAll(false);
         const sendAMessage = async (mp: ModelPlatform, manualStart) => {
-          if (mp.number_of_days === 0) return;
           let groups = await this.groupService.findNGroupsByPlatformId(
             mp.platform_id,
             mp.latest_group_id || 0,
@@ -199,8 +198,6 @@ export class CronService {
             mp.id,
           );
 
-          if (postWithTimesAndCaptions.number_of_days === 0) return;
-
           const postFiles = await this.postFileService.findByPostId(
             postWithTimesAndCaptions.id,
           );
@@ -238,8 +235,14 @@ export class CronService {
           if (i >= modelPlatforms.length) break;
           const mp = modelPlatforms[i];
           if (isPost) {
+            const postWithTimesAndCaptions = await this.postService.findById(
+              mp.id,
+            );
+
+            if (postWithTimesAndCaptions.number_of_days === 0) return;
             promises.push(postAPost(mp, manualStart));
           } else {
+            if (mp.number_of_days === 0) return;
             promises.push(sendAMessage(mp, manualStart));
           }
 
