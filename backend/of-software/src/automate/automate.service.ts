@@ -70,7 +70,11 @@ export class AutomateService {
       puppeteerUtil.setConfig();
       // recaptcha solving can be wrong sometime
       const headless = !manualStart;
-      await puppeteerUtil.openBrowser(headless);
+      try {
+        await puppeteerUtil.openBrowser(headless);
+      } catch (error) {
+        console.log('Error: ', error);
+      }
       const cookieFileName = 'user_' + data.model_id + '.' + data.platform_id;
       await puppeteerUtil.openPage('https://onlyfans.com/my/chats/send');
       await puppeteerUtil.acceptCookie();
