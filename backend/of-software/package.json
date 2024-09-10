@@ -12,7 +12,7 @@
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/src/main",
-    "start:server": "pm2 stop backend && pm2 start npm --name \"backend\" --log /dev/null -- start",
+    "start:server": "pm2 stop backend && pm2 delete backend && pm2 start npm --name \"backend\" --log /dev/null -- start",
     "migrate-generate": "ts-node ./node_modules/typeorm/cli.js migration:generate migrations/init -d ./datasource.ts",
     "migrate-run": "ts-node ./node_modules/typeorm/cli.js migration:run -d ./datasource.ts",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
