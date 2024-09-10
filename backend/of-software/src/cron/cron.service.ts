@@ -239,11 +239,15 @@ export class CronService {
               mp.id,
             );
 
-            if (postWithTimesAndCaptions.number_of_days !== 0)
+            if (postWithTimesAndCaptions.number_of_days !== 0) {
               promises.push(postAPost(mp, manualStart));
+              continue;
+            }
           } else {
-            if (mp.number_of_days !== 0)
+            if (mp.number_of_days !== 0) {
               promises.push(sendAMessage(mp, manualStart));
+              continue;
+            }
           }
 
           if (
