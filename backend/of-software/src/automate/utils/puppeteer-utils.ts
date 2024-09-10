@@ -30,6 +30,7 @@ export const CONFIG = {
     'check_page',
     'login',
     'check_page',
+    // 'login_captcha_extension',
     // 'login_captcha',
     // 'check_page',
   ],
@@ -59,6 +60,9 @@ export const CONFIG = {
     idSelector: 'input[name="email"]',
     passwordSelector: 'input[name="password"]',
     submitSelector: '.b-loginreg__form button[type="submit"]',
+  },
+  login_captcha_extension: {
+    isRecaptchaExtension: true,
   },
   work: [
     {
@@ -948,6 +952,9 @@ export class PuppeteerUtil {
         `--window-size=1920,1080`,
       ],
       executablePath: executablePath(),
+      env: {
+        DISPLAY: ':10.0',
+      },
     });
     this._browser.on('disconnected', () => {
       this._isclosed = true;
@@ -1298,6 +1305,7 @@ export class PuppeteerUtil {
             { submitSelector: _config.submitSelector },
           );
           await this._page.click(_config.submitSelector);
+        } else if (_config.isRecaptchaExtension) {
         } else {
           await this._page.waitForSelector(_config.pageSelector, {
             timeout: 10000,
