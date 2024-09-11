@@ -1319,7 +1319,7 @@ export class PuppeteerUtil {
           const worker = await workerTarget.worker();
 
           // Open a popup (available for Canary channels).
-          // await worker.evaluate('chrome.action.openPopup();');
+          await worker.evaluate('chrome.action.openPopup();');
 
           const popupTarget = await this._browser.waitForTarget(
             // Assumes that there is only one page with the URL ending with popup.html and that is the popup created by the extension.
