@@ -30,7 +30,7 @@ export const CONFIG = {
     'check_page',
     'login',
     'check_page',
-    // 'login_captcha_extension',
+    'login_captcha_extension',
     // 'login_captcha',
     // 'check_page',
   ],
@@ -63,6 +63,9 @@ export const CONFIG = {
   },
   login_captcha_extension: {
     isRecaptchaExtension: true,
+    pageSelector: '.login_content',
+    submitSelector: '.b-loginreg__form button[type="submit"]',
+    disabledSelector: '.b-loginreg__form button[type="submit"]:disabled',
   },
   work: [
     {
@@ -1303,6 +1306,23 @@ export class PuppeteerUtil {
           );
           await this._page.click(_config.submitSelector);
         } else if (_config.isRecaptchaExtension) {
+          await this._page.waitForSelector(_config.pageSelector, {
+            timeout: 10000,
+          });
+          await this._page.goto(
+            `chrome-extension://hlifkpholllijblknnmbfagnkjneagid/popup/popup.html`,
+          );
+          const isLoginBtnValid = false;
+          while (!isLoginBtnValid) {
+            const disabledBtn = await this._page.waitForSelector(
+              _config.disabledSelector,
+            );
+            console.log('DisabledButton: ', disabledBtn);
+            if (!disabledBtn) {
+              isLoginBtnValid = true;
+            }
+          }
+          await this._page.click(_config.submitSelector);
         } else {
           await this._page.waitForSelector(_config.pageSelector, {
             timeout: 10000,
