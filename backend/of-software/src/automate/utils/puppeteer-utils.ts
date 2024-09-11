@@ -1312,7 +1312,7 @@ export class PuppeteerUtil {
           await this._page.goto(
             `chrome-extension://hlifkpholllijblknnmbfagnkjneagid/popup/popup.html`,
           );
-          const isLoginBtnValid = false;
+          let isLoginBtnValid = false;
           while (!isLoginBtnValid) {
             const disabledBtn = await this._page.waitForSelector(
               _config.disabledSelector,
