@@ -952,9 +952,6 @@ export class PuppeteerUtil {
         `--window-size=1920,1080`,
       ],
       executablePath: executablePath(),
-      env: {
-        DISPLAY: ':10.0',
-      },
     });
     this._browser.on('disconnected', () => {
       this._isclosed = true;
