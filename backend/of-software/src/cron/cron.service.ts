@@ -232,6 +232,7 @@ export class CronService {
         let i = 0;
         let promises = [];
         for (;;) {
+          console.log('I', i);
           if (i >= modelPlatforms.length) break;
           const mp = modelPlatforms[i];
           if (isPost) {
