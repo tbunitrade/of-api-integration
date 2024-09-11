@@ -947,8 +947,8 @@ export class PuppeteerUtil {
       headless: headless,
       slowMo: 10,
       args: [
-        // `--disable-extensions-except=${twoCaptchaSolverExtPath},${captchaSolverExtPath}`,
-        // `--load-extension=${twoCaptchaSolverExtPath},${captchaSolverExtPath}`,
+        `--disable-extensions-except=${twoCaptchaSolverExtPath},${captchaSolverExtPath}`,
+        `--load-extension=${twoCaptchaSolverExtPath},${captchaSolverExtPath}`,
         `--window-size=1920,1080`,
       ],
       executablePath: executablePath(),
