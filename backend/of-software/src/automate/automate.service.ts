@@ -72,8 +72,10 @@ export class AutomateService {
       const headless = !manualStart;
       try {
         await puppeteerUtil.openBrowser(headless);
+        return;
       } catch (error) {
         console.log('Error: ', error);
+        return;
       }
       const cookieFileName = 'user_' + data.model_id + '.' + data.platform_id;
       await puppeteerUtil.openPage('https://onlyfans.com/my/chats/send');
