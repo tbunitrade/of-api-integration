@@ -72,7 +72,6 @@ export class AutomateService {
       const headless = !manualStart;
       try {
         await puppeteerUtil.openBrowser(headless);
-        return;
       } catch (error) {
         console.log('Error: ', error);
         return;
