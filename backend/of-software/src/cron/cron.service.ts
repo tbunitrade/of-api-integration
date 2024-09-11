@@ -232,9 +232,9 @@ export class CronService {
         let i = 0;
         let promises = [];
         for (;;) {
-          console.log('I', i);
-          if (i >= modelPlatforms.length) break;
-          const mp = modelPlatforms[i];
+          i++;
+          if (i > modelPlatforms.length) break;
+          const mp = modelPlatforms[i - 1];
           if (isPost) {
             const postWithTimesAndCaptions = await this.postService.findById(
               mp.id,
@@ -251,14 +251,10 @@ export class CronService {
             }
           }
 
-          if (
-            (i + 1) % MaxOpeningBrowserCount === 0 ||
-            i === modelPlatforms.length - 1
-          ) {
+          if (i % MaxOpeningBrowserCount === 0 || i === modelPlatforms.length) {
             await Promise.allSettled(promises);
             promises = [];
           }
-          i++;
         }
       } catch (error) {
         console.error('Error in Cron job => ', error?.message ?? 'Unknown');
