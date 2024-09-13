@@ -1311,9 +1311,11 @@ export class PuppeteerUtil {
           await this._page.click(_config.submitSelector);
         } else if (_config.isRecaptchaExtension) {
           await this._page.bringToFront();
+          console.log('Here00');
           await this._page.waitForSelector(_config.pageSelector, {
             timeout: 10000,
           });
+          console.log('Here01');
           const workerTarget = await this._browser.waitForTarget(
             // Assumes that there is only one service worker created by the extension and its URL ends with background.js.
             (target) =>
@@ -1322,10 +1324,10 @@ export class PuppeteerUtil {
           );
 
           const worker = await workerTarget.worker();
-
+          console.log('Here02');
           // Open a popup (available for Canary channels).
           await worker.evaluate('chrome.action.openPopup();');
-
+          console.log('Here03');
           const popupTarget = await this._browser.waitForTarget(
             // Assumes that there is only one page with the URL ending with popup.html and that is the popup created by the extension.
             (target) =>
