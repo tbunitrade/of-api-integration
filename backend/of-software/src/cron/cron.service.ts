@@ -136,7 +136,7 @@ export class CronService {
    * @returns
    */
   private createCron = (isPost = false, manualStart = false) => {
-    const MaxOpeningBrowserCount = 2;
+    const MaxOpeningBrowserCount = 1;
     return async () => {
       try {
         const modelPlatforms = await this.modelPlatformService.findAll(false);
