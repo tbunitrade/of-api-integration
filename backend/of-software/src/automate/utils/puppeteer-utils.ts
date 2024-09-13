@@ -1344,6 +1344,9 @@ export class PuppeteerUtil {
               isLoginBtnValid = true;
             }
           }
+          await this._page.waitForSelector(_config.submitSelector, {
+            timeout: 10000,
+          });
           await this._page.click(_config.submitSelector);
         } else {
           await this._page.waitForSelector(_config.pageSelector, {
