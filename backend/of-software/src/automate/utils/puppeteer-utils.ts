@@ -27,6 +27,7 @@ const captchaSolverExtPath = path.join(
  * Config variables*/
 export const CONFIG = {
   login_workflow: [
+    'reload',
     'check_page',
     'login',
     'check_page',
@@ -41,6 +42,9 @@ export const CONFIG = {
     submitSelector: '.b-loginreg__form button[type="submit"]',
     idValue: '$value',
     passwordValue: '$value',
+  },
+  reload: {
+    isReload: true,
   },
   check_page: {
     isCheckPage: true,
@@ -1114,7 +1118,9 @@ export class PuppeteerUtil {
         const _configKey = config.login_workflow[i];
         const _config = config[_configKey];
         const recaptchaUtil = new RecaptchaUtil();
-        if (_config.isCheckPage) {
+        if (_config.isReload) {
+          await this.reload();
+        } else if (_config.isCheckPage) {
           try {
             await this._page.waitForTimeout(10000);
             await this._page.waitForSelector(_config.pageSelector, {
