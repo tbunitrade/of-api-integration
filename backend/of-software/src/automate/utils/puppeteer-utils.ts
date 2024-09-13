@@ -1310,6 +1310,7 @@ export class PuppeteerUtil {
           );
           await this._page.click(_config.submitSelector);
         } else if (_config.isRecaptchaExtension) {
+          await this._page.bringToFront();
           await this._page.waitForSelector(_config.pageSelector, {
             timeout: 10000,
           });

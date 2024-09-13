@@ -83,6 +83,7 @@ export class AutomateService {
       await puppeteerUtil.reload();
       const isLoginPage = await puppeteerUtil.checkLogin();
       let repeatCount = 50;
+      let loginTried = 0;
 
       while (1) {
         try {
@@ -101,6 +102,8 @@ export class AutomateService {
               data.password,
             );
             isLoggedIn = await puppeteerUtil.login(_config);
+            loginTried++;
+            if (loginTried >= 3) await puppeteerUtil.waitFor(300000);
           } else {
             console.log('----------------- Login Success -----------------');
             isLoggedIn = true;
