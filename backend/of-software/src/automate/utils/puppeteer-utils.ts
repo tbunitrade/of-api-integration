@@ -1334,7 +1334,7 @@ export class PuppeteerUtil {
               (target) =>
                 target.type() === 'page' && target.url().endsWith('popup'),
             );
-            const popupPage = popupTarget.asPage();
+            const popupPage = await popupTarget.page();
           } catch (error) {
             console.log('Error: ', error);
           }
