@@ -1333,6 +1333,8 @@ export class PuppeteerUtil {
           );
 
           const popupPage = popupTarget.asPage();
+          await popupPage.close();
+          await this._page.bringToFront();
 
           let isLoginBtnValid = false;
           while (!isLoginBtnValid) {
