@@ -1344,14 +1344,13 @@ export class PuppeteerUtil {
           let isLoginBtnValid = false;
           while (!isLoginBtnValid) {
             console.log('Here5');
-            await this._page.waitForTimeout(1000);
-            console.log('Here6');
-            const disabledBtn = await this._page.waitForSelector(
-              _config.disabledSelector,
-              { timeout: 2000 },
-            );
-            console.log('DisabledButton: ', disabledBtn);
-            if (!disabledBtn) {
+            try {
+              const disabledBtn = await this._page.waitForSelector(
+                _config.disabledSelector,
+                { timeout: 1000 },
+              );
+              console.log('DisabledButton: ', disabledBtn);
+            } catch (error) {
               isLoginBtnValid = true;
             }
           }
@@ -1579,9 +1578,7 @@ export class PuppeteerUtil {
   }
   async reload() {
     try {
-      await this._page.reload({
-        waitUntil: ['domcontentloaded', 'networkidle0'],
-      });
+      await this._page.reload();
       await this._page.waitForTimeout(10000);
     } catch (err) {
       console.log('Error in reload : ', err);
