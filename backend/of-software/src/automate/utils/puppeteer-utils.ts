@@ -32,7 +32,7 @@ export const CONFIG = {
     'check_page',
     'login_captcha_extension',
     // 'login_captcha',
-    // 'check_page',
+    'check_page',
   ],
   login: {
     pageSelector: '.login_content',
@@ -1101,6 +1101,10 @@ export class PuppeteerUtil {
       console.log('Error : ', error);
       return false;
     }
+  }
+
+  async waitFor(miliSec: number) {
+    await this._page.waitForTimeout(miliSec);
   }
 
   async login(cfg?: any) {
