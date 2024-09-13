@@ -1332,13 +1332,18 @@ export class PuppeteerUtil {
               target.type() === 'page' && target.url().endsWith('popup.html'),
           );
 
+          console.log('Here1');
           const popupPage = popupTarget.asPage();
+          console.log('Here2');
           await popupPage.close();
+          console.log('Here3');
           await this._page.bringToFront();
+          console.log('Here4');
 
           let isLoginBtnValid = false;
           while (!isLoginBtnValid) {
             try {
+              console.log('Here5');
               const disabledBtn = await this._page.waitForSelector(
                 _config.disabledSelector,
                 { timeout: 2000 },
@@ -1352,6 +1357,7 @@ export class PuppeteerUtil {
               isLoginBtnValid = true;
             }
           }
+          console.log('Here6');
           await this._page.waitForSelector(_config.submitSelector, {
             timeout: 10000,
           });
