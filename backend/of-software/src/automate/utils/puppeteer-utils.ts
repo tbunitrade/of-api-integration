@@ -1057,21 +1057,25 @@ export class PuppeteerUtil {
         },
       );
 
-      await this._page.evaluate(
-        (data) => {
-          localStorage.clear();
-          sessionStorage.clear();
-          const parsedLocalStorageData = JSON.parse(data.localStorageData);
-          const parsedSessionStorageData = JSON.parse(data.sessionStorageData);
-          for (const key in parsedLocalStorageData) {
-            localStorage.setItem(key, parsedLocalStorageData[key]);
-          }
-          for (const key in parsedSessionStorageData) {
-            sessionStorage.setItem(key, parsedSessionStorageData[key]);
-          }
-        },
-        { localStorageData, sessionStorageData },
-      );
+      if (!!localStorageData && !!sessionStorageData) {
+        await this._page.evaluate(
+          (data) => {
+            localStorage.clear();
+            sessionStorage.clear();
+            const parsedLocalStorageData = JSON.parse(data.localStorageData);
+            const parsedSessionStorageData = JSON.parse(
+              data.sessionStorageData,
+            );
+            for (const key in parsedLocalStorageData) {
+              localStorage.setItem(key, parsedLocalStorageData[key]);
+            }
+            for (const key in parsedSessionStorageData) {
+              sessionStorage.setItem(key, parsedSessionStorageData[key]);
+            }
+          },
+          { localStorageData, sessionStorageData },
+        );
+      }
     } catch (error) {
       console.error('Error loading cookies from file:', error);
     }
@@ -1316,12 +1320,10 @@ export class PuppeteerUtil {
           );
           await this._page.click(_config.submitSelector);
         } else if (_config.isRecaptchaExtension) {
-          console.log('Here00');
           await this._page.waitForSelector(_config.pageSelector, {
             timeout: 10000,
           });
           await this._page.bringToFront();
-          console.log('Here01');
           const workerTarget = await this._browser.waitForTarget(
             // Assumes that there is only one service worker created by the extension and its URL ends with background.js.
             (target) =>
@@ -1330,10 +1332,8 @@ export class PuppeteerUtil {
           );
 
           const worker = await workerTarget.worker();
-          console.log('Here02');
           // Open a popup (available for Canary channels).
           await worker.evaluate('chrome.action.openPopup();');
-          console.log('Here03');
           try {
             const popupTarget = await this._browser.waitForTarget(
               // Assumes that there is only one page with the URL ending with popup.html and that is the popup created by the extension.
@@ -1345,11 +1345,8 @@ export class PuppeteerUtil {
             console.log('Error: ', error);
           }
 
-          console.log('Here1');
-
           let isLoginBtnValid = false;
           while (!isLoginBtnValid) {
-            console.log('Here5');
             await this._page.waitForTimeout(1000);
             try {
               const disabledBtn = await this._page.waitForSelector(
@@ -1361,7 +1358,6 @@ export class PuppeteerUtil {
               isLoginBtnValid = true;
             }
           }
-          console.log('Here6');
           await this._page.waitForSelector(_config.submitSelector, {
             timeout: 10000,
           });
