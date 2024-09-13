@@ -240,23 +240,32 @@ export const CONFIG = {
       value: '.b-make-post__datepicker-input .vdatetime-popup',
     },
     {
-      type: 'compareValue',
+      type: 'clickUntil',
       key: 'message_month',
       value: '$value',
       selector:
         '.b-make-post__datepicker-input .vdatetime-calendar__current--month',
+      btnSelector:
+        '.b-make-post__datepicker-input .vdatetime-calendar__navigation--next',
     },
-    {
-      type: 'condition',
-      childs: {
-        yes: null,
-        no: {
-          type: 'click',
-          value:
-            '.b-make-post__datepicker-input .vdatetime-calendar__navigation--next',
-        },
-      },
-    },
+    // {
+    //   type: 'compareValue',
+    //   key: 'message_month',
+    //   value: '$value',
+    //   selector:
+    //     '.b-make-post__datepicker-input .vdatetime-calendar__current--month',
+    // },
+    // {
+    //   type: 'condition',
+    //   childs: {
+    //     yes: null,
+    //     no: {
+    //       type: 'click',
+    //       value:
+    //         '.b-make-post__datepicker-input .vdatetime-calendar__navigation--next',
+    //     },
+    //   },
+    // },
     {
       type: 'waitForTime',
       value: '500',
@@ -1538,6 +1547,25 @@ export class PuppeteerUtil {
             break;
           case 'waitForTime':
             await this._page.waitForTimeout(step.value);
+            break;
+          case 'clickUntil':
+            while (1) {
+              const domValue = await this._page.evaluate((selector) => {
+                const div = document.querySelector(selector);
+                return div ? div.textContent.trim() : null;
+              }, step.selector);
+              const isIncluding = domValue
+                .toLowerCase()
+                .includes(step.value.toLowerCase());
+              if (!isIncluding) {
+                const ele = await this._page.$(step.btnSelector);
+                if (ele) {
+                  await ele.click();
+                }
+              } else {
+                break;
+              }
+            }
             break;
           case 'compareValue':
             const actualValue = await this._page.evaluate((selector) => {
