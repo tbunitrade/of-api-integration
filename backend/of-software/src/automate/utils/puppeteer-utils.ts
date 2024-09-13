@@ -1328,17 +1328,18 @@ export class PuppeteerUtil {
           // Open a popup (available for Canary channels).
           await worker.evaluate('chrome.action.openPopup();');
           console.log('Here03');
-          const popupTarget = await this._browser.waitForTarget(
-            // Assumes that there is only one page with the URL ending with popup.html and that is the popup created by the extension.
-            (target) =>
-              target.type() === 'page' && target.url().endsWith('popup'),
-          );
+          try {
+            const popupTarget = await this._browser.waitForTarget(
+              // Assumes that there is only one page with the URL ending with popup.html and that is the popup created by the extension.
+              (target) =>
+                target.type() === 'page' && target.url().endsWith('popup'),
+            );
+            const popupPage = popupTarget.asPage();
+          } catch (error) {
+            console.log('Error: ', error);
+          }
 
           console.log('Here1');
-          const popupPage = popupTarget.asPage();
-          console.log('Here2');
-          console.log('Here3');
-          console.log('Here4');
 
           let isLoginBtnValid = false;
           while (!isLoginBtnValid) {
