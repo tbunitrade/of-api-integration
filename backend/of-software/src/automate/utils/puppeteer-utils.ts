@@ -1310,11 +1310,11 @@ export class PuppeteerUtil {
           );
           await this._page.click(_config.submitSelector);
         } else if (_config.isRecaptchaExtension) {
-          await this._page.bringToFront();
           console.log('Here00');
           await this._page.waitForSelector(_config.pageSelector, {
             timeout: 10000,
           });
+          await this._page.bringToFront();
           console.log('Here01');
           const workerTarget = await this._browser.waitForTarget(
             // Assumes that there is only one service worker created by the extension and its URL ends with background.js.
@@ -1343,19 +1343,15 @@ export class PuppeteerUtil {
 
           let isLoginBtnValid = false;
           while (!isLoginBtnValid) {
-            try {
-              console.log('Here5');
-              await this._page.waitForTimeout(1000);
-              const disabledBtn = await this._page.waitForSelector(
-                _config.disabledSelector,
-                { timeout: 2000 },
-              );
-              console.log('DisabledButton: ', disabledBtn);
-              if (!disabledBtn) {
-                isLoginBtnValid = true;
-              }
-            } catch {
-              console.log('DisabledButtonNotFound');
+            console.log('Here5');
+            await this._page.waitForTimeout(1000);
+            console.log('Here6');
+            const disabledBtn = await this._page.waitForSelector(
+              _config.disabledSelector,
+              { timeout: 2000 },
+            );
+            console.log('DisabledButton: ', disabledBtn);
+            if (!disabledBtn) {
               isLoginBtnValid = true;
             }
           }
