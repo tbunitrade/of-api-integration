@@ -1346,6 +1346,7 @@ export class PuppeteerUtil {
           while (!isLoginBtnValid) {
             try {
               console.log('Here5');
+              await this._page.waitForTimeout(1000);
               const disabledBtn = await this._page.waitForSelector(
                 _config.disabledSelector,
                 { timeout: 2000 },
