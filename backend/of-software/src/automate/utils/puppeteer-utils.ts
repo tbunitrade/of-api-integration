@@ -1336,12 +1336,17 @@ export class PuppeteerUtil {
 
           let isLoginBtnValid = false;
           while (!isLoginBtnValid) {
-            await this._page.waitForTimeout(1000);
-            const disabledBtn = await this._page.waitForSelector(
-              _config.disabledSelector,
-            );
-            console.log('DisabledButton: ', disabledBtn);
-            if (!disabledBtn) {
+            try {
+              const disabledBtn = await this._page.waitForSelector(
+                _config.disabledSelector,
+                { timeout: 2000 },
+              );
+              console.log('DisabledButton: ', disabledBtn);
+              if (!disabledBtn) {
+                isLoginBtnValid = true;
+              }
+            } catch {
+              console.log('DisabledButtonNotFound');
               isLoginBtnValid = true;
             }
           }
