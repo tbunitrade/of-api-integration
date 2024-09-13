@@ -1332,7 +1332,7 @@ export class PuppeteerUtil {
             const popupTarget = await this._browser.waitForTarget(
               // Assumes that there is only one page with the URL ending with popup.html and that is the popup created by the extension.
               (target) =>
-                target.type() === 'page' && target.url().endsWith('popup'),
+                target.type() === 'page' && target.url().endsWith('popup.html'),
             );
             const popupPage = await popupTarget.asPage();
           } catch (error) {
