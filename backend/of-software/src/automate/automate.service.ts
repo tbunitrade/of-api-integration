@@ -103,7 +103,7 @@ export class AutomateService {
             );
             isLoggedIn = await puppeteerUtil.login(_config);
             loginTried++;
-            if (loginTried >= 3) await puppeteerUtil.waitFor(300000);
+            if (loginTried >= 3) await puppeteerUtil.waitFor(200000);
           } else {
             console.log('----------------- Login Success -----------------');
             isLoggedIn = true;
