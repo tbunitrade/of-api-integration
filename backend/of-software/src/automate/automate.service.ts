@@ -79,8 +79,8 @@ export class AutomateService {
       const cookieFileName = 'user_' + data.model_id + '.' + data.platform_id;
       await puppeteerUtil.openPage('https://onlyfans.com/my/chats/send');
       await puppeteerUtil.acceptCookie();
-      await puppeteerUtil.loadCookiesFromFile(cookieFileName);
-      await puppeteerUtil.reload();
+      // await puppeteerUtil.loadCookiesFromFile(cookieFileName);
+      // await puppeteerUtil.reload();
       const isLoginPage = await puppeteerUtil.checkLogin();
       let repeatCount = 50;
       let loginTried = 0;
@@ -258,8 +258,8 @@ export class AutomateService {
         'user_' + modelPlatform.model_id + '.' + modelPlatform.platform_id;
       await puppeteerUtil.openPage('https://onlyfans.com/posts/create');
       await puppeteerUtil.acceptCookie();
-      await puppeteerUtil.loadCookiesFromFile(cookieFileName);
-      await puppeteerUtil.reload();
+      // await puppeteerUtil.loadCookiesFromFile(cookieFileName);
+      // await puppeteerUtil.reload();
       const isLoginPage = await puppeteerUtil.checkLogin();
       let repeatCount = 20;
       let loginTried = 0;
