@@ -664,6 +664,11 @@ export const CONFIG = {
       value: '1000',
     },
     {
+      type: 'click', // Schedule Btn
+      value:
+        '.b-feed #make_post_form .b-make-post__main-wrapper .b-make-post__textarea-wrapper .b-text-editor.js-text-editor p',
+    },
+    {
       type: 'type',
       key: 'message',
       selector:
