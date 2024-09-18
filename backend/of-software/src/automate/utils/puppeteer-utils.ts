@@ -667,7 +667,8 @@ export const CONFIG = {
       type: 'type',
       key: 'message',
       selector:
-        '.b-feed #make_post_form .b-make-post__main-wrapper .b-make-post__textarea-wrapper textarea#new_post_text_input',
+        // '.b-feed #make_post_form .b-make-post__main-wrapper .b-make-post__textarea-wrapper textarea#new_post_text_input',
+        '.b-feed #make_post_form .b-make-post__main-wrapper .b-make-post__textarea-wrapper .b-text-editor.js-text-editor',
       value: '$value',
     },
     {
