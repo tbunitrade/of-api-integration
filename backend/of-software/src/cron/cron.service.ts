@@ -240,7 +240,10 @@ export class CronService {
               mp.id,
             );
 
-            if (postWithTimesAndCaptions.number_of_days !== 0) {
+            if (
+              postWithTimesAndCaptions &&
+              postWithTimesAndCaptions.number_of_days !== 0
+            ) {
               promises.push(postAPost(mp, manualStart));
             }
           } else {
