@@ -668,14 +668,20 @@ export const CONFIG = {
       value:
         '.b-feed #make_post_form .b-make-post__main-wrapper .b-make-post__textarea-wrapper .b-text-editor.js-text-editor p',
     },
+    // {
+    //   type: 'type',
+    //   key: 'message',
+    //   selector:
+    //     // '.b-feed #make_post_form .b-make-post__main-wrapper .b-make-post__textarea-wrapper textarea#new_post_text_input',
+    //     '.b-feed #make_post_form .b-make-post__main-wrapper .b-make-post__textarea-wrapper .b-text-editor.js-text-editor p',
+    //   value: '$value',
+    // },
     {
-      type: 'type',
+      type: 'keyboardType',
       key: 'message',
-      selector:
-        // '.b-feed #make_post_form .b-make-post__main-wrapper .b-make-post__textarea-wrapper textarea#new_post_text_input',
-        '.b-feed #make_post_form .b-make-post__main-wrapper .b-make-post__textarea-wrapper .b-text-editor.js-text-editor p',
       value: '$value',
     },
+
     {
       type: 'waitForTime',
       value: '500',
@@ -1476,6 +1482,10 @@ export class PuppeteerUtil {
               },
               { selector: step.selector, value: step.value },
             );
+            // await this._page.type(step.selector, step.value);
+            break;
+          case 'keyboardType':
+            await this._page.keyboard.type(step.value);
             // await this._page.type(step.selector, step.value);
             break;
           case 'clickForValue':
