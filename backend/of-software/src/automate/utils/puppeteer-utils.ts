@@ -77,6 +77,10 @@ export const CONFIG = {
       value: '30000',
     },
     {
+      type: 'click', // New message => Send To => View All
+      value: '#ModalAlert button',
+    },
+    {
       type: 'waitForSelector',
       value: '#content .b-chats .b-chats__conversations-list',
     },
@@ -655,6 +659,10 @@ export const CONFIG = {
     {
       type: 'waitForTime',
       value: '30000',
+    },
+    {
+      type: 'click', // New message => Send To => View All
+      value: '#ModalAlert button',
     },
     {
       type: 'waitForSelector',
