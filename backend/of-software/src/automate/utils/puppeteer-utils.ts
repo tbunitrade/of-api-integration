@@ -1451,6 +1451,13 @@ export class PuppeteerUtil {
         const browserClosed = this.isBrowserClosed();
         console.log('BrowserClosed', browserClosed);
         if (browserClosed) return 'browser_closed';
+
+        try {
+          const alertEle = await this._page.$('#ModalAlert button');
+          if (alertEle) {
+            await alertEle.click();
+          }
+        } catch (err) {}
         await this._page.waitForTimeout(1000);
         const step = workConfig[i];
         console.log(`Step: ${step.type}, Value: ${step.value}`);
