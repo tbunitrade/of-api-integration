@@ -247,7 +247,7 @@ export const CONFIG = {
     },
     {
       type: 'waitForTime',
-      value: '500',
+      value: '50000',
     },
     {
       type: 'clickForValue',
