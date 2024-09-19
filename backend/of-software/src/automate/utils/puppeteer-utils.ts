@@ -237,9 +237,17 @@ export const CONFIG = {
         '.b-chats__conversations-content #make_post_form .b-text-editor.js-text-editor p',
     },
     {
+      type: 'waitForTime',
+      value: '500',
+    },
+    {
       type: 'keyboardType',
       key: 'message',
       value: '$value',
+    },
+    {
+      type: 'waitForTime',
+      value: '500',
     },
     {
       type: 'click', // Schedule Message Btn
