@@ -247,7 +247,16 @@ export const CONFIG = {
     },
     {
       type: 'waitForTime',
-      value: '5000',
+      value: '500',
+    },
+    {
+      type: 'clickForValue',
+      selector: '#ModalAlert button',
+      value: 'Yes',
+    },
+    {
+      type: 'waitForTime',
+      value: '500',
     },
     {
       type: 'click', // Schedule Message Btn
@@ -256,7 +265,7 @@ export const CONFIG = {
     },
     {
       type: 'waitForTime',
-      value: '5000',
+      value: '500',
     },
     {
       type: 'waitForSelector',
@@ -264,7 +273,7 @@ export const CONFIG = {
     },
     {
       type: 'waitForTime',
-      value: '5000',
+      value: '500',
     },
     {
       type: 'clickUntil',
