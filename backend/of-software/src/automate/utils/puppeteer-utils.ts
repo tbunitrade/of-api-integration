@@ -219,11 +219,22 @@ export const CONFIG = {
       type: 'waitForTime',
       value: '500',
     },
+    // {
+    //   type: 'type',
+    //   key: 'message',
+    //   selector:
+    //     '.b-chats__conversations-content #make_post_form #new_post_text_input',
+    //   value: '$value',
+    // },
+
     {
-      type: 'type',
+      type: 'click',
+      value:
+        '.b-chats__conversations-content #make_post_form .b-text-editor.js-text-editor p',
+    },
+    {
+      type: 'keyboardType',
       key: 'message',
-      selector:
-        '.b-chats__conversations-content #make_post_form #new_post_text_input',
       value: '$value',
     },
     {
