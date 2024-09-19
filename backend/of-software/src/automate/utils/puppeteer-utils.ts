@@ -247,12 +247,12 @@ export const CONFIG = {
     },
     {
       type: 'waitForTime',
-      value: '50000',
+      value: '500',
     },
     {
       type: 'clickForValue',
-      selector: '#ModalAlert button',
       value: 'Yes',
+      selector: '.modal-dialog-centered footer button',
     },
     {
       type: 'waitForTime',
