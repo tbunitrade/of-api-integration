@@ -247,7 +247,7 @@ export const CONFIG = {
     },
     {
       type: 'waitForTime',
-      value: '500',
+      value: '5000',
     },
     {
       type: 'click', // Schedule Message Btn
@@ -256,11 +256,15 @@ export const CONFIG = {
     },
     {
       type: 'waitForTime',
-      value: '500',
+      value: '5000',
     },
     {
       type: 'waitForSelector',
       value: '.b-make-post__datepicker-input .vdatetime-popup',
+    },
+    {
+      type: 'waitForTime',
+      value: '5000',
     },
     {
       type: 'clickUntil',
