@@ -1455,7 +1455,16 @@ export class PuppeteerUtil {
         try {
           const alertEle = await this._page.$('#ModalAlert button');
           if (alertEle) {
-            await alertEle.click();
+            const actualValue = await this._page.evaluate((selector) => {
+              const div = document.querySelector(selector);
+              return div ? div.textContent.trim() : null;
+            }, '#ModalAlert .dialog_message');
+            const shouldClickModal = actualValue
+              .toLowerCase()
+              .includes('No microphone detected'.toLowerCase());
+            if (shouldClickModal) {
+              await alertEle.click();
+            }
           }
         } catch (err) {}
         await this._page.waitForTimeout(1000);
