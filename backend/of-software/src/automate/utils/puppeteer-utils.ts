@@ -1401,7 +1401,7 @@ export class PuppeteerUtil {
               (target) =>
                 target.type() === 'page' && target.url().endsWith('popup.html'),
             );
-            const popupPage = popupTarget.asPage();
+            const popupPage = popupTarget.page();
             await popupPage.waitForSelector('#id_pro_setting', {
               visible: true,
             });
