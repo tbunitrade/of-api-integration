@@ -1414,6 +1414,7 @@ export class PuppeteerUtil {
 
             console.log('HHHHHERERE1');
             const popupPage = await popupTarget.asPage();
+            console.log('Popuppage: ', popupPage);
             // await popupPage.waitForSelector('#id_pro_setting', {
             //   timeout: 1000,
             // });
