@@ -1413,7 +1413,7 @@ export class PuppeteerUtil {
             } catch (error) {}
 
             console.log('HHHHHERERE1');
-            const popupPage = popupTarget.asPage();
+            const popupPage = await popupTarget.asPage();
             // await popupPage.waitForSelector('#id_pro_setting', {
             //   timeout: 1000,
             // });
