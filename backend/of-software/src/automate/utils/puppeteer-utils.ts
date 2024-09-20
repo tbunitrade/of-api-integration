@@ -1404,7 +1404,6 @@ export class PuppeteerUtil {
               popupTarget = await this._browser.waitForTarget(
                 // Assumes that there is only one page with the URL ending with popup.html and that is the popup created by the extension.
                 (target) => {
-                  console.log('TargetURL: ', target.type(), target.url());
                   return (
                     target.type() === 'page' &&
                     target.url().includes('popup.html')
@@ -1415,17 +1414,17 @@ export class PuppeteerUtil {
 
             console.log('HHHHHERERE1');
             const popupPage = popupTarget.asPage();
-            await popupPage.waitForSelector('#id_pro_setting', {
-              timeout: 1000,
-            });
-            await popupPage.click('#id_pro_setting');
-            await popupPage.waitForTimeout(1000);
-            // await popupPage.evaluate(() => {
-            //   const btn: any = document.querySelector('#id_pro_setting');
-            //   if (btn) {
-            //     btn.click();
-            //   }
+            // await popupPage.waitForSelector('#id_pro_setting', {
+            //   timeout: 1000,
             // });
+            // await popupPage.click('#id_pro_setting');
+            // await popupPage.waitForTimeout(1000);
+            await popupPage.evaluate(() => {
+              const btn: any = document.querySelector('#id_pro_setting');
+              if (btn) {
+                btn.click();
+              }
+            });
           } catch (error) {
             console.log('Error: ', error);
           }
