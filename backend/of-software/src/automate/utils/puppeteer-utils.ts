@@ -1407,7 +1407,7 @@ export class PuppeteerUtil {
                   console.log('TargetURL: ', target.type(), target.url());
                   return (
                     target.type() === 'page' &&
-                    target.url().endsWith('popup.html')
+                    target.url().includes('popup.html')
                   );
                 },
               );
