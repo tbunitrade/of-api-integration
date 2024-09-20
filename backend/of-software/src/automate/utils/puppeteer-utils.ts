@@ -1173,7 +1173,9 @@ export class PuppeteerUtil {
   }
 
   async waitFor(miliSec: number) {
-    await this._page.waitForTimeout(miliSec);
+    try {
+      await this._page.waitForTimeout(miliSec);
+    } catch (error) {}
   }
 
   async login(cfg?: any) {
@@ -1511,7 +1513,10 @@ export class PuppeteerUtil {
             }
           }
         } catch (err) {}
-        await this._page.waitForTimeout(1000);
+        try {
+          await this._page.waitForTimeout(1000);
+        } catch (err) {}
+
         const step = workConfig[i];
         console.log(`Step: ${step.type}, Value: ${step.value}`);
         switch (step.type) {
@@ -1641,7 +1646,10 @@ export class PuppeteerUtil {
             // );
             break;
           case 'waitForTime':
-            await this._page.waitForTimeout(step.value);
+            try {
+              await this._page.waitForTimeout(step.value);
+            } catch (error) {}
+
             break;
           case 'clickUntil':
             while (1) {
