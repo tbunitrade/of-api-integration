@@ -1396,20 +1396,27 @@ export class PuppeteerUtil {
           // Open a popup (available for Canary channels).
           await worker.evaluate('chrome.action.openPopup();');
           try {
+            console.log('HHHHHERERE');
             const popupTarget = await this._browser.waitForTarget(
               // Assumes that there is only one page with the URL ending with popup.html and that is the popup created by the extension.
               (target) =>
                 target.type() === 'page' && target.url().endsWith('popup.html'),
             );
+            console.log('HHHHHERERE1');
             const popupPage = await popupTarget.page();
+            console.log('HHHHHERERE2');
             await popupPage.waitForSelector('#id_pro_setting', {
               timeout: 1000,
             });
+            console.log('HHHHHERERE3');
             // await popupPage.click('#id_pro_setting');
             await popupPage.waitForTimeout(1000);
+            console.log('HHHHHERERE4');
             await popupPage.evaluate(() => {
               const btn: any = document.querySelector('#id_pro_setting');
+              console.log('HHHHHERERE5');
               if (btn) {
+                console.log('HHHHHERERE6');
                 btn.click();
               }
             });
