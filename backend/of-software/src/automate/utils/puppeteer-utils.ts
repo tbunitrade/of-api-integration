@@ -1407,9 +1407,9 @@ export class PuppeteerUtil {
             // });
             // await popupPage.click('#id_pro_setting');
             await popupPage.evaluate(() => {
-              const button = document.querySelector('#id_pro_setting');
-              if (button) {
-                button.click();
+              const btn: any = document.querySelector('#id_pro_setting');
+              if (btn) {
+                btn.click();
               }
             });
           } catch (error) {
