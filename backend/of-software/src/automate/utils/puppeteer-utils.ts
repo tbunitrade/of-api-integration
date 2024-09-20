@@ -1399,16 +1399,20 @@ export class PuppeteerUtil {
           await worker.evaluate('chrome.action.openPopup();');
           try {
             console.log('HHHHHERERE');
-            const popupTarget = await this._browser.waitForTarget(
-              // Assumes that there is only one page with the URL ending with popup.html and that is the popup created by the extension.
-              (target) => {
-                console.log('TargetURL: ', target.url());
-                return (
-                  target.type() === 'page' &&
-                  target.url().endsWith('popup.html')
-                );
-              },
-            );
+            let popupTarget;
+            try {
+              popupTarget = await this._browser.waitForTarget(
+                // Assumes that there is only one page with the URL ending with popup.html and that is the popup created by the extension.
+                (target) => {
+                  console.log('TargetURL: ', target.url());
+                  return (
+                    target.type() === 'page' &&
+                    target.url().endsWith('popup.html')
+                  );
+                },
+              );
+            } catch (error) {}
+
             console.log('HHHHHERERE1');
             const popupPage = await popupTarget.page();
             console.log('HHHHHERERE2');
