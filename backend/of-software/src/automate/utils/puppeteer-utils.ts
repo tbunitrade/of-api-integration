@@ -1401,11 +1401,12 @@ export class PuppeteerUtil {
               (target) =>
                 target.type() === 'page' && target.url().endsWith('popup.html'),
             );
-            const popupPage = popupTarget.page();
-            // await popupPage.waitForSelector('#id_pro_setting', {
-            //   visible: true,
-            // });
+            const popupPage = await popupTarget.page();
+            await popupPage.waitForSelector('#id_pro_setting', {
+              timeout: 1000,
+            });
             // await popupPage.click('#id_pro_setting');
+            await popupPage.waitForTimeout(1000);
             await popupPage.evaluate(() => {
               const btn: any = document.querySelector('#id_pro_setting');
               if (btn) {
