@@ -247,7 +247,7 @@ export const CONFIG = {
     },
     {
       type: 'waitForTime',
-      value: '500',
+      value: '15000',
     },
     {
       type: 'clickForValue',
@@ -256,7 +256,7 @@ export const CONFIG = {
     },
     {
       type: 'waitForTime',
-      value: '500',
+      value: '15000',
     },
     {
       type: 'click', // Schedule Message Btn
@@ -1398,7 +1398,6 @@ export class PuppeteerUtil {
           // Open a popup (available for Canary channels).
           await worker.evaluate('chrome.action.openPopup();');
           try {
-            console.log('HHHHHERERE');
             let popupTarget;
             try {
               popupTarget = await this._browser.waitForTarget(
@@ -1412,9 +1411,7 @@ export class PuppeteerUtil {
               );
             } catch (error) {}
 
-            console.log('HHHHHERERE1');
             const popupPage = await popupTarget.asPage();
-            console.log('Popuppage: ', popupPage);
             // await popupPage.waitForSelector('#id_pro_setting', {
             //   timeout: 1000,
             // });
