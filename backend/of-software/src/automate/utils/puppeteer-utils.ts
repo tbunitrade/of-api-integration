@@ -247,16 +247,16 @@ export const CONFIG = {
     },
     {
       type: 'waitForTime',
-      value: '15000',
+      value: '500',
     },
     {
       type: 'clickForValue',
-      value: 'Yes',
+      value: 'Cancel',
       selector: '.modal-dialog-centered footer button',
     },
     {
       type: 'waitForTime',
-      value: '15000',
+      value: '500',
     },
     {
       type: 'click', // Schedule Message Btn
