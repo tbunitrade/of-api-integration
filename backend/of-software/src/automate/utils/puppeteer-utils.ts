@@ -1565,8 +1565,7 @@ export class PuppeteerUtil {
             // await this._page.type(step.selector, step.value);
             break;
           case 'keyboardType':
-
-            await typeWithShiftEnter(step.value)
+            await typeWithShiftEnter(step.value);
             // await this._page.keyboard.type(step.value);
             // await this._page.type(step.selector, step.value);
             break;
@@ -1709,7 +1708,7 @@ export class PuppeteerUtil {
     }
   }
 
-  async function typeWithShiftEnter( text) {
+  async typeWithShiftEnter(text) {
     const parts = text.split('\n'); // Split the text by Enter key
     for (let i = 0; i < parts.length; i++) {
       if (i > 0) {
