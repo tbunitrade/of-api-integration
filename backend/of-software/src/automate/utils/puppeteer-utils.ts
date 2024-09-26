@@ -1565,7 +1565,9 @@ export class PuppeteerUtil {
             // await this._page.type(step.selector, step.value);
             break;
           case 'keyboardType':
-            await this._page.keyboard.type(step.value);
+
+            await typeWithShiftEnter(step.value)
+            // await this._page.keyboard.type(step.value);
             // await this._page.type(step.selector, step.value);
             break;
           case 'clickForValue':
@@ -1706,6 +1708,21 @@ export class PuppeteerUtil {
       }
     }
   }
+
+  async function typeWithShiftEnter( text) {
+    const parts = text.split('\n'); // Split the text by Enter key
+    for (let i = 0; i < parts.length; i++) {
+      if (i > 0) {
+        // Simulate Shift + Enter for newline
+        await this._page.keyboard.down('Shift');
+        await this._page.keyboard.press('Enter');
+        await this._page.keyboard.up('Shift');
+      }
+      // Type the current part of the text
+      await this._page.keyboard.type(parts[i]);
+    }
+  }
+
   async reload() {
     try {
       await this._page.reload();
