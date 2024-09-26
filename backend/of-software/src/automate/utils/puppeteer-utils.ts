@@ -1565,7 +1565,7 @@ export class PuppeteerUtil {
             // await this._page.type(step.selector, step.value);
             break;
           case 'keyboardType':
-            await typeWithShiftEnter(step.value);
+            await this.typeWithShiftEnter(step.value);
             // await this._page.keyboard.type(step.value);
             // await this._page.type(step.selector, step.value);
             break;
