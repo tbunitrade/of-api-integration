@@ -70,6 +70,8 @@ export const CONFIG = {
     pageSelector: '.login_content',
     submitSelector: '.b-loginreg__form button[type="submit"]',
     disabledSelector: '.b-loginreg__form button[type="submit"]:disabled',
+    proKey: 'sk_64961ef6-f351-4f00-8ffa-774c11236b72',
+    proKeySelector: 'input[placeholder="INPUT PRO KEY"]',
   },
   work: [
     {
@@ -1417,12 +1419,32 @@ export class PuppeteerUtil {
             // });
             // await popupPage.click('#id_pro_setting');
             // await popupPage.waitForTimeout(1000);
-            await popupPage.evaluate(() => {
-              const btn: any = document.querySelector('#id_pro_setting');
-              if (btn) {
-                btn.click();
-              }
-            });
+            if (_config.proKey) {
+              await popupPage.evaluate(() => {
+                const btn: any = document.querySelector('#id_pro_setting');
+                if (btn) {
+                  btn.click();
+                }
+              });
+              await popupPage.waitForSelector(_config.proKeySelector, {
+                timeout: 10000,
+              });
+              await popupPage.type(_config.proKeySelector, _config.proKey);
+              await this._page.evaluate(
+                ({ selector, value }) => {
+                  const elements = Array.from(
+                    document.querySelectorAll(selector),
+                  );
+                  const eles = elements.filter((ele) =>
+                    ele.textContent.toLowerCase().includes(value.toLowerCase()),
+                  );
+                  if (eles.length > 0) {
+                    eles[0].click();
+                  }
+                },
+                { selector: 'button', value: 'Bind' },
+              );
+            }
           } catch (error) {
             console.log('Error: ', error);
           }
