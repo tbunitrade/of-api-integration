@@ -43,6 +43,9 @@ export class ModelPlatform {
   @Column({ default: 0 })
   number_of_days: number;
 
+  @Column({ default: null, nullable: true })
+  prokey: string;
+
   @Column({ default: null })
   scheduled_date: string;
 

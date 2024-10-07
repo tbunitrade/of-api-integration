@@ -1,6 +1,6 @@
 <script setup>
 import { computed, onMounted, reactive, ref, watch } from "vue";
-import { mdiMessage } from '@mdi/js';
+import { mdiKey, mdiMessage } from '@mdi/js';
 import { useNotification } from "@kyvg/vue3-notification";
 import { ClipLoader } from "vue3-spinner";
 import { useGroupStore, useModelPlatformStore, useModelStore, usePlatformStore, useCronStore } from '@/stores';
@@ -70,8 +70,14 @@ const selectedPlatform = computed(() => platformStore.selectedPlatform);
 const filesInStore = computed(() => fileStore.files);
 const groupsInStore = computed(() => groupStore.groups || []);
 const messagesInStore = computed(() => messageStore.messages || []);
-const numberOfDays = computed(() => {
+const numberOfDays = computed(() =>
+{
   return modelPlatformStore.model_platforms.length > 0 ? modelPlatformStore.model_platforms[0].number_of_days : 0;
+});
+
+const proKey = computed(() =>
+{
+  return modelPlatformStore.model_platforms.length > 0 ? modelPlatformStore.model_platforms[0].prokey : '';
 });
 
 const deleteId = ref(0);
@@ -96,29 +102,37 @@ const mrules = computed(() => (
 ));
 const $mv = useVuelidate(mrules, selectedMessage);
 
-const fetchData = async () => {
-  try {
+const fetchData = async () =>
+{
+  try
+  {
     const params = {
       model_id: selectedModel.value.id,
       platform_id: selectedPlatform.value.id,
     };
     await groupStore.getAllGroups(params);
     await modelPlatformStore.getModelPlatform(params.model_id, params.platform_id);
-  } catch (error) {
+  } catch (error)
+  {
     console.error('Error fetching data:', error);
 
   }
 };
 
 
-const onSubmitGroup = async () => {
-  if (selectedGroup.value.isEdit) {
+const onSubmitGroup = async () =>
+{
+  if (selectedGroup.value.isEdit)
+  {
 
     const result = $gv.value.$validate();
-    result.then(async (res) => {
-      if (res) {
+    result.then(async (res) =>
+    {
+      if (res)
+      {
         const add_result = await groupStore.updateGroup(selectedGroup.value);
-        if (add_result) {
+        if (add_result)
+        {
           notify({
             title: "Success",
             type: "success",
@@ -131,12 +145,16 @@ const onSubmitGroup = async () => {
       }
     });
 
-  } else {
+  } else
+  {
     const result = $gv.value.$validate();
-    result.then(async (res) => {
-      if (res) {
+    result.then(async (res) =>
+    {
+      if (res)
+      {
 
-        if (!selectedModel.value || !selectedPlatform.value) {
+        if (!selectedModel.value || !selectedPlatform.value)
+        {
           notify({
             title: "Warning",
             type: "error",
@@ -145,7 +163,8 @@ const onSubmitGroup = async () => {
           return;
         }
         const add_result = await groupStore.addGroup({ ...selectedGroup.value, model_id: selectedModel.value.id, platform_id: selectedPlatform.value.id });
-        if (add_result) {
+        if (add_result)
+        {
           notify({
             title: "Success",
             type: "success",
@@ -156,26 +175,32 @@ const onSubmitGroup = async () => {
 
         isGroupModalActive.value = false;
       }
-    }).catch((err) => {
+    }).catch((err) =>
+    {
       console.log(err);
     });
   }
 
 };
 
-const onSubmitMessage = async () => {
-  if (selectedMessage.value.isEdit) {
+const onSubmitMessage = async () =>
+{
+  if (selectedMessage.value.isEdit)
+  {
 
     const result = $mv.value.$validate();
-    result.then(async (res) => {
-      if (res) {
+    result.then(async (res) =>
+    {
+      if (res)
+      {
         selectedMessage.value = {
           ...selectedMessage.value,
           ...(fileStore.files.length > 0 ? { content: fileStore.files.join(','), content_attached: true } : { content_attached: false }),
           message_time: selectedMessage.value.message_time.split(":").slice(0, 2).join(":")
         };
         const add_result = await messageStore.updateMessage(selectedMessage.value);
-        if (add_result) {
+        if (add_result)
+        {
           notify({
             title: "Success",
             type: "success",
@@ -189,16 +214,20 @@ const onSubmitMessage = async () => {
       }
     });
 
-  } else {
+  } else
+  {
     const result = $mv.value.$validate();
-    result.then(async (res) => {
-      if (res) {
+    result.then(async (res) =>
+    {
+      if (res)
+      {
         selectedMessage.value = {
           ...selectedMessage.value,
           ...(fileStore.files.length > 0 ? { content: fileStore.files.join(','), content_attached: true } : { content_attached: false }),
         };
         const add_result = await messageStore.addMessage(selectedMessage.value);
-        if (add_result) {
+        if (add_result)
+        {
           notify({
             title: "Success",
             type: "success",
@@ -210,28 +239,34 @@ const onSubmitMessage = async () => {
 
         isMessageModalActive.value = false;
       }
-    }).catch((err) => {
+    }).catch((err) =>
+    {
       console.log(err);
     });
     fileStore.files = [];
   }
 
 };
-const onClickEditGroup = (id) => {
+const onClickEditGroup = (id) =>
+{
   const group = (groupStore.groups || []).filter((it) => it.id === id);
 
-  if (group) {
+  if (group)
+  {
     selectedGroup.value = { ...group[0], isEdit: true };
     isGroupModalActive.value = true;
   }
 
 };
-const onClickEditMessage = (id) => {
+const onClickEditMessage = (id) =>
+{
   const message = messagesInStore.value.filter((it) => it.id === id);
-  if (message) {
+  if (message)
+  {
     selectedMessage.value = { group_id: selectedGroup.value.id, ...message[0], isEdit: true };
     isMessageModalActive.value = true;
-    if (selectedMessage.value.content?.length > 0) {
+    if (selectedMessage.value.content?.length > 0)
+    {
       const _files = selectedMessage.value.content.split(',');
       fileStore.setFiles(_files);
     }
@@ -239,26 +274,33 @@ const onClickEditMessage = (id) => {
 
 };
 
-const onChangeSearchString = (e) => {
-  if (selectedModel.value && e.target) {
+const onChangeSearchString = (e) =>
+{
+  if (selectedModel.value && e.target)
+  {
     messageStore.getMessagesByModel(selectedModel.value.id, e.target.value);
   }
 };
 
-const onViewGroup = (id) => {
+const onViewGroup = (id) =>
+{
 
   selectedGroup.value = groupStore.groups.filter((it) => it.id === id)[0];
   messageStore.getMessagesByGroup(id);
   isGroupSelected.value = true;
 };
-const onCancelAddMessage = () => {
+const onCancelAddMessage = () =>
+{
   selectedGroup.value = { name: "" };
   isGroupSelected.value = false;
 };
-const onClickMessageList = (tabNumber) => {
+const onClickMessageList = (tabNumber) =>
+{
   // If show messages
-  if (tabNumber === 2) {
-    if (selectedModel.value) {
+  if (tabNumber === 2)
+  {
+    if (selectedModel.value)
+    {
       messageStore.getMessagesByModel(selectedModel.value.id);
     }
   }
@@ -267,7 +309,8 @@ const onClickMessageList = (tabNumber) => {
 
 };
 
-const onAddNewGroup = () => {
+const onAddNewGroup = () =>
+{
   selectedGroup.value = {
     isEdit: false,
     name: "",
@@ -276,7 +319,8 @@ const onAddNewGroup = () => {
   isGroupModalActive.value = true;
 };
 
-const onAddNewMessage = () => {
+const onAddNewMessage = () =>
+{
   selectedMessage.value = {
     isEdit: false,
     name: "",
@@ -298,20 +342,24 @@ const onAddNewMessage = () => {
   isMessageModalActive.value = true;
 };
 
-const onDeleteGroup = async (id) => {
+const onDeleteGroup = async (id) =>
+{
   isModalDangerActive.value = true;
   deleteId.value = id;
   deleteCallback.value = confirmDeleteGroup;
 
 };
-const onDeleteMessage = async (id) => {
+const onDeleteMessage = async (id) =>
+{
   isModalDangerActive.value = true;
   deleteId.value = id;
   deleteCallback.value = confirmDeleteMessage;
 };
-const confirmDeleteGroup = async () => {
+const confirmDeleteGroup = async () =>
+{
   const del_result = await groupStore.deleteGroup(deleteId.value);
-  if (del_result) {
+  if (del_result)
+  {
     notify({
       title: "Success",
       type: "success",
@@ -322,9 +370,11 @@ const confirmDeleteGroup = async () => {
   }
 };
 
-const confirmDeleteMessage = async () => {
+const confirmDeleteMessage = async () =>
+{
   const del_result = await messageStore.deleteMessage(deleteId.value);
-  if (del_result) {
+  if (del_result)
+  {
     notify({
       title: "Success",
       type: "success",
@@ -334,15 +384,20 @@ const confirmDeleteMessage = async () => {
     isModalDangerActive.value = false;
   }
 };
-const confirmDelete = async () => {
-  if (deleteCallback.value) {
+const confirmDelete = async () =>
+{
+  if (deleteCallback.value)
+  {
     deleteCallback.value();
-  } else {
+  } else
+  {
     console.log("No delete function assigned yet");
   }
 };
-const onChangeNumberOfDays = async (e) => {
-  if (modelPlatformStore.model_platforms && modelPlatformStore.model_platforms.length > 0) {
+const onChangeNumberOfDays = async (e) =>
+{
+  if (modelPlatformStore.model_platforms && modelPlatformStore.model_platforms.length > 0)
+  {
     const data = modelPlatformStore.model_platforms[0];
     data.number_of_days = parseInt(e.target.value);
     await modelPlatformStore.updateModelPlatform(data);
@@ -351,7 +406,8 @@ const onChangeNumberOfDays = async (e) => {
       type: "success",
       text: "Number_Of_Days updated successfully",
     });
-  } else {
+  } else
+  {
     notify({
       title: "Error",
       type: "error",
@@ -361,15 +417,42 @@ const onChangeNumberOfDays = async (e) => {
 
 };
 
-const onChangeStatus = async (e) => {
+const onChangeProKey = async (e) =>
+{
+  if (modelPlatformStore.model_platforms && modelPlatformStore.model_platforms.length > 0)
+  {
+    const data = modelPlatformStore.model_platforms[0];
+    data.prokey = e.target.value;
+    await modelPlatformStore.updateModelPlatform(data);
+    notify({
+      title: "Success",
+      type: "success",
+      text: "Prokey updated successfully",
+    });
+  } else
+  {
+    notify({
+      title: "Error",
+      type: "error",
+      text: "ProKey relation is not found",
+    });
+  }
+
+};
+
+
+const onChangeStatus = async (e) =>
+{
   bulkUpdateStatus(checkedGroups.value, e.target.value);
 };
 
-const onCheckGroups = (ids) => {
+const onCheckGroups = (ids) =>
+{
   checkedGroups.value = ids;
 };
 
-const bulkUpdateStatus = async (ids, value) => {
+const bulkUpdateStatus = async (ids, value) =>
+{
   const data = {
     groupIds: ids,
     status: value
@@ -377,7 +460,8 @@ const bulkUpdateStatus = async (ids, value) => {
   groupStore.bulkUpdateStatus(data);
 };
 
-const onStartCronJobManually = async () => {
+const onStartCronJobManually = async () =>
+{
   cronStore.triggerCronJobManually();
   notify({
     title: "Success",
@@ -386,8 +470,10 @@ const onStartCronJobManually = async () => {
   });
 };
 
-onMounted(() => {
-  if (!selectedModel.value || !selectedPlatform.value) {
+onMounted(() =>
+{
+  if (!selectedModel.value || !selectedPlatform.value)
+  {
     notify({
       title: "Warning",
       type: "error",
@@ -398,24 +484,32 @@ onMounted(() => {
   fetchData();
 
 });
-watch(isMessageModalActive, () => {
-  if (!isMessageModalActive.value) {
+watch(isMessageModalActive, () =>
+{
+  if (!isMessageModalActive.value)
+  {
     fileStore.files = [];
   }
 });
-watch(filesInStore, () => {
-  if (selectedMessage.value.name.length > 0 && filesInStore.value.length > 0) {
+watch(filesInStore, () =>
+{
+  if (selectedMessage.value.name.length > 0 && filesInStore.value.length > 0)
+  {
     selectedMessage.value.content = filesInStore.value.join(',');
   }
 
 });
-watch(groupsInStore, () => {
-  if (selectedMessage.value.name.length > 0 && selectedGroup.value.name.length > 0) {
+watch(groupsInStore, () =>
+{
+  if (selectedMessage.value.name.length > 0 && selectedGroup.value.name.length > 0)
+  {
     selectedMessage.value = groupsInStore.value.filter(it => it.id === selectedGroup.value.id)[0];
   }
-  if (selectedGroup.value.name.length > 0) {
+  if (selectedGroup.value.name.length > 0)
+  {
     selectedGroup.value = groupsInStore.value.filter(it => it.id === selectedGroup.value.id)[0];
-    if (!selectedGroup.value?.name) {
+    if (!selectedGroup.value?.name)
+    {
       selectedGroup.value = {
         name: ""
       };
@@ -431,6 +525,12 @@ watch(groupsInStore, () => {
       <SectionTitleLineWithButton :icon="mdiMessage" title="Message" main>
         <BaseButton label="Trigger CronJob Manually" color="info" rounded small @click="onStartCronJobManually" />
       </SectionTitleLineWithButton>
+      <CardBox class="mb-6">
+        <div>
+          <label class="block text-sm">Captcha Solver Pro key</label>
+          <input class="w-full rounded" type="text" :value="proKey" @change="onChangeProKey" />
+        </div>
+      </CardBox>
       <CardBox class="mb-6">
         <TabContainer :tabs="tabs" @click-tab="onClickMessageList">
           <template #default="{ openTab }">
@@ -497,7 +597,7 @@ watch(groupsInStore, () => {
             <FormField label="Name" help="Required. Group name">
               <FormControl v-model="selectedGroup.name" name="name" required autocomplete="name" />
             </FormField>
-            <div class="mb-3" v-for="error of  $gv.name.$errors " :key="error.$uid">
+            <div class="mb-3" v-for="error of $gv.name.$errors " :key="error.$uid">
               <div :class="[colorsText['danger'], 'text-sm']">{{ error.$message }}</div>
             </div>
           </div>
@@ -521,7 +621,7 @@ watch(groupsInStore, () => {
                         :options="groupStore.groups.map(it => ({ id: it.id, label: it.name }))"
                         placeholder="Select a Group" />
                     </FormField>
-                    <div class="mb-3" v-for="error of  $mv.group_id.$errors " :key="error.$uid">
+                    <div class="mb-3" v-for="error of $mv.group_id.$errors " :key="error.$uid">
                       <div :class="[colorsText['danger'], 'text-sm']">{{ error.$message }}</div>
                     </div>
                   </div>
@@ -530,7 +630,7 @@ watch(groupsInStore, () => {
                       <FormControl v-model="selectedMessage.name" name="name" required autocomplete="name"
                         placeholder="Input Message Name" />
                     </FormField>
-                    <div class="mb-3" v-for="error of  $mv.name.$errors " :key="error.$uid">
+                    <div class="mb-3" v-for="error of $mv.name.$errors " :key="error.$uid">
                       <div :class="[colorsText['danger'], 'text-sm']">{{ error.$message }}</div>
                     </div>
                   </div>
@@ -541,7 +641,7 @@ watch(groupsInStore, () => {
                     <FormControl v-model="selectedMessage.message" name="message" required autocomplete="message"
                       type="textarea" placeholder="This message will be posted on Platform" />
                   </FormField>
-                  <div class="mb-3" v-for="error of  $mv.message.$errors " :key="error.$uid">
+                  <div class="mb-3" v-for="error of $mv.message.$errors " :key="error.$uid">
                     <div :class="[colorsText['danger'], 'text-sm']">{{ error.$message }}</div>
                   </div>
                 </div>
@@ -553,7 +653,7 @@ watch(groupsInStore, () => {
                       <FormControl v-model="selectedMessage.message_time" name="message_time" required type="time"
                         autocomplete="message_time" />
                     </FormField>
-                    <div class="mb-3" v-for="error of  $mv.message_time.$errors " :key="error.$uid">
+                    <div class="mb-3" v-for="error of $mv.message_time.$errors " :key="error.$uid">
                       <div :class="[colorsText['danger'], 'text-sm']">{{ error.$message }}</div>
                     </div>
                   </div>
@@ -562,7 +662,7 @@ watch(groupsInStore, () => {
                       <FormControl v-model="selectedMessage.message_list" name="message_list" required
                         autocomplete="message_list" placeholder="(separate with commas)" />
                     </FormField>
-                    <div class="mb-3" v-for="error of  $mv.message_list.$errors " :key="error.$uid">
+                    <div class="mb-3" v-for="error of $mv.message_list.$errors " :key="error.$uid">
                       <div :class="[colorsText['danger'], 'text-sm']">{{ error.$message }}</div>
                     </div>
                   </div>

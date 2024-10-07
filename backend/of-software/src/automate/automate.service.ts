@@ -101,6 +101,14 @@ export class AutomateService {
               '$value',
               data.password,
             );
+            if (data.prokey) {
+              _config.login_captcha_extension.proKey =
+                _config.login_captcha_extension.proKey.replace(
+                  '$value',
+                  data.prokey,
+                );
+            }
+
             isLoggedIn = await puppeteerUtil.login(_config);
             loginTried++;
             if (loginTried >= 3) await puppeteerUtil.waitFor(200000);

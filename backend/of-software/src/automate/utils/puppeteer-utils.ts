@@ -70,7 +70,7 @@ export const CONFIG = {
     pageSelector: '.login_content',
     submitSelector: '.b-loginreg__form button[type="submit"]',
     disabledSelector: '.b-loginreg__form button[type="submit"]:disabled',
-    proKey: 'sk_64961ef6-f351-4f00-8ffa-774c11236b72',
+    proKey: '$value',
     proKeySelector: 'input[placeholder="INPUT PRO KEY"]',
   },
   work: [
