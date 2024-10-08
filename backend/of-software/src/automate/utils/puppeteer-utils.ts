@@ -155,7 +155,7 @@ export const CONFIG = {
         {
           type: 'click',
           value:
-            '#ModalUsersLists___BV_modal_content_ form.b-search-users-form button.b-search-users-form__clear',
+            '#content .b-chats__conversations-list form.b-search-users-form button.b-search-users-form__clear',
         },
       ],
     },
@@ -242,7 +242,7 @@ export const CONFIG = {
         {
           type: 'click',
           value:
-            '#ModalUsersLists___BV_modal_content_ form.b-search-users-form button.b-search-users-form__clear',
+            '#content .b-chats__conversations-list form.b-search-users-form button.b-search-users-form__clear',
         },
       ],
     },
