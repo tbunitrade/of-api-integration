@@ -180,8 +180,7 @@ export const CONFIG = {
     {
       type: 'clickForValue',
       value: 'exclude',
-      selector:
-        '.b-chats__conversations.m-create-chat .b-chats__conversations-list .b-tabs__nav.m-tabs-default li',
+      selector: '#content .b-chats__conversations-list .b-tabs__nav li',
     },
     {
       type: 'waitForTime',
