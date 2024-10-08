@@ -21,4 +21,7 @@ export class User {
 
   @Column({ select: false })
   password: string;
+
+  @Column({ nullable: true })
+  prokey: string;
 }

@@ -41,13 +41,35 @@ const useAuthStore = defineStore({
         const response = await axios.get(`${import.meta.env.VITE_APP_ROOT_API}/user/me`)
 
         if (response.data) {
-          const { user } = response.data
+          const user = response.data
           this.user = user
         }
 
         return response.data
       } catch (error) {
         console.error('Login failed:', error)
+        throw error
+      }
+    },
+
+    async updateMe(data) {
+      try {
+        this.isLoading = true
+        const response = await axios.patch(
+          `${import.meta.env.VITE_APP_ROOT_API}/user/${data.id}`,
+          data
+        )
+
+        if (response.data) {
+          const user = response.data
+          this.user = user
+        }
+        this.isLoading = false
+        return response.data
+      } catch (error) {
+        this.isLoading = false
+        console.error('Platforms add failed:', error)
+
         throw error
       }
     },
@@ -75,10 +97,13 @@ const useAuthStore = defineStore({
 
     async changePassword(data) {
       try {
-        const response = await axios.post(`${import.meta.env.VITE_APP_ROOT_API}/auth/change-password`, data)
+        const response = await axios.post(
+          `${import.meta.env.VITE_APP_ROOT_API}/auth/change-password`,
+          data
+        )
 
         if (response.data) {
-          return true;
+          return true
         }
 
         return response.data

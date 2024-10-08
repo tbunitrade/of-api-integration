@@ -86,55 +86,61 @@ export const CONFIG = {
       type: 'waitForSelector',
       value: '#content .b-chats .b-chats__conversations-list',
     },
-    {
-      type: 'waitForSelector', // New message => Send To => View All
-      value:
-        '.b-chats__conversations.m-create-chat .b-chats__conversations-list .b-content-filter button.m-link',
-    },
-    {
-      type: 'click', // New message => Send To => View All
-      value:
-        '.b-chats__conversations.m-create-chat .b-chats__conversations-list .b-content-filter button.m-link',
-    },
+    // {
+    //   type: 'waitForSelector', // New message => Send To => View All
+    //   value:
+    //     '.b-chats__conversations.m-create-chat .b-chats__conversations-list .b-content-filter button.m-link',
+    // },
+    // {
+    //   type: 'click', // New message => Send To => View All
+    //   value:
+    //     '.b-chats__conversations.m-create-chat .b-chats__conversations-list .b-content-filter button.m-link',
+    // },
     {
       type: 'waitForTime',
       value: '500',
     },
-    {
-      type: 'waitForSelector',
-      value:
-        '#ModalUsersLists___BV_modal_content_ #ModalUsersLists___BV_modal_body_ .m-collections-list',
-    },
+    // {
+    //   type: 'waitForSelector',
+    //   value:
+    //     '#ModalUsersLists___BV_modal_content_ #ModalUsersLists___BV_modal_body_ .m-collections-list',
+    // },
     {
       type: 'loop',
       key: 'message_list',
       value: '$value',
       childs: [
-        {
-          type: 'waitForSelector',
-          value:
-            '#ModalUsersLists___BV_modal_content_ #ModalUsersLists___BV_modal_header_ .modal-header__btns-group button',
-        },
-        {
-          type: 'click',
-          value:
-            '#ModalUsersLists___BV_modal_content_ #ModalUsersLists___BV_modal_header_ .modal-header__btns-group button',
-        },
-        {
-          type: 'waitForTime',
-          value: '500',
-        },
+        // {
+        //   type: 'waitForSelector',
+        //   value:
+        //     '#ModalUsersLists___BV_modal_content_ #ModalUsersLists___BV_modal_header_ .modal-header__btns-group button',
+        // },
+        // {
+        //   type: 'click',
+        //   value:
+        //     '#ModalUsersLists___BV_modal_content_ #ModalUsersLists___BV_modal_header_ .modal-header__btns-group button',
+        // },
+        // {
+        //   type: 'waitForTime',
+        //   value: '500',
+        // },
+        // {
+        //   type: 'type',
+        //   value: '$value',
+        //   selector:
+        //     '#ModalUsersLists___BV_modal_content_ #ModalUsersLists___BV_modal_header_ .b-chat__search-input',
+        // },
         {
           type: 'type',
           value: '$value',
           selector:
-            '#ModalUsersLists___BV_modal_content_ #ModalUsersLists___BV_modal_header_ .b-chat__search-input',
+            '#content .b-chats__conversations-list form.b-search-users-form .b-search-users-form__input',
         },
-        {
-          type: 'click',
-          value:
-            '#ModalUsersLists___BV_modal_content_ #ModalUsersLists___BV_modal_header_ .modal-header__btns-group button',
-        },
+        // {
+        //   type: 'click',
+        //   value:
+        //     '#ModalUsersLists___BV_modal_content_ #ModalUsersLists___BV_modal_header_ .modal-header__btns-group button',
+        // },
 
         {
           type: 'waitForTime',
@@ -144,65 +150,84 @@ export const CONFIG = {
           type: 'clickForValue',
           value: '$value',
           selector:
-            '#ModalUsersLists___BV_modal_content_ #ModalUsersLists___BV_modal_body_ .b-rows-lists .b-rows-lists__item__label',
+            '#content .b-chats__conversations-list .b-available-users__list .b-rows-lists .b-available-users__item.b-chats__item',
+        },
+        {
+          type: 'click',
+          value:
+            '#ModalUsersLists___BV_modal_content_ form.b-search-users-form button.b-search-users-form__clear',
         },
       ],
     },
 
-    {
-      type: 'click',
-      value:
-        '#ModalUsersLists___BV_modal_content_ #ModalUsersLists___BV_modal_footer_ button',
-    },
+    // {
+    //   type: 'click',
+    //   value:
+    //     '#ModalUsersLists___BV_modal_content_ #ModalUsersLists___BV_modal_footer_ button',
+    // },
+
     {
       type: 'waitForTime',
       value: '500',
     },
 
+    // {
+    //   type: 'click', // New message => Exclude => View All
+    //   value:
+    //     '.b-chats__conversations.m-create-chat .b-chats__conversations-list .b-chats__collapse-section button.m-link',
+    // },
+
     {
-      type: 'click', // New message => Exclude => View All
-      value:
-        '.b-chats__conversations.m-create-chat .b-chats__conversations-list .b-chats__collapse-section button.m-link',
+      type: 'clickForValue',
+      value: 'exclude',
+      selector:
+        '.b-chats__conversations.m-create-chat .b-chats__conversations-list .b-tabs__nav.m-tabs-default li',
     },
     {
       type: 'waitForTime',
       value: '500',
     },
-    {
-      type: 'waitForSelector',
-      value:
-        '#ModalUsersLists___BV_modal_content_ #ModalUsersLists___BV_modal_body_ .m-collections-list',
-    },
+    // {
+    //   type: 'waitForSelector',
+    //   value:
+    //     '#ModalUsersLists___BV_modal_content_ #ModalUsersLists___BV_modal_body_ .m-collections-list',
+    // },
     {
       type: 'loop',
       key: 'message_exclude_list',
       value: '$value',
       childs: [
-        {
-          type: 'waitForSelector',
-          value:
-            '#ModalUsersLists___BV_modal_content_ #ModalUsersLists___BV_modal_header_ .modal-header__btns-group button',
-        },
-        {
-          type: 'click',
-          value:
-            '#ModalUsersLists___BV_modal_content_ #ModalUsersLists___BV_modal_header_ .modal-header__btns-group button',
-        },
-        {
-          type: 'waitForTime',
-          value: '500',
-        },
+        // {
+        //   type: 'waitForSelector',
+        //   value:
+        //     '#ModalUsersLists___BV_modal_content_ #ModalUsersLists___BV_modal_header_ .modal-header__btns-group button',
+        // },
+        // {
+        //   type: 'click',
+        //   value:
+        //     '#ModalUsersLists___BV_modal_content_ #ModalUsersLists___BV_modal_header_ .modal-header__btns-group button',
+        // },
+        // {
+        //   type: 'waitForTime',
+        //   value: '500',
+        // },
+        // {
+        //   type: 'type',
+        //   value: '$value',
+        //   selector:
+        //     '#ModalUsersLists___BV_modal_content_ #ModalUsersLists___BV_modal_header_ .b-chat__search-input',
+        // },
         {
           type: 'type',
           value: '$value',
           selector:
-            '#ModalUsersLists___BV_modal_content_ #ModalUsersLists___BV_modal_header_ .b-chat__search-input',
+            '#content .b-chats__conversations-list form.b-search-users-form .b-search-users-form__input',
         },
-        {
-          type: 'click',
-          value:
-            '#ModalUsersLists___BV_modal_content_ #ModalUsersLists___BV_modal_header_ .modal-header__btns-group button',
-        },
+        // {
+        //   type: 'click',
+        //   value:
+        //     '#ModalUsersLists___BV_modal_content_ #ModalUsersLists___BV_modal_header_ .modal-header__btns-group button',
+        // },
 
         {
           type: 'waitForTime',
@@ -212,15 +237,20 @@ export const CONFIG = {
           type: 'clickForValue',
           value: '$value',
           selector:
-            '#ModalUsersLists___BV_modal_content_ #ModalUsersLists___BV_modal_body_ .b-rows-lists .b-rows-lists__item__label',
+            '#content .b-chats__conversations-list .b-available-users__list .b-rows-lists .b-available-users__item.b-chats__item',
+        },
+        {
+          type: 'click',
+          value:
+            '#ModalUsersLists___BV_modal_content_ form.b-search-users-form button.b-search-users-form__clear',
         },
       ],
     },
-    {
-      type: 'click',
-      value:
-        '#ModalUsersLists___BV_modal_content_ #ModalUsersLists___BV_modal_footer_ button',
-    },
+    // {
+    //   type: 'click',
+    //   value:
+    //     '#ModalUsersLists___BV_modal_content_ #ModalUsersLists___BV_modal_footer_ button',
+    // },
     {
       type: 'waitForTime',
       value: '500',

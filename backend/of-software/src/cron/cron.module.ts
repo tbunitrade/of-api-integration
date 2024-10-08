@@ -16,10 +16,13 @@ import { PostFile } from 'src/postFile/post_file.entity';
 import { PostCaption } from 'src/postCaption/post_caption.entity';
 import { PostTimeService } from 'src/postTime/post_time.service';
 import { PostTime } from 'src/postTime/post_time.entity';
+import { UserService } from 'src/user/user.service';
+import { User } from 'src/user/user.entity';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([
+      User,
       ModelPlatform,
       Group,
       Post,
@@ -32,6 +35,7 @@ import { PostTime } from 'src/postTime/post_time.entity';
   ],
   controllers: [CronController],
   providers: [
+    UserService,
     CronService,
     ModelPlatformService,
     GroupService,

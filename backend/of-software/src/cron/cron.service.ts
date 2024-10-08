@@ -69,9 +69,9 @@ export class CronService {
   /*
    * Manual Start Cron Job
    */
-  async manualStart(isPost = false) {
+  async manualStart(isPost = false, user?: any) {
     //this is test line and need to be deleted
-    const startJob = this.createCron(isPost, true);
+    const startJob = this.createCron(isPost, true, user);
     await startJob();
     return true;
   }
@@ -135,7 +135,7 @@ export class CronService {
    * @param createCronDto
    * @returns
    */
-  private createCron = (isPost = false, manualStart = false) => {
+  private createCron = (isPost = false, manualStart = false, user?: any) => {
     const MaxOpeningBrowserCount = 1;
     return async () => {
       try {
@@ -164,6 +164,9 @@ export class CronService {
             return groupIds.indexOf(a.id) - groupIds.indexOf(b.id);
           });
           const data: any = mp;
+          if (user && user.prokey) {
+            data.prokey = user.prokey;
+          }
           data.groupsWithMessages = groupsWithMessages;
           const result = await this.automateService.startMessage(
             data,
@@ -204,13 +207,16 @@ export class CronService {
           if (!postWithTimesAndCaptions.post_times) return;
           if (!postWithTimesAndCaptions.captions) return;
 
-          const data = {
+          const data: any = {
             modelPlatform: mp,
             postWithTimesAndCaptions,
             scheduledDate: postWithTimesAndCaptions.scheduled_date,
             numberOfDays: postWithTimesAndCaptions.number_of_days,
             postFiles,
           };
+          if (user && user.prokey) {
+            data.prokey = user.prokey;
+          }
           const result = await this.automateService.startPost(
             data,
             manualStart,

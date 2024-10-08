@@ -3,7 +3,7 @@ import { computed, onMounted, reactive, ref, watch } from "vue";
 import { mdiKey, mdiMessage } from '@mdi/js';
 import { useNotification } from "@kyvg/vue3-notification";
 import { ClipLoader } from "vue3-spinner";
-import { useGroupStore, useModelPlatformStore, useModelStore, usePlatformStore, useCronStore } from '@/stores';
+import { useGroupStore, useModelPlatformStore, useModelStore, usePlatformStore, useCronStore, useAuthStore } from '@/stores';
 import SectionMain from '@/components/SectionMain.vue';
 import CardBox from '@/components/CardBox.vue';
 import LayoutAuthenticated from '@/layouts/LayoutAuthenticated.vue';
@@ -36,6 +36,7 @@ const fileStore = useFileStore();
 const modelStore = useModelStore();
 const platformStore = usePlatformStore();
 const modelPlatformStore = useModelPlatformStore();
+const authStore = useAuthStore();
 const cronStore = useCronStore();
 const { notify } = useNotification();
 
@@ -77,7 +78,7 @@ const numberOfDays = computed(() =>
 
 const proKey = computed(() =>
 {
-  return modelPlatformStore.model_platforms.length > 0 ? modelPlatformStore.model_platforms[0].prokey : '';
+  return authStore.user ? authStore.user.prokey : '';
 });
 
 const deleteId = ref(0);
@@ -110,6 +111,7 @@ const fetchData = async () =>
       model_id: selectedModel.value.id,
       platform_id: selectedPlatform.value.id,
     };
+    await authStore.getMyProfile();
     await groupStore.getAllGroups(params);
     await modelPlatformStore.getModelPlatform(params.model_id, params.platform_id);
   } catch (error)
@@ -419,11 +421,12 @@ const onChangeNumberOfDays = async (e) =>
 
 const onChangeProKey = async (e) =>
 {
-  if (modelPlatformStore.model_platforms && modelPlatformStore.model_platforms.length > 0)
+  console.log("authStore.user: ", authStore.user);
+  if (authStore.user)
   {
-    const data = modelPlatformStore.model_platforms[0];
+    const data = authStore.user;
     data.prokey = e.target.value;
-    await modelPlatformStore.updateModelPlatform(data);
+    await authStore.updateMe(data);
     notify({
       title: "Success",
       type: "success",
@@ -482,6 +485,7 @@ onMounted(() =>
     return;
   }
   fetchData();
+
 
 });
 watch(isMessageModalActive, () =>
