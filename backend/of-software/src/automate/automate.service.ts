@@ -311,7 +311,7 @@ export class AutomateService {
 
             const postCaptions = postWithTimesAndCaptions.captions || [];
 
-            if (!postCaptions) return;
+            // if (!postCaptions) return;
             // if (postCaptions.length === 0) return;
             let captionIndexes = Array.from(
               { length: postCaptions.length || 0 },
