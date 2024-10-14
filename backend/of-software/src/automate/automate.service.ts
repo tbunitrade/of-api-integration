@@ -234,6 +234,7 @@ export class AutomateService {
       postFiles: PostFile[];
       scheduledDate: string;
       numberOfDays: number;
+      prokey: string;
     },
     manualStart = false,
   ) {
@@ -244,6 +245,7 @@ export class AutomateService {
       postFiles,
       scheduledDate,
       numberOfDays,
+      prokey,
     } = allData;
     try {
       // const isExpired = checkIfExpired(
@@ -288,6 +290,14 @@ export class AutomateService {
               '$value',
               modelPlatform.password,
             );
+
+            if (prokey) {
+              _config.login_captcha_extension.proKey =
+                _config.login_captcha_extension.proKey.replace(
+                  '$value',
+                  prokey,
+                );
+            }
             isLoggedIn = await puppeteerUtil.login(_config);
             loginTried++;
             if (loginTried >= 3) await puppeteerUtil.waitFor(300000);
@@ -299,10 +309,10 @@ export class AutomateService {
             //start cron
             console.log('----------------- Start cron -----------------');
 
-            const postCaptions = postWithTimesAndCaptions.captions;
+            const postCaptions = postWithTimesAndCaptions.captions || [];
 
             if (!postCaptions) return;
-            if (postCaptions.length === 0) return;
+            // if (postCaptions.length === 0) return;
             let captionIndexes = Array.from(
               { length: postCaptions.length || 0 },
               (_, i) => i,
@@ -352,9 +362,17 @@ export class AutomateService {
                   const randNumber = getRandomNumber(fileIndexes.length ?? 0);
                   const postFile = postFiles[fileIndexes[randNumber]]?.url;
                   fileIndexes.splice(randNumber, 1);
-                  const randNC = getRandomNumber(captionIndexes.length ?? 0);
-                  const postCaption = postCaptions[captionIndexes[randNC]];
-                  captionIndexes.splice(randNC, 1);
+                  let postCaption = {
+                    caption: null,
+                  };
+                  if (postCaptions.length === 0) {
+                    postCaption.caption = '';
+                  } else {
+                    const randNC = getRandomNumber(captionIndexes.length ?? 0);
+                    postCaption = postCaptions[captionIndexes[randNC]];
+                    captionIndexes.splice(randNC, 1);
+                  }
+
                   const msgData = {
                     content: postFile,
                     message: postCaption.caption,
