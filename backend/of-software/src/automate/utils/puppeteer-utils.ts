@@ -150,7 +150,7 @@ export const CONFIG = {
           type: 'clickForValue',
           value: '$value',
           selector:
-            '#content .b-chats__conversations-list .b-available-users__list .b-rows-lists .b-available-users__item.b-chats__item',
+            '#content .b-chats__conversations-list .b-available-users__list .b-rows-lists label.b-chats__item',
         },
         {
           type: 'click',
@@ -236,7 +236,7 @@ export const CONFIG = {
           type: 'clickForValue',
           value: '$value',
           selector:
-            '#content .b-chats__conversations-list .b-available-users__list .b-rows-lists .b-available-users__item.b-chats__item',
+            '#content .b-chats__conversations-list .b-available-users__list .b-rows-lists label.b-chats__item',
         },
         {
           type: 'click',
