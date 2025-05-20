@@ -2,8 +2,9 @@
 import { defineStore } from 'pinia'
 import axios from '../plugin/axios'
 
-const useAuthStore = defineStore({
-  id: 'auth',
+const useAuthStore = defineStore(
+  'auth',
+  {
   state: () => ({
     isLoading: false,
     isLoggedIn: false,
@@ -14,6 +15,7 @@ const useAuthStore = defineStore({
     async login({ email, password }) {
       try {
         this.isLoading = true
+        console.log("API URL :", `${import.meta.env.VITE_APP_ROOT_API}/auth/login`)
         const response = await axios.post(`${import.meta.env.VITE_APP_ROOT_API}/auth/login`, {
           email: email,
           password: password

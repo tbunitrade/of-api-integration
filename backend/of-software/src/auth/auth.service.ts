@@ -1,7 +1,7 @@
 // auth.service.ts
 
 import { Injectable, UnauthorizedException } from '@nestjs/common';
-import * as bcrypt from 'bcrypt';
+import * as bcrypt from 'bcryptjs';
 import { JwtPayload } from '../interfaces/jwt-payload.interface';
 import { UserService } from '../user/user.service'; // Adjust the path based on your project structure
 import { User } from '../user/user.entity'; // Adjust the path based on your project structure

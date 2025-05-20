@@ -67,23 +67,55 @@ const usePostFileStore = defineStore({
     async deleteFile(file, id) {
       try {
         this.isLoading = true
-        const response = await axios.delete(
-          `${import.meta.env.VITE_APP_ROOT_API}/post_file/${id}`
-        )
+        const response = await axios.delete(`${import.meta.env.VITE_APP_ROOT_API}/post_file/${id}`)
         if (response.data) {
-          const fileDeleteResponse = await axios.get(
-            `${import.meta.env.VITE_APP_ROOT_API}/upload/delete?file=${file}`
-          )
-          if (fileDeleteResponse.data) {
-            this.post_files = this.post_files.filter((it) => it.id !== id)
-          }
+          //const fileDeleteResponse = await axios.get(`${import.meta.env.VITE_APP_ROOT_API}/upload/delete?file=${file}`)
+          //if (fileDeleteResponse.data) {
+          this.post_files = this.post_files.filter((it) => it.id !== id)
+          //this.post_files = this.post_files.filter((it) => it.url !== file)
+
+          //}
         }
-        this.isLoading = false
+        //this.isLoading = false
         return response.data
       } catch (err) {
         console.error('File delete failed: ', err)
         this.isLoading = false
         throw err
+      } finally {
+        this.isLoading = false;
+      }
+    },
+    async deleteMany(ids) {
+      try {
+        this.isLoading = true;
+
+        // 1. Удалить записи из post_file
+        const response = await axios.post(`${import.meta.env.VITE_APP_ROOT_API}/post_file/delete-many`, { ids });
+
+        if (response.data?.success) {
+          // 2. Получить URL-ы удаляемых файлов
+          //const filesToDelete = this.post_files.filter((file) => ids.includes(file.id));
+
+          // 3. Удалить физические файлы
+          // for (const file of filesToDelete) {
+          //   try {
+          //     await axios.get(`${import.meta.env.VITE_APP_ROOT_API}/upload/delete?file=${file.url}`);
+          //   } catch (e) {
+          //     console.warn(`⚠️ Ошибка при удалении файла: ${file.url}`, e);
+          //   }
+          // }
+
+          // 4. Удалить из состояния
+          this.post_files = this.post_files.filter((file) => !ids.includes(file.id));
+        }
+
+        return true;
+      } catch (err) {
+        console.error('❌ deleteManyFiles failed:', err);
+        return false;
+      } finally {
+        this.isLoading = false;
       }
     }
   }

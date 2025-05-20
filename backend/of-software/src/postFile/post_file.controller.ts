@@ -13,6 +13,7 @@ import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { PostFileService } from './post_file.service';
 import { PostFile } from './post_file.entity';
 import { PostFileDto } from 'src/dtos/post-file.dto';
+import { DeleteManyDto } from 'src/dtos/delete-many.dto';
 
 @Controller('post_file')
 @ApiTags('post_file')
@@ -67,14 +68,31 @@ export class PostFileController {
     }
   }
 
+  @Post('delete-many')
+  @ApiBearerAuth('jwt')
+  @UseGuards(JwtAuthGuard)
+  //async deleteMany(@Body('ids') ids: number[]) {
+  async deleteMany(@Body( new ValidationPipe()) dto: DeleteManyDto) {
+    try {
+      const result = await this.postFileService.deleteMany(dto.ids);
+      console.log('delete-many-img result:', result);
+      return { success: true, deleted: result };
+    } catch (error) {
+      console.log('delete-many-img error:', error);
+      throw error;
+    }
+  }
+
   @Delete(':id')
   @ApiBearerAuth('jwt')
   @UseGuards(JwtAuthGuard)
-  async deletePostFile(@Param('id') id: number): Promise<PostFile> {
+  async deletePostFile(@Param('id') id: number): Promise<{ id: number; url: string; deleted: boolean }> {
     try {
       const result = await this.postFileService.deletePostFile(id);
+      console.log('deletePostFile', result);
       return result;
     } catch (error) {
+      console.log('deletePostFile', error);
       throw error;
     }
   }

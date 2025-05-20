@@ -129,4 +129,17 @@ export class PostCaptionController {
       throw error;
     }
   }
+
+  @Post('delete-many')
+  @ApiBearerAuth('jwt')
+  @UseGuards(JwtAuthGuard)
+  async deleteMany(@Body('ids') ids: number[]) {
+    try {
+      const result = await this.postCaptionService.deleteMany(ids);
+      return { success: true, delete: result };
+    } catch (error) {
+      console.log('deleteMany Error');
+      throw error;
+    }
+  }
 }

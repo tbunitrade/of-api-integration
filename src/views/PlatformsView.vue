@@ -156,7 +156,7 @@ onMounted(() => {
       </CardBox>
 
       <CardBoxModal v-model="isModalActive" title="Platform" :buttonLabel="selectedPlatform.isEdit ? 'Update' : '+ Add'"
-        hasCancel="true" @confirm="onSubmit">
+        :hasCancel="true" @confirm="onSubmit">
 
         <CardBox is-form>
           <div>

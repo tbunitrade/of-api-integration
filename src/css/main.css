@@ -2,6 +2,10 @@
 @import 'tailwind/_components.css';
 @import 'tailwind/_utilities.css';
 
+/*@tailwind base;*/
+/*@tailwind components;*/
+/*@tailwind utilities;*/
+
 @import '_checkbox-radio-switch.css';
 @import '_progress.css';
 @import '_scrollbars.css';
@@ -9,3 +13,4 @@
 
 @import 'styles/_basic.css';
 @import 'styles/_white.css';
+@import 'safelist.css';

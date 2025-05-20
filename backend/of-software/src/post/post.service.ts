@@ -39,9 +39,14 @@ export class PostService {
     post_id: number,
   ): Promise<Post> {
     const options: FindOneOptions<Post> = {
-      where: { model_platform_id: post_id },
+      //where: { model_platform_id: post_id },
+      // ✅ теперь ищем по post.id, а не model_platform_id
+      where: { id: post_id },
       relations: ['post_times', 'captions'],
     };
+
+    console.log(`[POST-SERVICE] Looking for Post with id=${post_id}`)
+
     return await this.postRepository.findOne(options);
   }
 

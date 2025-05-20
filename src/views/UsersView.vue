@@ -181,7 +181,7 @@ onMounted(() => {
 
 
       <CardBoxModal v-model="isModalActive" title="User" :buttonLabel="selectedUser.isEdit ? 'Update' : '+ Add'"
-        hasCancel="true" @confirm="onSubmit">
+        :hasCancel="true" @confirm="onSubmit">
 
         <CardBox is-form>
           <div class="grid grid-cols-2 lg:grid-cols-2 gap-6">

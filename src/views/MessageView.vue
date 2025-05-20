@@ -594,7 +594,7 @@ watch(groupsInStore, () =>
       </CardBox>
 
       <CardBoxModal v-model="isGroupModalActive" title="Group" :buttonLabel="selectedGroup?.isEdit ? 'Update' : '+ Add'"
-        hasCancel="true" @confirm="onSubmitGroup">
+        :hasCancel="true" @confirm="onSubmitGroup">
 
         <CardBox is-form>
           <div>
@@ -612,7 +612,7 @@ watch(groupsInStore, () =>
 
       <CardBoxModal v-model="isMessageModalActive" title="Message"
         size="xxl:!w-11/12 xl:!w-11/12 md:w-4/5 lg:w-4/5 w-4/5"
-        :buttonLabel="selectedMessage.isEdit ? 'Update' : 'Save'" hasCancel="true" @confirm="onSubmitMessage">
+        :buttonLabel="selectedMessage.isEdit ? 'Update' : 'Save'" :hasCancel="true" @confirm="onSubmitMessage">
 
         <CardBox is-form>
           <div class="flex flex-col">

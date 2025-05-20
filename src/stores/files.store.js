@@ -1,6 +1,10 @@
 // files.store.js
+//для сообщений, работает в MessageView.vue
+// (возможно чат или файл-менеджер не по постам)
+
 import { defineStore } from 'pinia'
 import axios from '../plugin/axios'
+import {error} from "simple-vue-validator/src/templates";
 
 const useFileStore = defineStore({
   id: 'file',

@@ -69,13 +69,13 @@ const deleteFile = async (file) => {
     notify({
       title: "Success",
       type: "success",
-      text: "File deleted successfully",
+      text: "ImageVideoUpload File deleted successfully",
     });
   } else {
     notify({
       title: "Error",
       type: "error",
-      text: "File delete error",
+      text: "ImageVideoUpload file delete error",
     });
   }
 };
@@ -92,7 +92,7 @@ const processFiles = async (selectedFiles) => {
     notify({
       title: "Success",
       type: "success",
-      text: "File uploaded successfully",
+      text: "ImageVideoUpload file uploaded successfully",
     });
   }
 };

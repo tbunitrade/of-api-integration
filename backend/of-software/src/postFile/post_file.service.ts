@@ -5,8 +5,13 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { FindOneOptions, Repository } from 'typeorm';
+import { In } from 'typeorm'; // 👈 как просил — отдельная строка
+
 import { PostFile } from './post_file.entity';
 import { PostFileDto } from 'src/dtos/post-file.dto';
+
+import * as fs from 'fs/promises';
+import * as path from 'path';
 
 @Injectable()
 export class PostFileService {
@@ -53,46 +58,103 @@ export class PostFileService {
   }
 
   async create(postFile: PostFileDto): Promise<PostFile> {
-    // try {
     const { post_id, url } = postFile;
-    // const urls = Array.isArray(url) ? url : [url];
-    // const postFileEntities: PostFileDto[] = [];
-    // urls.map(async (u: string) => {
-    //   const newPostFile: PostFileDto = {
-    //     post_id: post_id,
-    //     url: u,
-    //   };
-    //   postFileEntities.push(newPostFile);
-    // });
+
     const existingPostFile = await this.postFileRepository.findOne({
       where: { post_id, url },
     });
+
     if (existingPostFile) {
       throw new ConflictException('PostFile already exists');
     }
+
     const newPostFile = this.postFileRepository.create(postFile);
     const result = await this.postFileRepository.save(newPostFile);
-    const _result = this.findById(result.id);
-    return _result;
-    // } catch (err) {
-    //   console.error('PostFile create error', err);
-    // }
+
+    return await this.findById(result.id);
   }
 
-  async deletePostFile(id: number): Promise<PostFile> {
+  //async deletePostFile(id: number, fileUrl?: string): Promise<PostFile> {
+  async deletePostFile(id: number, fileUrl?: string): Promise<{id: number; url: string; deleted: boolean}> {
     try {
-      const options: FindOneOptions<PostFile> = {
-        where: { id },
-      };
-      const post = await this.postFileRepository.findOne(options);
+      const post = await this.postFileRepository.findOne({ where: { id } });
 
       if (!post) {
         throw new NotFoundException(`PostFile with ID ${id} not found`);
       }
 
-      return await this.postFileRepository.remove(post);
+
+      const deletedId = post.id;
+      const deletedUrl = post.url;
+      const targetUrl = fileUrl || post.url;
+
+      if (targetUrl) {
+        const filePath = path.resolve('uploads', path.basename(targetUrl));
+        try {
+          await fs.access(filePath); // check if file exists
+          await fs.unlink(filePath);
+          console.log(`🧹 Deleted file: ${filePath}`);
+        } catch (err) {
+          if (err.code === 'ENOENT') {
+            console.warn(`⚠️ File not found (already deleted?): ${filePath}`);
+          } else {
+            console.warn(`⚠️ Could not delete file: ${filePath}`, err.message);
+          }
+        }
+      }
+      //return
+      await this.postFileRepository.remove(post);
+      return {
+        id: deletedId,
+        url: deletedUrl,
+        deleted: true,
+      };
+
+      //return post; //Возвращаем ДО удаления
     } catch (err) {
       console.error('PostFile deletePostFile error', err);
+      throw err; // <-- иначе фронт может застрять в спиннере
+    }
+  }
+
+  async deleteMany(ids: number[]): Promise<number[]> {
+    try {
+      const filesToDelete = await this.postFileRepository.findBy({
+        id: In(ids),
+      });
+
+      if (!filesToDelete.length) {
+        console.warn('[⚠️ deleteMany] No files found for deletion.');
+        return [];
+      }
+
+      const deletedIds = filesToDelete.map((f) => f.id); // ✅ сохраняем ДО удаления
+
+      for (const file of filesToDelete) {
+        if (file.url) {
+          const filePath = path.resolve('uploads', path.basename(file.url)); // ⬅️ скорректируй если другой путь
+          try {
+            await fs.access(filePath); // check if file exists
+            await fs.unlink(filePath);
+            console.log(`🧹 Deleted file: ${filePath}`);
+          } catch (err) {
+            if (err.code === 'ENOENT') {
+              console.warn(`⚠️ File not found (already deleted?): ${filePath}`);
+            } else {
+              console.warn(`⚠️ Failed to delete file: ${filePath}`, err.message);
+            }
+          }
+        }
+      }
+
+      await this.postFileRepository.remove(filesToDelete);
+//      return filesToDelete.map((f) => f.id);
+      return deletedIds; // ✅ теперь возвращаем корректный список ID
+
+
+    } catch (err) {
+      console.error('❌ deleteMany error', err);
+      throw err;
     }
   }
 }

@@ -4,6 +4,8 @@ import { FindOneOptions, Repository } from 'typeorm';
 import { PostCaption } from './post_caption.entity';
 import { PostCaptionDto } from 'src/dtos/post-caption.dto';
 import { uploadFile } from 'src/utils/upload';
+import { In } from 'typeorm';
+
 import * as XLSX from 'xlsx';
 
 @Injectable()
@@ -82,6 +84,31 @@ export class PostCaptionService {
       return await this.postCaptionRepository.remove(post);
     } catch (err) {
       console.error('PostCaption deletePostCaption error', err);
+    }
+  }
+
+  async deleteMany(ids: number[]): Promise<number[]> {
+    try {
+      console.log('[🗑️ deleteMany] Incoming IDs:', ids);
+      const captionsToDelete = await this.postCaptionRepository.findBy({
+        id: In(ids),
+      });
+      console.log(
+        '[🔍 deleteMany] Found captions:',
+        captionsToDelete.map((c) => c.id),
+      );
+      if (captionsToDelete.length === 0) {
+        console.warn('[⚠️ deleteMany] No matching captions found');
+        return [];
+      }
+
+      await this.postCaptionRepository.remove(captionsToDelete);
+
+      console.log(`[✅ deleteMany] Deleted ${captionsToDelete.length} captions`);
+      return ids;
+    } catch (err) {
+      console.error('❌ deleteMany error', err);
+      throw err;
     }
   }
 

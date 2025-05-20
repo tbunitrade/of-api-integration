@@ -24,7 +24,7 @@ const authStore = useAuthStore();
 
 const form = reactive({
   email: '',
-  pass: '',
+  password: '',
   remember: true
 });
 const rules = computed(() => (
@@ -69,7 +69,7 @@ const submitForm = async () => {
 
 <template>
   <LayoutGuest>
-    <SectionFullScreen v-slot="{ cardClass }">
+    <SectionFullScreen bg="white"  v-slot="{ cardClass }">
       <CardBox title="Login" :class="cardClass" is-form @submit.prevent="submitForm">
 
         <h1 class="text-3xl text-center w-100 mb-5">Sign in</h1>

@@ -54,6 +54,7 @@ const selectedPostCaption = ref({
   isEdit: false
 });
 
+const selectedCaptionIds = ref([]);
 
 const postInStore = computed(() => postStore.post);
 const postTimesInStore = computed(() => postTimeStore.post_times);
@@ -124,7 +125,8 @@ const onViewCaptions = async () => {
     return;
   }
   isCaptionsModalActive.value = true;
-  const result = await postCaptionStore.getPostCaptions(postStore.post.id);
+  const result = await postCaptionStore.getPostCaptions(postStore.post.id, 'onViewCaptions'); // second duplication
+  // getPostCaptions был тут — теперь не нужен, вызывается в uploadFiles
 };
 
 const onAddTime = () => {
@@ -372,12 +374,13 @@ const processFiles = async (selectedFiles) => {
 
   }
 
-  const result = await postCaptionStore.uploadFiles(formData, postStore.post.id);
+  const result = await postCaptionStore.uploadFiles(formData, postStore.post.id, 'processFiles ');
   if (result) {
+    //await postCaptionStore.getPostCaptions(postStore.post.id); // <--- dublication
     notify({
       title: "Success",
       type: "success",
-      text: "File uploaded successfully",
+      text: "File with caption uploaded successfully",
     });
   }
 };
@@ -413,6 +416,36 @@ const convertTo12HourFormat = (timeStr) => {
   // Combine into the final time string
   return `${formattedHours}:${formattedMinutes}:${formattedSeconds} ${period}`;
 }
+
+const onDeleteSelectedCaptions = async () => {
+  if (selectedCaptionIds.value.length === 0) return;
+
+  try {
+    await postCaptionStore.deleteManyPostCaptions(selectedCaptionIds.value, postInStore.value.id);
+    selectedCaptionIds.value = []; // очистим выбранные после удаления
+    notify({
+      title: "Success",
+      type: "success",
+      text: "Selected captions deleted",
+    });
+  } catch (err) {
+    notify({
+      title: "Error",
+      type: "error",
+      text: "Failed to delete captions",
+    });
+  }
+};
+
+
+const toggleSelectAll = () => {
+  if (selectedCaptionIds.value.length === postCaptionsInStore.value.length) {
+    selectedCaptionIds.value = []
+  } else {
+    selectedCaptionIds.value = postCaptionsInStore.value.map(caption => caption.id)
+  }
+}
+
 
 </script>
 
@@ -477,7 +510,7 @@ const convertTo12HourFormat = (timeStr) => {
         </CardBox>
       </div>
       <CardBoxModal v-model="isContentModalActive" title="Content"
-        size="xxl:!w-11/12 xl:!w-11/12 md:w-4/5 lg:w-4/5 w-4/5" hasCancel="true" @confirm="onCloseContentModal">
+        size="xxl:!w-11/12 xl:!w-11/12 md:w-4/5 lg:w-4/5 w-4/5" :hasCancel="true" @confirm="onCloseContentModal">
         <CardBox is-form>
           <div class="flex flex-col mt-5">
             <div class="flex flex-wrap">
@@ -503,10 +536,28 @@ const convertTo12HourFormat = (timeStr) => {
       </CardBoxModal>
 
       <CardBoxModal v-model="isCaptionsModalActive" title="Captions"
-        size="xxl:!w-8/12 xl:!w-8/12 md:w-4/5 lg:w-4/5 w-4/5" :buttonLabel="'Add Caption'" hasCancel="true"
+        size="xxl:!w-8/12 xl:!w-8/12 md:w-4/5 lg:w-4/5 w-4/5" :buttonLabel="'Add Caption'" :hasCancel="true"
         @confirm="onAddCaption">
+        <div class="flex items-center mb-3">
+          <input
+            id="selectAll"
+            type="checkbox"
+            :checked="selectedCaptionIds.length === postCaptionsInStore.length"
+            @change="toggleSelectAll"
+          />
+          <label for="selectAll" class="ml-2 text-sm">Select All</label>
+        </div>
+
         <CardBox is-form>
           <div class="flex flex-col">
+            <div class="mt-4 text-right">
+              <BaseButton
+                label="Delete Selected"
+                color="danger"
+                :disabled="selectedCaptionIds.length === 0"
+                @click="onDeleteSelectedCaptions"
+              />
+            </div>
             <div class="flex mt-5 mb-1 justify-end">
               <BaseButton label="Upload" color="info" rounded small @click="openFileInput" />
               <input ref="fileInputRef" type="file" @change="handleFileChange" accept=".xlsx, .xls" hidden />
@@ -517,8 +568,14 @@ const convertTo12HourFormat = (timeStr) => {
               <label class="flex-1">Caption</label>
               <label>Actions</label>
             </div>
+
             <div class="w-full">
               <div v-for="postCaption of postCaptionsInStore" :key="postCaption.id" class="flex ">
+                <input v-model="selectedCaptionIds"
+                       :value="postCaption.id"
+                       type="checkbox"
+                       class="mr-2"
+                />
                 <pre class="w-full overflow-hidden text-ellipsis mb-3">{{ postCaption.caption }}</pre>
                 <div class="">
                   <BaseButtons type="justify-start lg:justify-end" no-wrap>
@@ -529,6 +586,14 @@ const convertTo12HourFormat = (timeStr) => {
                   </BaseButtons>
                 </div>
               </div>
+              <div class="mt-4 text-right">
+                <BaseButton
+                  label="Delete Selected"
+                  color="danger"
+                  :disabled="selectedCaptionIds.length === 0"
+                  @click="onDeleteSelectedCaptions"
+                />
+              </div>
             </div>
 
           </div>
@@ -536,7 +601,7 @@ const convertTo12HourFormat = (timeStr) => {
       </CardBoxModal>
 
       <CardBoxModal v-model="isCaptionModalActive" title="Caption" size="xxl:!w-6/12 xl:!w-6/12 md:w-3/5 lg:w-4/5 w-3/5"
-        :buttonLabel="'Save'" hasCancel="true" @confirm="onSubmitPostContent">
+        :buttonLabel="'Save'" :hasCancel="true" @confirm="onSubmitPostContent">
         <CardBox is-form>
           <div class="flex flex-col mt-5">
             <FormControl name="caption" required autocomplete="caption" type="textarea" placeholder=""

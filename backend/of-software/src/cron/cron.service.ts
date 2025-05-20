@@ -138,6 +138,15 @@ export class CronService {
   private createCron = (isPost = false, manualStart = false, user?: any) => {
     const MaxOpeningBrowserCount = 1;
     return async () => {
+      console.log(
+        `[CRON START] ${isPost ? 'Post' : 'Message'} job ${
+          manualStart ? '(manual)' : '(scheduled)'
+        } started at ${new Date().toISOString()}`,
+      );
+      console.log(
+        `[CRON] ${manualStart ? 'Manual' : 'Auto'} job started - ${isPost ? 'Post' : 'Message'} @ ${new Date().toISOString()}`,
+      );
+
       try {
         const modelPlatforms = await this.modelPlatformService.findAll(false);
         const sendAMessage = async (mp: ModelPlatform, manualStart) => {
