@@ -53,6 +53,7 @@ export class AutomateService {
   //   ],
   // };
   async startMessage(data: any = {}, manualStart = false) {
+    console.log('start function startMessage');
     let scheduledCount = 0;
     try {
       const isExpired = checkIfExpired(
@@ -113,12 +114,12 @@ export class AutomateService {
             loginTried++;
             if (loginTried >= 3) await puppeteerUtil.waitFor(200000);
           } else {
-            console.log('----------------- Login Success -----------------');
+            console.log('----------------- Login function startMessage Success -----------------');
             isLoggedIn = true;
           }
           if (isLoggedIn) {
             //start cron
-            console.log('----------------- Start cron -----------------');
+            console.log('----------------- Start func startMessage cron -----------------');
             const groupsWithMessages = data.groupsWithMessages;
 
             for (let i = 0; i < groupsWithMessages.length; i++) {
@@ -257,7 +258,7 @@ export class AutomateService {
       // await testRecaptchaSolver();
       // return;
       // Test recaptcha v2 enterprise End
-
+      console.log('start function startPost');
       const puppeteerUtil = new PuppeteerUtil();
       puppeteerUtil.initialize();
       puppeteerUtil.setConfig();
@@ -302,12 +303,12 @@ export class AutomateService {
             loginTried++;
             if (loginTried >= 3) await puppeteerUtil.waitFor(300000);
           } else {
-            console.log('----------------- Login Success -----------------');
+            console.log('----------------- Login function startPost Success -----------------');
             isLoggedIn = true;
           }
           if (isLoggedIn) {
             //start cron
-            console.log('----------------- Start cron -----------------');
+            console.log('----------------- Start function startPost cron -----------------');
 
             const postCaptions = postWithTimesAndCaptions.captions || [];
 
