@@ -1025,6 +1025,7 @@ export class PuppeteerUtil {
   private _page;
   private _config;
   private _isclosed;
+  private headless: boolean = false;
 
   constructor() {
     this._puppeteer = null;
@@ -1032,6 +1033,8 @@ export class PuppeteerUtil {
     this._page = null;
     this._config = null;
     this._isclosed = false;
+    // Перед созданием браузера логируем, какой у нас DISPLAY
+    console.log('▶ PuppeteerUtil.constructor: DISPLAY=', process.env.DISPLAY || '(undefined)');
   }
 
   initialize() {
@@ -1042,12 +1045,14 @@ export class PuppeteerUtil {
   setConfig(_config?: any) {
     this._config = _config || { ...CONFIG };
   }
-  async openBrowser(headless = false) {
+  async openBrowser(headless : boolean) {
     console.log('openBrowser(): headless=', headless, 'DISPLAY=', process.env.DISPLAY);
     console.log('>>> openBrowser() вызвано: headless=', headless, ' DISPLAY=', process.env.DISPLAY);
     const ext = path.resolve(__dirname, '../extensions/hcapt/0.4.1_0');
+    this.headless = headless;
+    console.log('this.headless = ',  this.headless);
     this._browser = await this._puppeteer.launch({
-      headless: headless,
+      headless:   this.headless,
       slowMo: 100,
       // args: [
       //   `--disable-extensions-except=${twoCaptchaSolverExtPath},${captchaSolverExtPath}`,
@@ -1055,8 +1060,10 @@ export class PuppeteerUtil {
       //   `--window-size=1920,1080`,
       // ],
       args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
+        `--no-sandbox`,
+        `--disable-gpu`,
+        `--single-process`,
+        `--disable-setuid-sandbox`,
         `--disable-extensions-except=${ext}`,
         `--load-extension=${ext}`,
         `--window-size=1920,1080`,
