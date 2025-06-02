@@ -1036,7 +1036,7 @@ export class PuppeteerUtil {
     this._config = null;
     this._isclosed = true;
     // Перед созданием браузера логируем, какой у нас DISPLAY
-    console.log('▶ PuppeteerUtil.constructor: DISPLAY=', process.env.HEADLESS_MODE || '(undefined)');
+    console.log('▶ PuppeteerUtil.constructor: HEADLESS_MODE=', process.env.HEADLESS_MODE || '(undefined)');
   }
 
   initialize() {
@@ -1047,22 +1047,22 @@ export class PuppeteerUtil {
   setConfig(_config?: any) {
     this._config = _config || { ...CONFIG };
   }
-  async openBrowser(headless : boolean) {
-    console.log('openBrowser(): headless=', headless, 'DISPLAY=', process.env.HEADLESS_MODE);
-    console.log('>>> openBrowser() вызвано: headless=', headless, ' DISPLAY=', process.env.HEADLESS_MODE);
-    const ext = path.resolve(__dirname, '../extensions/hcapt/0.4.1_0');
-    const envValue = (process.env.HEADLESS_MODE || 'true').toLowerCase().trim();
-    headless = envValue === 'false' || envValue === '0' ? false : true;
+  async openBrowser() {
+    // 1) Определяем headless из .env
+    const raw = (process.env.HEADLESS_MODE || 'true').toLowerCase().trim();
+    const headless = raw === 'false' || raw === '0' ? false : true;
     this.headless = headless;
-    console.log('this.headless = ',  this.headless);
+    console.log(`>>> openBrowser(): HEADLESS_MODE="${process.env.HEADLESS_MODE}", headless=${this.headless}`);
+
+    // 2) Определяем путь к бинарнику из .env или дефолт
+    const exePath = process.env.PUPPETEER_EXECUTABLE_PATH?.trim() || executablePath();
+    console.log(`>>> openBrowser(): executablePath="${exePath}"`);
+
+    // 3) подключаем нашу капчу
+    const ext = path.resolve(__dirname, '../extensions/hcapt/0.4.1_0');
     this._browser = await this._puppeteer.launch({
-      headless:   this.headless,
+      headless:  this.headless,
       slowMo: 100,
-      // args: [
-      //   `--disable-extensions-except=${twoCaptchaSolverExtPath},${captchaSolverExtPath}`,
-      //   `--load-extension=${twoCaptchaSolverExtPath},${captchaSolverExtPath}`,
-      //   `--window-size=1920,1080`,
-      // ],
       args: [
         `--no-sandbox`,
         `--disable-gpu`,
@@ -1072,7 +1072,8 @@ export class PuppeteerUtil {
         `--load-extension=${ext}`,
         `--window-size=1920,1080`,
       ],
-      executablePath: executablePath(),
+      //executablePath: executablePath(),
+      executablePath: exePath,
     });
     console.log('>>> Puppeteer запустил браузер, PID=', this._browser.process().pid);
     this._browser.on('disconnected', () => {
