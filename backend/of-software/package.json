@@ -8,7 +8,7 @@
   "scripts": {
     "build": "nest build && npm run postbuild",
     "postbuild": "npm run copy:extensions && npm run ensure:crondir",
-    "copy:extensions": "cp -r \"$PWD/extensions\" \"$PWD/dist/extensions\"",
+    "copy:extensions": "mkdir -p \"$PWD/dist/extensions\" && cp -r \"$PWD/extensions/hcapt\" \"$PWD/dist/extensions/hcapt\"",
     "ensure:crondir": "mkdir -p \"$PWD/dist/.cron-data\"",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
