@@ -1072,8 +1072,8 @@ export class PuppeteerUtil {
         `--load-extension=${ext}`,
         `--window-size=1920,1080`,
       ],
-      //executablePath: executablePath(),
-      executablePath: exePath,
+      executablePath: executablePath(),
+      //executablePath: exePath,
     });
     console.log('>>> Puppeteer запустил браузер, PID=', this._browser.process().pid);
     this._browser.on('disconnected', () => {
