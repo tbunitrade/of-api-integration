@@ -6,7 +6,10 @@
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
-    "build": "nest build",
+    "build": "nest build && npm run postbuild",
+    "postbuild": "npm run copy:extensions && npm run ensure:crondir",
+    "copy:extensions": "cp -r ./extensions ./dist",
+    "ensure:crondir": "mkdir -p ./dist/.cron-data",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
     "start:dev": "nest start --watch",
