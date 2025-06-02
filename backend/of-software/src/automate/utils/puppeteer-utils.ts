@@ -6,7 +6,8 @@ import * as path from 'path';
 import { solveRecaptcha } from './nopecha';
 import { resolveCaptcha, resolveCaptchaV3 } from './anticaptcha';
 import _fs from 'fs';
-import { RecaptchaUtil } from './recaptcha';
+//import { RecaptchaUtil } from './recaptcha';
+import { RecaptchaUtil } from '../utils/_functions/recaptcha-utils';
 import { Solver } from '2captcha-ts';
 const APIKEY = '1f98aeffff33253bdcbe8b92bc9f7d3f';
 
@@ -1217,326 +1218,541 @@ export class PuppeteerUtil {
     } catch (error) {}
   }
 
-  async login(cfg?: any) {
-    const config = cfg || this._config;
+  // async login(cfg?: any) {
+  //   const config = cfg || this._config;
+  //   try {
+  //     for (let i = 0; i < config.login_workflow.length; i++) {
+  //       const _configKey = config.login_workflow[i];
+  //       const _config = config[_configKey];
+  //       const recaptchaUtil = new RecaptchaUtil();
+  //       if (_config.isReload) {
+  //         await this.reload();
+  //       } else if (_config.isCheckPage) {
+  //         try {
+  //           await this._page.waitForTimeout(10000);
+  //           await this._page.waitForSelector(_config.pageSelector, {
+  //             timeout: 10000,
+  //           });
+  //           // if (i > 2) {
+  //           const cookieFileName =
+  //             'user_' + config.model_id + '.' + config.platform_id;
+  //           await this.saveCookieToFile(cookieFileName);
+  //           // }
+  //           await this._page.addStyleTag({
+  //             content:
+  //               'img{-webkit-filter: blur(113px);-moz-filter: blur(113px);-o-filter: blur(113px);-ms-filter: blur(113px);filter: blur(113px);  }',
+  //           });
+  //           console.log('----------------- Login async login puppeteer Success -----------------');
+  //           return true;
+  //         } catch (error) {
+  //           console.log(
+  //             `Check selector "${_config?.pageSelector}" not found on the page`,
+  //           );
+  //         }
+  //       } else if (_config.isRecaptcha) {
+  //         await this._page.waitForSelector(_config.pageSelector, {
+  //           timeout: 10000,
+  //         });
+  //         let captchaSolution: any = null;
+  //         if (_config.hasDefaultCaptcha) {
+  //           // captchaSolution = await solveRecaptcha(
+  //           //   _config.defaultCaptchaType,
+  //           //   _config.defaultCaptchaKey,
+  //           //   await this._page.url(),
+  //           // );
+  //           // const siteUrl = await this._page.url();
+  //           // captchaSolution = await resolveCaptchaV3(
+  //           //   siteUrl,
+  //           //   _config.defaultCaptchaKey,
+  //           // );
+  //           await this._page.waitForTimeout(200000);
+  //           captchaSolution = await recaptchaUtil.resolveRecaptcha2(
+  //             _config.defaultCaptchaKey,
+  //             await this._page.url(),
+  //             30,
+  //             _config.defaultCaptchaVersion,
+  //           );
+  //           if (_config.defaultCaptchaVersion === 2) {
+  //             // this is for V2
+  //             const recaptchaHandle = await this._page.$x(
+  //               '//*[@name="g-recaptcha-response"]',
+  //             );
+  //             await recaptchaHandle[0].evaluate(
+  //               (elem: any, captchaSolution: any) => {
+  //                 elem.style.display = 'block';
+  //                 elem.style.position = 'relative';
+  //                 elem.style.top = '200px';
+  //                 elem.style.left = '5px';
+  //                 elem.style.width = '70%';
+  //                 elem.style.height = '80px';
+  //                 elem.innerHTML = captchaSolution;
+  //                 return elem;
+  //               },
+  //               captchaSolution,
+  //             );
+  //             console.log('Done.');
+  //             await this._page.waitForTimeout(3000);
+  //           }
+  //           await this._page.evaluate(
+  //             ({ captchaSolution, captchaVersion }) => {
+  //               const captchaDOM = document.getElementsByClassName('m-captcha');
+  //               if (captchaDOM.length > 0) {
+  //                 const ele = captchaDOM[0];
+  //                 if (captchaVersion === 3)
+  //                   ele['__vue__']._props.data['e-recaptcha-response'] =
+  //                     captchaSolution;
+  //                 if (captchaVersion === 2)
+  //                   ele['__vue__']._props.data['ec-recaptcha-response'] =
+  //                     captchaSolution;
+  //               } else {
+  //                 console.log(
+  //                   'No elements found with the specified class name: ',
+  //                   'm-captcha',
+  //                 );
+  //               }
+  //             },
+  //             {
+  //               captchaSolution,
+  //               captchaVersion: _config.defaultCaptchaVersion,
+  //             },
+  //           );
+  //         }
+  //
+  //         const iframeHandle = await this._page.$(_config.captchaSelector);
+  //         const iframeSrc = await iframeHandle.evaluate((iframe) => iframe.src);
+  //         const iframeUrl = new URL(iframeSrc);
+  //         const urlParams = iframeUrl.searchParams;
+  //         const siteKey = urlParams.get('k');
+  //         // captchaSolution = await solveRecaptcha(
+  //         //   _config.captchaType,
+  //         //   siteKey,
+  //         //   await this._page.url(),
+  //         // );
+  //         const siteUrl = await this._page.url();
+  //         // const stoken = urlParams.get('');
+  //         //ar=1&k=6LddGoYgAAAAAHD275rVBjuOYXiofr1u4pFS5lHn&co=aHR0cHM6Ly9vbmx5ZmFucy5jb206NDQz&hl=en&v=rz4DvU-cY2JYCwHSTck0_qm-&theme=light&size=normal&badge=inline&sa=login&cb=odl8pjyrwaxr
+  //         // const additionalParams = {
+  //         //   action: 'login',
+  //         //   badge: 'inline',
+  //         //   theme: 'light',
+  //         //   ar: 1,
+  //         //   k: '6LddGoYgAAAAAHD275rVBjuOYXiofr1u4pFS5lHn',
+  //         //   co: 'aHR0cHM6Ly9vbmx5ZmFucy5jb206NDQz',
+  //         //   hl: 'en',
+  //         //   v: 'rz4DvU-cY2JYCwHSTck0_qm-',
+  //         //   size: 'normal',
+  //         //   sa: 'login',
+  //         //   cb: 'odl8pjyrwaxr',
+  //         //   s: 'aHR0cHM6Ly9vbmx5ZmFucy5jb206NDQz',
+  //         // };
+  //         // await this._page.waitForTimeout(20000);
+  //         // captchaSolution = await resolveCaptcha(siteUrl, siteKey);
+  //
+  //         // await this._page.waitForTimeout(20000);
+  //         // const res = await solver.recaptcha({
+  //         //   pageurl: siteUrl,
+  //         //   googlekey: siteKey,
+  //         // });
+  //
+  //         // console.log(res);
+  //
+  //         // captchaSolution = res.data;
+  //
+  //         await this._page.waitForTimeout(200000);
+  //         captchaSolution = await recaptchaUtil.resolveRecaptcha2(
+  //           siteKey,
+  //           await this._page.url(),
+  //           30,
+  //           _config.captchaVersion,
+  //         );
+  //
+  //         if (_config.captchaVersion === 2) {
+  //           // this is for V2
+  //           const recaptchaHandle = await this._page.$x(
+  //             '//*[@name="g-recaptcha-response"]',
+  //           );
+  //           await recaptchaHandle[0].evaluate(
+  //             (elem: any, captchaSolution: any) => {
+  //               elem.style.display = 'block';
+  //               elem.style.position = 'relative';
+  //               elem.style.top = '200px';
+  //               elem.style.left = '5px';
+  //               elem.style.width = '70%';
+  //               elem.style.height = '80px';
+  //               elem.innerHTML = captchaSolution;
+  //               return elem;
+  //             },
+  //             captchaSolution,
+  //           );
+  //           console.log('Done.');
+  //           await this._page.waitForTimeout(9000);
+  //         }
+  //         await this._page.evaluate(
+  //           ({ captchaSolution, captchaVersion }) => {
+  //             const captchaDOM = document.getElementsByClassName('m-captcha');
+  //             if (captchaDOM.length > 0) {
+  //               const ele = captchaDOM[0];
+  //               if (captchaVersion === 3)
+  //                 ele['__vue__']._props.data['e-recaptcha-response'] =
+  //                   captchaSolution;
+  //               if (captchaVersion === 2)
+  //                 ele['__vue__']._props.data['ec-recaptcha-response'] =
+  //                   captchaSolution;
+  //             } else {
+  //               console.log(
+  //                 'No elements found with the specified class name: ',
+  //                 'm-captcha',
+  //               );
+  //             }
+  //           },
+  //           { captchaSolution, captchaVersion: _config.captchaVersion },
+  //         );
+  //
+  //         //   // Click on the "Check" button to check the successful solution of the captcha.
+  //         await this._page.evaluate(
+  //           ({ submitSelector }) => {
+  //             // Replace 'your-button-selector' with the actual selector of your disabled button
+  //             const disabledButton = document.querySelector(submitSelector);
+  //
+  //             if (disabledButton) {
+  //               // Remove the 'disabled' attribute to enable the button
+  //               disabledButton.removeAttribute('disabled');
+  //             }
+  //           },
+  //           { submitSelector: _config.submitSelector },
+  //         );
+  //         await this._page.click(_config.submitSelector);
+  //       } else if (_config.isRecaptchaExtension) {
+  //         await this._page.waitForSelector(_config.pageSelector, {
+  //           timeout: 10000,
+  //         });
+  //         await this._page.bringToFront();
+  //         const workerTarget = await this._browser.waitForTarget(
+  //           // Assumes that there is only one service worker created by the extension and its URL ends with background.js.
+  //           (target) =>
+  //             target.type() === 'service_worker' &&
+  //             target.url().endsWith('background.js'),
+  //         );
+  //
+  //         const worker = await workerTarget.worker();
+  //         // Open a popup (available for Canary channels).
+  //         await worker.evaluate('chrome.action.openPopup();');
+  //         try {
+  //           let popupTarget;
+  //           try {
+  //             popupTarget = await this._browser.waitForTarget(
+  //               // Assumes that there is only one page with the URL ending with popup.html and that is the popup created by the extension.
+  //               (target) => {
+  //                 return (
+  //                   target.type() === 'page' &&
+  //                   target.url().includes('popup.html')
+  //                 );
+  //               },
+  //             );
+  //           } catch (error) {}
+  //
+  //           const popupPage = await popupTarget.asPage();
+  //           // await popupPage.waitForSelector('#id_pro_setting', {
+  //           //   timeout: 1000,
+  //           // });
+  //           // await popupPage.click('#id_pro_setting');
+  //           // await popupPage.waitForTimeout(1000);
+  //           if (_config.proKey) {
+  //             await popupPage.evaluate(() => {
+  //               const btn: any = document.querySelector('#id_pro_setting');
+  //               if (btn) {
+  //                 btn.click();
+  //               }
+  //             });
+  //             await popupPage.waitForSelector(_config.proKeySelector, {
+  //               timeout: 10000,
+  //             });
+  //             await popupPage.type(_config.proKeySelector, _config.proKey);
+  //             await this._page.evaluate(
+  //               ({ selector, value }) => {
+  //                 const elements = Array.from(
+  //                   document.querySelectorAll(selector),
+  //                 );
+  //                 const eles = elements.filter((ele) =>
+  //                   ele.textContent.toLowerCase().includes(value.toLowerCase()),
+  //                 );
+  //                 if (eles.length > 0) {
+  //                   eles[0].click();
+  //                 }
+  //               },
+  //               { selector: 'button', value: 'Bind' },
+  //             );
+  //           }
+  //         } catch (error) {
+  //           console.log('Error: ', error);
+  //         }
+  //
+  //         let isLoginBtnValid = false;
+  //         while (!isLoginBtnValid) {
+  //           await this._page.waitForTimeout(1000);
+  //           try {
+  //             const disabledBtn = await this._page.waitForSelector(
+  //               _config.disabledSelector,
+  //               { timeout: 1000 },
+  //             );
+  //             console.log('DisabledButton: ', disabledBtn);
+  //           } catch (error) {
+  //             isLoginBtnValid = true;
+  //           }
+  //         }
+  //         await this._page.waitForSelector(_config.submitSelector, {
+  //           timeout: 10000,
+  //         });
+  //         await this._page.click(_config.submitSelector);
+  //       } else {
+  //         await this._page.waitForSelector(_config.pageSelector, {
+  //           timeout: 10000,
+  //         });
+  //         await this._page.evaluate(
+  //           ({ idSelector }) => {
+  //             const ele = document.querySelector(idSelector);
+  //             ele.value = '';
+  //             ele.dispatchEvent(new Event('input', { bubbles: true })); // As this is vue website, it doens't chagne state value though we set value on input box
+  //           },
+  //           { idSelector: _config.idSelector },
+  //         );
+  //         await this._page.evaluate(
+  //           ({ passwordSelector }) => {
+  //             const ele = document.querySelector(passwordSelector);
+  //             ele.value = '';
+  //             ele.dispatchEvent(new Event('input', { bubbles: true })); // As this is vue website, it doens't chagne state value though we set value on input box
+  //           },
+  //           { passwordSelector: _config.passwordSelector },
+  //         );
+  //         await this._page.type(_config.idSelector, _config.idValue);
+  //         await this._page.type(
+  //           _config.passwordSelector,
+  //           _config.passwordValue,
+  //         );
+  //         await this._page.click(_config.submitSelector);
+  //         await this._page.waitForTimeout(5000);
+  //       }
+  //     }
+  //   } catch (error) {
+  //     console.log('Error: ', error);
+  //   }
+  //   return false;
+  // }
+
+  /**
+   * Метод login (полностью берёт все настройки из переданного cfg).
+   * Предполагает, что cfg — это ваш объект CONFIG, где есть:
+   *   login_workflow, login, reload, check_page, login_captcha, login_captcha_extension и т.п.
+   */
+  async login(cfg: any): Promise<boolean> {
+    const config = cfg;
+    const recaptchaUtil = new RecaptchaUtil();
+
     try {
       for (let i = 0; i < config.login_workflow.length; i++) {
-        const _configKey = config.login_workflow[i];
-        const _config = config[_configKey];
-        const recaptchaUtil = new RecaptchaUtil();
-        if (_config.isReload) {
-          await this.reload();
-        } else if (_config.isCheckPage) {
+        const stepKey = config.login_workflow[i];
+        const stepConf = config[stepKey] as any;
+
+        // 1) reload
+        if (stepConf.isReload) {
+          await this._page.reload({ waitUntil: 'networkidle2' });
+          continue;
+        }
+
+        // 2) check_page — проверяем, уже ли залогинены
+        if (stepConf.isCheckPage) {
           try {
             await this._page.waitForTimeout(10000);
-            await this._page.waitForSelector(_config.pageSelector, {
-              timeout: 10000,
-            });
-            // if (i > 2) {
-            const cookieFileName =
-              'user_' + config.model_id + '.' + config.platform_id;
-            await this.saveCookieToFile(cookieFileName);
-            // }
-            await this._page.addStyleTag({
-              content:
-                'img{-webkit-filter: blur(113px);-moz-filter: blur(113px);-o-filter: blur(113px);-ms-filter: blur(113px);filter: blur(113px);  }',
-            });
-            console.log('----------------- Login async login puppeteer Success -----------------');
+            await this._page.waitForSelector(stepConf.pageSelector, { timeout: 10000 });
+            console.log('----------------- Уже залогинены, выходим из login -----------------');
             return true;
-          } catch (error) {
-            console.log(
-              `Check selector "${_config?.pageSelector}" not found on the page`,
-            );
+          } catch {
+            console.log(`CheckPage: селектор "${stepConf.pageSelector}" не найден, продолжаем`);
+            continue;
           }
-        } else if (_config.isRecaptcha) {
-          await this._page.waitForSelector(_config.pageSelector, {
-            timeout: 10000,
-          });
-          let captchaSolution: any = null;
-          if (_config.hasDefaultCaptcha) {
-            // captchaSolution = await solveRecaptcha(
-            //   _config.defaultCaptchaType,
-            //   _config.defaultCaptchaKey,
-            //   await this._page.url(),
-            // );
-            // const siteUrl = await this._page.url();
-            // captchaSolution = await resolveCaptchaV3(
-            //   siteUrl,
-            //   _config.defaultCaptchaKey,
-            // );
-            await this._page.waitForTimeout(200000);
-            captchaSolution = await recaptchaUtil.resolveRecaptcha2(
-              _config.defaultCaptchaKey,
+        }
+
+        // 3) login_captcha — встроенная reCAPTCHA/Turnstile
+        if (stepConf.isRecaptcha) {
+          await this._page.waitForSelector(stepConf.pageSelector, { timeout: 10000 });
+
+          // 3.1) Решаем «DefaultCaptcha», если задано
+          if (stepConf.hasDefaultCaptcha) {
+            await this._page.waitForTimeout(2000);
+
+            const solution = await recaptchaUtil.resolveRecaptcha2(
+              stepConf.defaultCaptchaKey,
               await this._page.url(),
               30,
-              _config.defaultCaptchaVersion,
+              stepConf.defaultCaptchaVersion,
             );
-            if (_config.defaultCaptchaVersion === 2) {
-              // this is for V2
-              const recaptchaHandle = await this._page.$x(
-                '//*[@name="g-recaptcha-response"]',
-              );
-              await recaptchaHandle[0].evaluate(
-                (elem: any, captchaSolution: any) => {
-                  elem.style.display = 'block';
-                  elem.style.position = 'relative';
-                  elem.style.top = '200px';
-                  elem.style.left = '5px';
-                  elem.style.width = '70%';
-                  elem.style.height = '80px';
-                  elem.innerHTML = captchaSolution;
-                  return elem;
-                },
-                captchaSolution,
-              );
-              console.log('Done.');
+
+            if (stepConf.defaultCaptchaVersion === 2) {
+              // раскрываем скрытое textarea[name="g-recaptcha-response"]
+              const [handle] = await this._page.$x('//textarea[@name="g-recaptcha-response"]');
+              await handle.evaluate((el: any, sol: string) => {
+                el.style.display = 'block';
+                el.value = sol;
+              }, solution);
               await this._page.waitForTimeout(3000);
             }
+
+            // Пробрасываем ответ в Vue-компонент, если нужно
             await this._page.evaluate(
-              ({ captchaSolution, captchaVersion }) => {
-                const captchaDOM = document.getElementsByClassName('m-captcha');
-                if (captchaDOM.length > 0) {
-                  const ele = captchaDOM[0];
-                  if (captchaVersion === 3)
-                    ele['__vue__']._props.data['e-recaptcha-response'] =
-                      captchaSolution;
-                  if (captchaVersion === 2)
-                    ele['__vue__']._props.data['ec-recaptcha-response'] =
-                      captchaSolution;
-                } else {
-                  console.log(
-                    'No elements found with the specified class name: ',
-                    'm-captcha',
-                  );
+              ({ solution, version }) => {
+                const dom = document.getElementsByClassName('m-captcha');
+                if (dom.length > 0) {
+                  const vueComp = (dom[0] as any).__vue__;
+                  if (version === 3) vueComp._props.data['e-recaptcha-response'] = solution;
+                  if (version === 2) vueComp._props.data['ec-recaptcha-response'] = solution;
                 }
               },
-              {
-                captchaSolution,
-                captchaVersion: _config.defaultCaptchaVersion,
-              },
+              { solution, version: stepConf.defaultCaptchaVersion },
             );
           }
 
-          const iframeHandle = await this._page.$(_config.captchaSelector);
-          const iframeSrc = await iframeHandle.evaluate((iframe) => iframe.src);
-          const iframeUrl = new URL(iframeSrc);
-          const urlParams = iframeUrl.searchParams;
-          const siteKey = urlParams.get('k');
-          // captchaSolution = await solveRecaptcha(
-          //   _config.captchaType,
-          //   siteKey,
-          //   await this._page.url(),
-          // );
-          const siteUrl = await this._page.url();
-          // const stoken = urlParams.get('');
-          //ar=1&k=6LddGoYgAAAAAHD275rVBjuOYXiofr1u4pFS5lHn&co=aHR0cHM6Ly9vbmx5ZmFucy5jb206NDQz&hl=en&v=rz4DvU-cY2JYCwHSTck0_qm-&theme=light&size=normal&badge=inline&sa=login&cb=odl8pjyrwaxr
-          // const additionalParams = {
-          //   action: 'login',
-          //   badge: 'inline',
-          //   theme: 'light',
-          //   ar: 1,
-          //   k: '6LddGoYgAAAAAHD275rVBjuOYXiofr1u4pFS5lHn',
-          //   co: 'aHR0cHM6Ly9vbmx5ZmFucy5jb206NDQz',
-          //   hl: 'en',
-          //   v: 'rz4DvU-cY2JYCwHSTck0_qm-',
-          //   size: 'normal',
-          //   sa: 'login',
-          //   cb: 'odl8pjyrwaxr',
-          //   s: 'aHR0cHM6Ly9vbmx5ZmFucy5jb206NDQz',
-          // };
-          // await this._page.waitForTimeout(20000);
-          // captchaSolution = await resolveCaptcha(siteUrl, siteKey);
+          // 3.2) Решаем внешнюю капчу — вытаскиваем siteKey из iframe
+          const iframeHandle = await this._page.$(stepConf.captchaSelector);
+          const iframeSrc = await iframeHandle!.evaluate((el: any) => el.src);
+          const urlObj = new URL(iframeSrc);
+          const siteKey = urlObj.searchParams.get('k')!;
+          const pageUrl = await this._page.url();
 
-          // await this._page.waitForTimeout(20000);
-          // const res = await solver.recaptcha({
-          //   pageurl: siteUrl,
-          //   googlekey: siteKey,
-          // });
+          await this._page.waitForTimeout(2000);
 
-          // console.log(res);
-
-          // captchaSolution = res.data;
-
-          await this._page.waitForTimeout(200000);
-          captchaSolution = await recaptchaUtil.resolveRecaptcha2(
+          const solution2 = await recaptchaUtil.resolveRecaptcha2(
             siteKey,
-            await this._page.url(),
+            pageUrl,
             30,
-            _config.captchaVersion,
+            stepConf.captchaVersion,
           );
 
-          if (_config.captchaVersion === 2) {
-            // this is for V2
-            const recaptchaHandle = await this._page.$x(
-              '//*[@name="g-recaptcha-response"]',
-            );
-            await recaptchaHandle[0].evaluate(
-              (elem: any, captchaSolution: any) => {
-                elem.style.display = 'block';
-                elem.style.position = 'relative';
-                elem.style.top = '200px';
-                elem.style.left = '5px';
-                elem.style.width = '70%';
-                elem.style.height = '80px';
-                elem.innerHTML = captchaSolution;
-                return elem;
-              },
-              captchaSolution,
-            );
-            console.log('Done.');
-            await this._page.waitForTimeout(9000);
+          if (stepConf.captchaVersion === 2) {
+            const [h2] = await this._page.$x('//textarea[@name="g-recaptcha-response"]');
+            await h2.evaluate((el: any, sol: string) => {
+              el.style.display = 'block';
+              el.value = sol;
+            }, solution2);
+            await this._page.waitForTimeout(3000);
           }
+
           await this._page.evaluate(
-            ({ captchaSolution, captchaVersion }) => {
-              const captchaDOM = document.getElementsByClassName('m-captcha');
-              if (captchaDOM.length > 0) {
-                const ele = captchaDOM[0];
-                if (captchaVersion === 3)
-                  ele['__vue__']._props.data['e-recaptcha-response'] =
-                    captchaSolution;
-                if (captchaVersion === 2)
-                  ele['__vue__']._props.data['ec-recaptcha-response'] =
-                    captchaSolution;
-              } else {
-                console.log(
-                  'No elements found with the specified class name: ',
-                  'm-captcha',
-                );
+            ({ solution, version }) => {
+              const dom = document.getElementsByClassName('m-captcha');
+              if (dom.length > 0) {
+                const vueComp = (dom[0] as any).__vue__;
+                if (version === 3) vueComp._props.data['e-recaptcha-response'] = solution;
+                if (version === 2) vueComp._props.data['ec-recaptcha-response'] = solution;
               }
             },
-            { captchaSolution, captchaVersion: _config.captchaVersion },
+            { solution: solution2, version: stepConf.captchaVersion },
           );
 
-          //   // Click on the "Check" button to check the successful solution of the captcha.
+          // Если кнопка «submit» всё ещё disabled — снимаем атрибут
           await this._page.evaluate(
-            ({ submitSelector }) => {
-              // Replace 'your-button-selector' with the actual selector of your disabled button
-              const disabledButton = document.querySelector(submitSelector);
-
-              if (disabledButton) {
-                // Remove the 'disabled' attribute to enable the button
-                disabledButton.removeAttribute('disabled');
-              }
+            ({ submitSel }) => {
+              const btn = document.querySelector<HTMLButtonElement>(submitSel);
+              if (btn && btn.hasAttribute('disabled')) btn.removeAttribute('disabled');
             },
-            { submitSelector: _config.submitSelector },
-          );
-          await this._page.click(_config.submitSelector);
-        } else if (_config.isRecaptchaExtension) {
-          await this._page.waitForSelector(_config.pageSelector, {
-            timeout: 10000,
-          });
-          await this._page.bringToFront();
-          const workerTarget = await this._browser.waitForTarget(
-            // Assumes that there is only one service worker created by the extension and its URL ends with background.js.
-            (target) =>
-              target.type() === 'service_worker' &&
-              target.url().endsWith('background.js'),
+            { submitSel: stepConf.submitSelector },
           );
 
-          const worker = await workerTarget.worker();
-          // Open a popup (available for Canary channels).
-          await worker.evaluate('chrome.action.openPopup();');
-          try {
-            let popupTarget;
-            try {
-              popupTarget = await this._browser.waitForTarget(
-                // Assumes that there is only one page with the URL ending with popup.html and that is the popup created by the extension.
-                (target) => {
-                  return (
-                    target.type() === 'page' &&
-                    target.url().includes('popup.html')
-                  );
-                },
-              );
-            } catch (error) {}
-
-            const popupPage = await popupTarget.asPage();
-            // await popupPage.waitForSelector('#id_pro_setting', {
-            //   timeout: 1000,
-            // });
-            // await popupPage.click('#id_pro_setting');
-            // await popupPage.waitForTimeout(1000);
-            if (_config.proKey) {
-              await popupPage.evaluate(() => {
-                const btn: any = document.querySelector('#id_pro_setting');
-                if (btn) {
-                  btn.click();
-                }
-              });
-              await popupPage.waitForSelector(_config.proKeySelector, {
-                timeout: 10000,
-              });
-              await popupPage.type(_config.proKeySelector, _config.proKey);
-              await this._page.evaluate(
-                ({ selector, value }) => {
-                  const elements = Array.from(
-                    document.querySelectorAll(selector),
-                  );
-                  const eles = elements.filter((ele) =>
-                    ele.textContent.toLowerCase().includes(value.toLowerCase()),
-                  );
-                  if (eles.length > 0) {
-                    eles[0].click();
-                  }
-                },
-                { selector: 'button', value: 'Bind' },
-              );
-            }
-          } catch (error) {
-            console.log('Error: ', error);
-          }
-
-          let isLoginBtnValid = false;
-          while (!isLoginBtnValid) {
-            await this._page.waitForTimeout(1000);
-            try {
-              const disabledBtn = await this._page.waitForSelector(
-                _config.disabledSelector,
-                { timeout: 1000 },
-              );
-              console.log('DisabledButton: ', disabledBtn);
-            } catch (error) {
-              isLoginBtnValid = true;
-            }
-          }
-          await this._page.waitForSelector(_config.submitSelector, {
-            timeout: 10000,
-          });
-          await this._page.click(_config.submitSelector);
-        } else {
-          await this._page.waitForSelector(_config.pageSelector, {
-            timeout: 10000,
-          });
-          await this._page.evaluate(
-            ({ idSelector }) => {
-              const ele = document.querySelector(idSelector);
-              ele.value = '';
-              ele.dispatchEvent(new Event('input', { bubbles: true })); // As this is vue website, it doens't chagne state value though we set value on input box
-            },
-            { idSelector: _config.idSelector },
-          );
-          await this._page.evaluate(
-            ({ passwordSelector }) => {
-              const ele = document.querySelector(passwordSelector);
-              ele.value = '';
-              ele.dispatchEvent(new Event('input', { bubbles: true })); // As this is vue website, it doens't chagne state value though we set value on input box
-            },
-            { passwordSelector: _config.passwordSelector },
-          );
-          await this._page.type(_config.idSelector, _config.idValue);
-          await this._page.type(
-            _config.passwordSelector,
-            _config.passwordValue,
-          );
-          await this._page.click(_config.submitSelector);
-          await this._page.waitForTimeout(5000);
+          // Нажимаем «Login»
+          await this._page.click(stepConf.submitSelector);
+          continue;
         }
-      }
+
+        // 4) login_captcha_extension — HCAPT-расширение
+        if (stepConf.isRecaptchaExtension) {
+          await this._page.waitForSelector(stepConf.pageSelector, { timeout: 10000 });
+          await this._page.bringToFront();
+
+          const workerTarget = await this._browser.waitForTarget(
+            (t) => t.type() === 'service_worker' && t.url().endsWith('background.js')
+          );
+          const worker = await workerTarget.worker();
+          await worker.evaluate('chrome.action.openPopup()');
+
+          let popupPage;
+          try {
+            const popupTarget = await this._browser.waitForTarget(
+              (t) => t.type() === 'page' && t.url().includes('popup.html')
+            );
+            popupPage = await popupTarget.page();
+          } catch {
+            // Если не нашёл popup — пропускаем привязку proKey
+          }
+
+          if (popupPage && stepConf.proKey) {
+            await popupPage.type(stepConf.proKeySelector, stepConf.proKey);
+            await popupPage.evaluate(() => {
+              const btns = Array.from(document.querySelectorAll('button'));
+              const bindBtn = btns.find((b) => (b.textContent || '').toLowerCase().includes('bind'));
+              if (bindBtn) (bindBtn as HTMLElement).click();
+            });
+            await this._page.waitForTimeout(2000);
+          }
+
+          let loginBtnUnlocked = false;
+          while (!loginBtnUnlocked) {
+            try {
+              await this._page.waitForSelector(stepConf.disabledSelector, { timeout: 1000 });
+              // Если кнопка всё ещё disabled, повторяем цикл
+            } catch {
+              loginBtnUnlocked = true;
+            }
+          }
+
+          await this._page.click(stepConf.submitSelector);
+          continue;
+        }
+
+        // 5) Обычный ввод email+пароля без капчи
+        if (stepConf.idSelector && stepConf.passwordSelector && stepConf.submitSelector) {
+          // Очистка поля «email»
+          await this._page.evaluate(
+            ({ idSel }) => {
+              const el = document.querySelector<HTMLInputElement>(idSel);
+              if (el) {
+                el.value = '';
+                el.dispatchEvent(new Event('input', { bubbles: true }));
+              }
+            },
+            { idSel: stepConf.idSelector },
+          );
+
+          // Очистка поля «password»
+          await this._page.evaluate(
+            ({ pwdSel }) => {
+              const el = document.querySelector<HTMLInputElement>(pwdSel);
+              if (el) {
+                el.value = '';
+                el.dispatchEvent(new Event('input', { bubbles: true }));
+              }
+            },
+            { pwdSel: stepConf.passwordSelector },
+          );
+
+          // Ввод «email» и «password» и клик по кнопке
+          await this._page.type(stepConf.idSelector, stepConf.idValue);
+          await this._page.type(stepConf.passwordSelector, stepConf.passwordValue);
+          await this._page.click(stepConf.submitSelector);
+
+          // Ждём 5 секунд, чтобы форма успела сработать
+          await this._page.waitForTimeout(5000);
+          continue;
+        }
+
+      } // конец цикла login_workflow
     } catch (error) {
-      console.log('Error: ', error);
+      console.error('❌ Ошибка в login:', error);
+      return false;
     }
+
+    // Если цикл завершился без возврата true, значит мы не залогинились
     return false;
   }
+
   isBrowserClosed() {
     return this._isclosed;
   }
