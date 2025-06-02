@@ -4,19 +4,18 @@ import type { Page } from 'puppeteer';
 let captchaAlreadySolved = false;
 
 /**
- * Класс-обёртка вокруг уже написанных функций решения капч.
- * Основная задача: экспортировать метод resolveRecaptcha2(...) для вашего кода,
- * чтобы он мог его вызывать.
+ * Экспортируем класс, чтобы его можно было
+ * импортировать в старом файле login(...).
  */
 export class RecaptchaUtil {
   /**
-   * «Симулирует» решение reCAPTCHA v2/v3 через HCAPT/плагин.
-   * В вашей свободной версии плагин сам кликает/ждёт — поэтому здесь
-   * можно просто дождаться, пока плагин решит капчу, и вернуть пустую строку.
+   * Эмулирует ожидание решения reCAPTCHA v2/v3.
+   * Поскольку вы используете бесплатный плагин, он сам «поднимает» капчу
+   * и решает её, поэтому тут достаточно просто сделать setTimeout.
    *
-   * @param siteKey – ключ reCAPTCHA (обычно из URL iframe)
-   * @param pageUrl – текущий адрес страницы
-   * @param timeoutSec – сколько секунд ждать решения (например, 30)
+   * @param siteKey – ключ капчи (из URL iframe)
+   * @param pageUrl – текущая страница (для логов, если нужно)
+   * @param timeoutSec – сколько секунд ждать (например, 30)
    * @param version – 2 или 3
    */
   public async resolveRecaptcha2(
@@ -25,20 +24,17 @@ export class RecaptchaUtil {
     timeoutSec: number,
     version: number
   ): Promise<string> {
-    // Поскольку вы говорили, что «бесплатная версия плагина уже сама решает reCAPTCHA»,
-    // здесь мы просто ждём указанный таймаут, а затем возвращаем пустую строку.
     console.log(`⏳ RecaptchaUtil: ждём ${timeoutSec} сек. для решения reCAPTCHA v${version} (siteKey=${siteKey})`);
     await new Promise((res) => setTimeout(res, timeoutSec * 1000));
-    console.log('✔️ RecaptchaUtil: предположительно капча решена (или плагином пропущена).');
+    console.log('✔️ RecaptchaUtil: капча, судя по всему, решена (или пропущена плагином).');
     return '';
   }
 }
 
-/**
- * Переносим «старые» функции-утилиты внизу файла, чтобы их можно было вызывать напрямую,
- * если понадобится. Они остаются экспортируемыми, но уже не нужны для прямого импорта
- * (ваш код всё равно будет пользоваться RecaptchaUtil.resolveRecaptcha2(...)).
- */
+
+// ---- Ниже идут старые функции «по работе с капчей».
+//     Они экспортируются, чтобы их можно было вызывать
+//     в вашей «fallback» логике, если потребуется.
 
 export function resetCaptchaFlag(): void {
   captchaAlreadySolved = false;
@@ -69,7 +65,7 @@ export async function handleCaptchaBeforeClick(page: Page): Promise<void> {
   ]);
 
   if (hasTurn) {
-    console.log('🔄 handleCaptcha: обнаружен Turnstile → решаем…');
+    console.log('🔄 handleCaptcha: Turnstile обнаружен → решаем…');
     try {
       await triggerTurnstile(page);
     } catch {
@@ -78,7 +74,7 @@ export async function handleCaptchaBeforeClick(page: Page): Promise<void> {
     }
     markCaptchaSolved();
   } else if (hasRecap) {
-    console.log('🔐 handleCaptcha: обнаружена reCAPTCHA → решаем…');
+    console.log('🔐 handleCaptcha: reCAPTCHA обнаружена → решаем…');
     await triggerRecaptcha(page);
     markCaptchaSolved();
   }
@@ -92,20 +88,21 @@ export async function triggerRecaptcha(page: Page): Promise<void> {
   const frame = await iframe.contentFrame();
   if (!frame) throw new Error('Не удалось получить reCAPTCHA iframe');
 
-  await (await frame.waitForSelector('#recaptcha-anchor', { visible: true, timeout: 10_000 })).click();
+  await (await frame.waitForSelector('#recaptcha-anchor', {
+    visible: true, timeout: 10_000
+  })).click();
 
   await page.waitForFunction(
-    () =>
-      !!document
-        .querySelector<HTMLTextAreaElement>('#g-recaptcha-response')
-        ?.value.trim(),
+    () => !!document
+      .querySelector<HTMLTextAreaElement>('#g-recaptcha-response')
+      ?.value.trim(),
     { polling: 500, timeout: 5 * 60_000 }
   );
   console.log('✔️ reCAPTCHA решена');
 }
 
 export async function triggerTurnstile(page: Page): Promise<void> {
-  console.log('🔄 Обнаружен Turnstile, решаем…');
+  console.log('🔄 Turnstile обнаружен, решаем…');
   const iframe = await page.waitForSelector('iframe[title*="challenge"]', { timeout: 10_000 });
   const frame = await iframe.contentFrame();
   if (!frame) throw new Error('Не удалось получить Turnstile iframe');
@@ -118,8 +115,8 @@ export async function triggerTurnstile(page: Page): Promise<void> {
   await page.waitForFunction(
     () => {
       const t =
-        document.querySelector<HTMLTextAreaElement>('textarea[name="cf-turnstile-response"]') ||
-        document.querySelector<HTMLInputElement>('input[name="cf-turnstile-response"]');
+        document.querySelector<HTMLTextAreaElement>('textarea[name="cf-turnstile-response"]')
+        || document.querySelector<HTMLInputElement>('input[name="cf-turnstile-response"]');
       return !!t?.value;
     },
     { polling: 500, timeout: 120_000 }
@@ -130,7 +127,7 @@ export async function triggerTurnstile(page: Page): Promise<void> {
 export async function startCaptchaExtension(page: Page): Promise<void> {
   const browser = page.browser();
   const extTarget = browser.targets().find(
-    (t) => t.url().startsWith('chrome-extension://') && ['background_page', 'service_worker'].includes(t.type())
+    (t) => t.url().startsWith('chrome-extension://') && ['background_page','service_worker'].includes(t.type())
   );
   if (!extTarget) {
     console.warn('HCAPT-extension не найден среди targets');
@@ -138,9 +135,12 @@ export async function startCaptchaExtension(page: Page): Promise<void> {
   }
   const extensionId = extTarget.url().split('/')[2];
 
-  // manifest → default_popup
+  // Загружаем manifest.json, чтобы узнать default_popup
   const mf = await browser.newPage();
-  const resp = await mf.goto(`chrome-extension://${extensionId}/manifest.json`, { waitUntil: 'networkidle2' });
+  const resp = await mf.goto(
+    `chrome-extension://${extensionId}/manifest.json`,
+    { waitUntil: 'networkidle2' }
+  );
   if (!resp || resp.status() !== 200) {
     await mf.close();
     throw new Error('Не удалось загрузить манифест HCAPT');
@@ -152,9 +152,7 @@ export async function startCaptchaExtension(page: Page): Promise<void> {
   if (!popupPath) throw new Error('default_popup не найден в манифесте HCAPT');
 
   const candidates = [popupPath, `popup/${popupPath}`, 'popup/index.html', 'popup/popup.html'];
-  let popup: Page | null = null;
-  let lastErr: any = null;
-
+  let popup: Page | null = null, lastErr: any = null;
   for (const p of candidates) {
     try {
       popup = await browser.newPage();
@@ -162,10 +160,7 @@ export async function startCaptchaExtension(page: Page): Promise<void> {
       break;
     } catch (e) {
       lastErr = e;
-      if (popup) {
-        await popup.close();
-        popup = null;
-      }
+      if (popup) { await popup.close(); popup = null; }
     }
   }
   if (!popup) throw new Error(`HCAPT popup не найден: ${lastErr?.message}`);
@@ -177,6 +172,5 @@ export async function startCaptchaExtension(page: Page): Promise<void> {
   } catch {
     console.warn('HCAPT Solve button не найден');
   }
-
   await popup.close();
 }

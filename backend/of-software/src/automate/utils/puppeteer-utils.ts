@@ -7,7 +7,8 @@ import { solveRecaptcha } from './nopecha';
 import { resolveCaptcha, resolveCaptchaV3 } from './anticaptcha';
 import _fs from 'fs';
 //import { RecaptchaUtil } from './recaptcha';
-import { RecaptchaUtil } from '../utils/_functions/recaptcha-utils';
+import { RecaptchaUtil, handleCaptchaBeforeClick, checkLoginError, startCaptchaExtension } from './_functions/recaptcha-utils';
+
 import { Solver } from '2captcha-ts';
 // const APIKEY = '1f98aeffff33253bdcbe8b92bc9f7d3f';
 //
@@ -1540,12 +1541,12 @@ export class PuppeteerUtil {
   // }
 
   /**
-   * Метод login (полностью берёт все настройки из переданного cfg).
-   * Предполагает, что cfg — это ваш объект CONFIG, где есть:
-   *   login_workflow, login, reload, check_page, login_captcha, login_captcha_extension и т.п.
+   * Ваша уже существующая функция login(cfg).
+   * Мы здесь всего лишь «внедряем» RecaptchaUtil вместо
+   * того, чтобы вручную ставить многомиллионные timeout.
    */
   async login(cfg?: any): Promise<boolean> {
-    const config = cfg!;
+    const config = cfg!; // здесь должен быть ваш CONFIG из step-config.ts
     try {
       for (let i = 0; i < config.login_workflow.length; i++) {
         const _configKey = config.login_workflow[i];
@@ -1553,33 +1554,42 @@ export class PuppeteerUtil {
         const recaptchaUtil = new RecaptchaUtil();
 
         if (_config.isReload) {
+          // «Перезагрузка страницы»
           await this._page.reload({ waitUntil: 'networkidle2' });
+
         } else if (_config.isCheckPage) {
+          // «Проверка, что страница загрузилась»
           try {
             await this._page.waitForTimeout(10000);
-            await this._page.waitForSelector(_config.pageSelector, { timeout: 10000 });
+            await this._page.waitForSelector(_config.pageSelector as string, { timeout: 10000 });
             console.log('----------------- Login async login puppeteer Success -----------------');
             return true;
           } catch {
             console.log(`Check selector "${_config.pageSelector}" not found`);
           }
-        } else if (_config.isRecaptcha) {
-          // Сценарий «login_captcha» (встроенная reCAPTCHA / Turnstile)
-          await this._page.waitForSelector(_config.pageSelector, { timeout: 10000 });
 
-          // Если на странице уже есть «дефолтная» капча, решаем её:
+        } else if (_config.isRecaptcha) {
+          // Сценарий «login_captcha» – стандартная встроенная reCAPTCHA/Turnstile
+          await this._page.waitForSelector(_config.pageSelector as string, { timeout: 10_000 });
+
+          // Если есть «дефолтная» капча (defaultCaptcha)
           if (_config.hasDefaultCaptcha) {
             await this._page.waitForTimeout(2000);
+            const siteUrl = await this._page.url();
+            const defaultKey = _config.defaultCaptchaKey as string;
+            const defaultVer = _config.defaultCaptchaVersion as number;
+
+            // ждём «cost-free» вариант решения капчи в вашем плагине
             const captchaSolution = await recaptchaUtil.resolveRecaptcha2(
-              _config.defaultCaptchaKey,
-              await this._page.url(),
+              defaultKey,
+              siteUrl,
               30,
-              _config.defaultCaptchaVersion
+              defaultVer
             );
 
-            if (_config.defaultCaptchaVersion === 2) {
+            if (defaultVer === 2) {
               const [recaptchaHandle] = await this._page.$x('//*[@name="g-recaptcha-response"]');
-              await recaptchaHandle.evaluate(
+              await recaptchaHandle!.evaluate(
                 (elem: any, solution: any) => {
                   elem.style.display = 'block';
                   elem.value = solution;
@@ -1590,37 +1600,40 @@ export class PuppeteerUtil {
               await this._page.waitForTimeout(3000);
             }
 
-            // Подставляем решение в Vue-компонент:
+            // Подстановка результата в Vue-компонент
             await this._page.evaluate(
               ({ captchaSolution, captchaVersion }) => {
                 const captchaDOM = document.getElementsByClassName('m-captcha');
                 if (captchaDOM.length > 0) {
-                  const ele = captchaDOM[0] as any;
+                  const ele: any = captchaDOM[0];
                   if (captchaVersion === 3) ele['__vue__']._props.data['e-recaptcha-response'] = captchaSolution;
                   if (captchaVersion === 2) ele['__vue__']._props.data['ec-recaptcha-response'] = captchaSolution;
                 }
               },
-              { captchaSolution, captchaVersion: _config.defaultCaptchaVersion }
+              {
+                captchaSolution,
+                captchaVersion: defaultVer,
+              }
             );
           }
 
-          // Теперь обязательно останавливаемся и ждём, пока браузер подставит siteKey:
-          const iframeHandle = await this._page.$(_config.captchaSelector);
+          // Теперь найдём настоящий siteKey из iframe
+          const iframeHandle = await this._page.$(_config.captchaSelector as string);
           const iframeSrc = await iframeHandle!.evaluate((iframe: any) => iframe.src);
           const iframeUrl = new URL(iframeSrc);
-          const siteKey = iframeUrl.searchParams.get('k')!;
+          const siteKey = iframeUrl.searchParams.get('k') as string;
 
-          // Решаем вторую капчу (основную):
+          // Ждём решения второй капчи
           const captchaSolution2 = await recaptchaUtil.resolveRecaptcha2(
             siteKey,
             await this._page.url(),
             30,
-            _config.captchaVersion
+            _config.captchaVersion as number
           );
 
-          if (_config.captchaVersion === 2) {
+          if ((_config.captchaVersion as number) === 2) {
             const [recaptchaHandle2] = await this._page.$x('//*[@name="g-recaptcha-response"]');
-            await recaptchaHandle2.evaluate(
+            await recaptchaHandle2!.evaluate(
               (elem: any, solution: any) => {
                 elem.style.display = 'block';
                 elem.value = solution;
@@ -1631,21 +1644,22 @@ export class PuppeteerUtil {
             await this._page.waitForTimeout(9000);
           }
 
+          // Поднять кнопку «submit» вручную (она была disabled)
           await this._page.evaluate(
             ({ submitSelector }) => {
-              const disabledButton = document.querySelector(submitSelector);
-              if (disabledButton) (disabledButton as HTMLElement).removeAttribute('disabled');
+              const btn = document.querySelector(submitSelector as string) as HTMLElement;
+              if (btn) btn.removeAttribute('disabled');
             },
             { submitSelector: _config.submitSelector }
           );
-          await this._page.click(_config.submitSelector);
+          await this._page.click(_config.submitSelector as string);
 
         } else if (_config.isRecaptchaExtension) {
-          // Сценарий «login_captcha_extension» (HCAPT‐fallback)
-          await this._page.waitForSelector(_config.pageSelector, { timeout: 10000 });
+          // Сценарий «login_captcha_extension» – fallback через HCAPT-extension
+          await this._page.waitForSelector(_config.pageSelector as string, { timeout: 10000 });
           await this._page.bringToFront();
 
-          // Ожидаем background‐target расширения
+          // Ждём, пока service_worker у расширения появится:
           const workerTarget = await this._browser.waitForTarget(
             (target) =>
               target.type() === 'service_worker' &&
@@ -1660,46 +1674,50 @@ export class PuppeteerUtil {
             );
             const popupPage = await popupTarget.asPage();
 
+            // Если у вас указан proKey, подставляем его:
             if (_config.proKey) {
               await popupPage.evaluate(() => {
-                const btn: any = document.querySelector('#id_pro_setting');
+                const btn = document.querySelector('#id_pro_setting') as HTMLElement;
                 if (btn) btn.click();
               });
-              await popupPage.waitForSelector(_config.proKeySelector, { timeout: 10000 });
-              await popupPage.type(_config.proKeySelector, _config.proKey);
+              await popupPage.waitForSelector(_config.proKeySelector as string, { timeout: 10000 });
+              await popupPage.type(_config.proKeySelector as string, _config.proKey as string);
               await this._page.evaluate(
                 ({ selector, value }) => {
-                  const elements = Array.from(document.querySelectorAll(selector));
-                  const eles = elements.filter((ele) =>
-                    ele.textContent!.toLowerCase().includes(value.toLowerCase())
+                  const elements = Array.from(document.querySelectorAll(selector as string));
+                  const eles = (elements as HTMLElement[]).filter((ele) =>
+                    ele.textContent!.toLowerCase().includes((value as string).toLowerCase())
                   );
-                  if (eles.length > 0) (eles[0] as HTMLElement).click();
+                  if (eles.length > 0) eles[0].click();
                 },
                 { selector: 'button', value: 'Bind' }
               );
             }
-          } catch (error) {
-            console.log('Error (recaptcha_extension popup):', error);
+          } catch (err) {
+            console.log('Error (recaptcha_extension popup):', err);
           }
 
+          // Теперь ждём, пока кнопка «submit» станет enabled
           let isLoginBtnValid = false;
           while (!isLoginBtnValid) {
             await this._page.waitForTimeout(1000);
             try {
-              await this._page.waitForSelector(_config.disabledSelector, { timeout: 1000 });
+              // Если кнопка disabled всё ещё есть, выкинет timeout
+              await this._page.waitForSelector(_config.disabledSelector as string, { timeout: 1000 });
             } catch {
-              isLoginBtnValid = true;
+              isLoginBtnValid = true; // кнопка стала «enabled»
             }
           }
-          await this._page.waitForSelector(_config.submitSelector, { timeout: 10000 });
-          await this._page.click(_config.submitSelector);
+          await this._page.waitForSelector(_config.submitSelector as string, { timeout: 10000 });
+          await this._page.click(_config.submitSelector as string);
 
         } else {
-          // Обычный сценарий «просто вводим email/password и кликаем»
-          await this._page.waitForSelector(_config.pageSelector, { timeout: 10000 });
+          // Обычная ветка «просто ввести email+password и кликнуть»
+          await this._page.waitForSelector(_config.pageSelector as string, { timeout: 10000 });
+
           await this._page.evaluate(
             ({ idSelector }) => {
-              const ele = document.querySelector(idSelector) as HTMLInputElement;
+              const ele = document.querySelector(idSelector as string) as HTMLInputElement;
               ele.value = '';
               ele.dispatchEvent(new Event('input', { bubbles: true }));
             },
@@ -1707,16 +1725,16 @@ export class PuppeteerUtil {
           );
           await this._page.evaluate(
             ({ passwordSelector }) => {
-              const ele = document.querySelector(passwordSelector) as HTMLInputElement;
+              const ele = document.querySelector(passwordSelector as string) as HTMLInputElement;
               ele.value = '';
               ele.dispatchEvent(new Event('input', { bubbles: true }));
             },
             { passwordSelector: _config.passwordSelector }
           );
 
-          await this._page.type(_config.idSelector, _config.idValue);
-          await this._page.type(_config.passwordSelector, _config.passwordValue);
-          await this._page.click(_config.submitSelector);
+          await this._page.type(_config.idSelector as string, _config.idValue as string);
+          await this._page.type(_config.passwordSelector as string, _config.passwordValue as string);
+          await this._page.click(_config.submitSelector as string);
           await this._page.waitForTimeout(5000);
         }
       }
