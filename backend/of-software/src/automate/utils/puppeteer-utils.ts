@@ -8,8 +8,9 @@ import { resolveCaptcha, resolveCaptchaV3 } from './anticaptcha';
 import _fs from 'fs';
 //import { RecaptchaUtil } from './recaptcha';
 import { RecaptchaUtil, handleCaptchaBeforeClick, checkLoginError, startCaptchaExtension } from './_functions/recaptcha-utils';
-
+import dotenv from 'dotenv';
 import { Solver } from '2captcha-ts';
+import * as process from "node:process";
 // const APIKEY = '1f98aeffff33253bdcbe8b92bc9f7d3f';
 //
 // const solver = new Solver(APIKEY);
@@ -1025,16 +1026,16 @@ export class PuppeteerUtil {
   private _page;
   private _config;
   private _isclosed;
-  private headless: boolean = false;
+  private headless: boolean;
 
   constructor() {
     this._puppeteer = null;
     this._browser = null;
     this._page = null;
     this._config = null;
-    this._isclosed = false;
+    this._isclosed = true;
     // Перед созданием браузера логируем, какой у нас DISPLAY
-    console.log('▶ PuppeteerUtil.constructor: DISPLAY=', process.env.DISPLAY || '(undefined)');
+    console.log('▶ PuppeteerUtil.constructor: DISPLAY=', process.env.HEADLESS_MODE || '(undefined)');
   }
 
   initialize() {
@@ -1046,9 +1047,11 @@ export class PuppeteerUtil {
     this._config = _config || { ...CONFIG };
   }
   async openBrowser(headless : boolean) {
-    console.log('openBrowser(): headless=', headless, 'DISPLAY=', process.env.DISPLAY);
-    console.log('>>> openBrowser() вызвано: headless=', headless, ' DISPLAY=', process.env.DISPLAY);
+    console.log('openBrowser(): headless=', headless, 'DISPLAY=', process.env.HEADLESS_MODE);
+    console.log('>>> openBrowser() вызвано: headless=', headless, ' DISPLAY=', process.env.HEADLESS_MODE);
     const ext = path.resolve(__dirname, '../extensions/hcapt/0.4.1_0');
+    const envValue = (process.env.HEADLESS_MODE || 'true').toLowerCase().trim();
+    headless = envValue === 'false' || envValue === '0' ? false : true;
     this.headless = headless;
     console.log('this.headless = ',  this.headless);
     this._browser = await this._puppeteer.launch({
