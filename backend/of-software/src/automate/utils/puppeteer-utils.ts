@@ -1042,7 +1042,6 @@ export class PuppeteerUtil {
   setConfig(_config?: any) {
     this._config = _config || { ...CONFIG };
   }
-
   async openBrowser(headless = false) {
     console.log('openBrowser(): headless=', headless, 'DISPLAY=', process.env.DISPLAY);
     console.log('>>> openBrowser() вызвано: headless=', headless, ' DISPLAY=', process.env.DISPLAY);
