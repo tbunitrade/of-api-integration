@@ -48,7 +48,7 @@ export class CronController {
     try {
       const id = req.user.id;
       const user = this.userService.findById(id);
-      const result = await this.cronService.manualStart(!!isPost, user);
+      const result = await this.cronService.manualStart(true, !!isPost, user);
       return result;
     } catch (error) {
       console.log(error);
