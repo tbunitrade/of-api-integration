@@ -9,6 +9,7 @@ import _fs from 'fs';
 //import { RecaptchaUtil } from './recaptcha';
 import { RecaptchaUtil, handleCaptchaBeforeClick, checkLoginError, startCaptchaExtension } from './_functions/recaptcha-utils';
 import dotenv from 'dotenv';
+dotenv.config();
 import { Solver } from '2captcha-ts';
 import * as process from "node:process";
 // const APIKEY = '1f98aeffff33253bdcbe8b92bc9f7d3f';
