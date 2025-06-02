@@ -72,7 +72,8 @@ export class AutomateService {
       // recaptcha solving can be wrong sometime
       const headless = !manualStart;
       try {
-        await puppeteerUtil.openBrowser(headless);
+        await puppeteerUtil.openBrowser();
+        //await puppeteerUtil.openBrowser(headless);
       } catch (error) {
         console.log('Error: ', error);
         return;
@@ -264,7 +265,8 @@ export class AutomateService {
       puppeteerUtil.setConfig();
       // recaptcha solving can be wrong sometime
       const headless = !manualStart;
-      await puppeteerUtil.openBrowser(headless);
+      await puppeteerUtil.openBrowser();
+      //await puppeteerUtil.openBrowser(headless);
       const cookieFileName =
         'user_' + modelPlatform.model_id + '.' + modelPlatform.platform_id;
       await puppeteerUtil.openPage('https://onlyfans.com/posts/create');
