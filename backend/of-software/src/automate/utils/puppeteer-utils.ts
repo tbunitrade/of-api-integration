@@ -1044,6 +1044,7 @@ export class PuppeteerUtil {
   }
 
   async openBrowser(headless = false) {
+    console.log('openBrowser(): headless=', headless, 'DISPLAY=', process.env.DISPLAY);
     const ext = path.resolve(__dirname, '../extensions/hcapt/0.4.1_0');
     this._browser = await this._puppeteer.launch({
       headless: headless,
