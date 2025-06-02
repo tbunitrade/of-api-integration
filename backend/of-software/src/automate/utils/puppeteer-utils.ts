@@ -1045,6 +1045,7 @@ export class PuppeteerUtil {
 
   async openBrowser(headless = false) {
     console.log('openBrowser(): headless=', headless, 'DISPLAY=', process.env.DISPLAY);
+    console.log('>>> openBrowser() вызвано: headless=', headless, ' DISPLAY=', process.env.DISPLAY);
     const ext = path.resolve(__dirname, '../extensions/hcapt/0.4.1_0');
     this._browser = await this._puppeteer.launch({
       headless: headless,
@@ -1063,10 +1064,16 @@ export class PuppeteerUtil {
       ],
       executablePath: executablePath(),
     });
+    console.log('>>> Puppeteer запустил браузер, PID=', this._browser.process().pid);
     this._browser.on('disconnected', () => {
       this._isclosed = true;
+
     });
     this._page = await this._browser.newPage();
+    // Чтобы окно не закрылось мгновенно, добавим паузу:
+    console.log('>>> Жду 30 секунд перед закрытием браузера, чтобы увидеть окно');
+    await this._page.waitForTimeout(30000);
+    console.log('>>> Браузер закрыт');
   }
 
   async acceptCookie() {
