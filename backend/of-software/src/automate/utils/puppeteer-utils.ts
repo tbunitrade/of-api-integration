@@ -9,9 +9,9 @@ import _fs from 'fs';
 //import { RecaptchaUtil } from './recaptcha';
 import { RecaptchaUtil } from '../utils/_functions/recaptcha-utils';
 import { Solver } from '2captcha-ts';
-const APIKEY = '1f98aeffff33253bdcbe8b92bc9f7d3f';
-
-const solver = new Solver(APIKEY);
+// const APIKEY = '1f98aeffff33253bdcbe8b92bc9f7d3f';
+//
+// const solver = new Solver(APIKEY);
 
 const fs = _fs.promises;
 const twoCaptchaSolverExtPath = path.join(

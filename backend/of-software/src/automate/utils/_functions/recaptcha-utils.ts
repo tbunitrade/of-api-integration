@@ -4,48 +4,68 @@ import type { Page } from 'puppeteer';
 let captchaAlreadySolved = false;
 
 /**
- * Сбрасывает флаг решения капчи.
- * Вызывается в начале каждой новой попытки логина.
+ * Класс-обёртка вокруг уже написанных функций решения капч.
+ * Основная задача: экспортировать метод resolveRecaptcha2(...) для вашего кода,
+ * чтобы он мог его вызывать.
  */
+export class RecaptchaUtil {
+  /**
+   * «Симулирует» решение reCAPTCHA v2/v3 через HCAPT/плагин.
+   * В вашей свободной версии плагин сам кликает/ждёт — поэтому здесь
+   * можно просто дождаться, пока плагин решит капчу, и вернуть пустую строку.
+   *
+   * @param siteKey – ключ reCAPTCHA (обычно из URL iframe)
+   * @param pageUrl – текущий адрес страницы
+   * @param timeoutSec – сколько секунд ждать решения (например, 30)
+   * @param version – 2 или 3
+   */
+  public async resolveRecaptcha2(
+    siteKey: string,
+    pageUrl: string,
+    timeoutSec: number,
+    version: number
+  ): Promise<string> {
+    // Поскольку вы говорили, что «бесплатная версия плагина уже сама решает reCAPTCHA»,
+    // здесь мы просто ждём указанный таймаут, а затем возвращаем пустую строку.
+    console.log(`⏳ RecaptchaUtil: ждём ${timeoutSec} сек. для решения reCAPTCHA v${version} (siteKey=${siteKey})`);
+    await new Promise((res) => setTimeout(res, timeoutSec * 1000));
+    console.log('✔️ RecaptchaUtil: предположительно капча решена (или плагином пропущена).');
+    return '';
+  }
+}
+
+/**
+ * Переносим «старые» функции-утилиты внизу файла, чтобы их можно было вызывать напрямую,
+ * если понадобится. Они остаются экспортируемыми, но уже не нужны для прямого импорта
+ * (ваш код всё равно будет пользоваться RecaptchaUtil.resolveRecaptcha2(...)).
+ */
+
 export function resetCaptchaFlag(): void {
   captchaAlreadySolved = false;
 }
 
-/**
- * Отмечает, что капча уже решена в этой попытке.
- */
 export function markCaptchaSolved(): void {
   captchaAlreadySolved = true;
 }
 
-/**
- * Проверяет, есть ли на странице сообщение об ошибке логина.
- * @returns текст ошибки или null, если сообщения нет.
- */
 export async function checkLoginError(
   page: Page,
   errorSelector: string
 ): Promise<string | null> {
   try {
-    const txt = await page.$eval(errorSelector, el => el.textContent?.trim() || '');
+    const txt = await page.$eval(errorSelector, (el) => el.textContent?.trim() || '');
     return txt || null;
   } catch {
     return null;
   }
 }
 
-/**
- * Если ещё не решали капчу в этой попытке, то:
- * - детектит Turnstile и решает его,
- * - или детектит reCAPTCHA и решает её,
- * иначе — продолжает дальше.
- */
 export async function handleCaptchaBeforeClick(page: Page): Promise<void> {
   if (captchaAlreadySolved) return;
 
   const [hasRecap, hasTurn] = await Promise.all([
-    page.$('.captcha_wrapper iframe[title="reCAPTCHA"]').then(el => !!el).catch(() => false),
-    page.$('iframe[title*="challenge"]').then(el => !!el).catch(() => false),
+    page.$('.captcha_wrapper iframe[title="reCAPTCHA"]').then((el) => !!el).catch(() => false),
+    page.$('iframe[title*="challenge"]').then((el) => !!el).catch(() => false),
   ]);
 
   if (hasTurn) {
@@ -64,10 +84,6 @@ export async function handleCaptchaBeforeClick(page: Page): Promise<void> {
   }
 }
 
-/**
- * Решает Google reCAPTCHA:
- * 1) Находит iframe → кликает чекбокс → ждёт заполнения textarea.
- */
 export async function triggerRecaptcha(page: Page): Promise<void> {
   const iframe = await page.waitForSelector(
     '.captcha_wrapper iframe[title="reCAPTCHA"]',
@@ -76,28 +92,21 @@ export async function triggerRecaptcha(page: Page): Promise<void> {
   const frame = await iframe.contentFrame();
   if (!frame) throw new Error('Не удалось получить reCAPTCHA iframe');
 
-  await (await frame.waitForSelector('#recaptcha-anchor', {
-    visible: true, timeout: 10_000
-  })).click();
+  await (await frame.waitForSelector('#recaptcha-anchor', { visible: true, timeout: 10_000 })).click();
 
   await page.waitForFunction(
-    () => !!document
-      .querySelector<HTMLTextAreaElement>('#g-recaptcha-response')
-      ?.value.trim(),
+    () =>
+      !!document
+        .querySelector<HTMLTextAreaElement>('#g-recaptcha-response')
+        ?.value.trim(),
     { polling: 500, timeout: 5 * 60_000 }
   );
   console.log('✔️ reCAPTCHA решена');
 }
 
-/**
- * Решает Cloudflare Turnstile:
- * 1) Находит iframe → кликает чекбокс/button → ждёт появления ответа.
- */
 export async function triggerTurnstile(page: Page): Promise<void> {
   console.log('🔄 Обнаружен Turnstile, решаем…');
-  const iframe = await page.waitForSelector(
-    'iframe[title*="challenge"]', { timeout: 10_000 }
-  );
+  const iframe = await page.waitForSelector('iframe[title*="challenge"]', { timeout: 10_000 });
   const frame = await iframe.contentFrame();
   if (!frame) throw new Error('Не удалось получить Turnstile iframe');
 
@@ -108,10 +117,9 @@ export async function triggerTurnstile(page: Page): Promise<void> {
 
   await page.waitForFunction(
     () => {
-      const t = document
-          .querySelector<HTMLTextAreaElement>('textarea[name="cf-turnstile-response"]')
-        || document
-          .querySelector<HTMLInputElement>('input[name="cf-turnstile-response"]');
+      const t =
+        document.querySelector<HTMLTextAreaElement>('textarea[name="cf-turnstile-response"]') ||
+        document.querySelector<HTMLInputElement>('input[name="cf-turnstile-response"]');
       return !!t?.value;
     },
     { polling: 500, timeout: 120_000 }
@@ -119,16 +127,10 @@ export async function triggerTurnstile(page: Page): Promise<void> {
   console.log('✔️ Turnstile решён');
 }
 
-/**
- * Запускает HCAPT-extension (fallback):
- * 1) Находит extension ID → грузит manifest → берёт default_popup.
- * 2) Открывает popup и кликает кнопку #hcapt-solve-btn.
- */
 export async function startCaptchaExtension(page: Page): Promise<void> {
   const browser = page.browser();
-  const extTarget = browser.targets().find(t =>
-    t.url().startsWith('chrome-extension://') &&
-    ['background_page','service_worker'].includes(t.type())
+  const extTarget = browser.targets().find(
+    (t) => t.url().startsWith('chrome-extension://') && ['background_page', 'service_worker'].includes(t.type())
   );
   if (!extTarget) {
     console.warn('HCAPT-extension не найден среди targets');
@@ -138,23 +140,21 @@ export async function startCaptchaExtension(page: Page): Promise<void> {
 
   // manifest → default_popup
   const mf = await browser.newPage();
-  const resp = await mf.goto(
-    `chrome-extension://${extensionId}/manifest.json`,
-    { waitUntil: 'networkidle2' }
-  );
+  const resp = await mf.goto(`chrome-extension://${extensionId}/manifest.json`, { waitUntil: 'networkidle2' });
   if (!resp || resp.status() !== 200) {
     await mf.close();
     throw new Error('Не удалось загрузить манифест HCAPT');
   }
   const manifest = JSON.parse(await mf.evaluate(() => document.body.innerText));
   await mf.close();
-  const popupPath = manifest.action?.default_popup
-    || manifest.browser_action?.default_popup;
+
+  const popupPath = manifest.action?.default_popup || manifest.browser_action?.default_popup;
   if (!popupPath) throw new Error('default_popup не найден в манифесте HCAPT');
 
-  // открываем и кликаем
   const candidates = [popupPath, `popup/${popupPath}`, 'popup/index.html', 'popup/popup.html'];
-  let popup: Page | null = null, lastErr: any = null;
+  let popup: Page | null = null;
+  let lastErr: any = null;
+
   for (const p of candidates) {
     try {
       popup = await browser.newPage();
@@ -162,19 +162,21 @@ export async function startCaptchaExtension(page: Page): Promise<void> {
       break;
     } catch (e) {
       lastErr = e;
-      if (popup) { await popup.close(); popup = null; }
+      if (popup) {
+        await popup.close();
+        popup = null;
+      }
     }
   }
   if (!popup) throw new Error(`HCAPT popup не найден: ${lastErr?.message}`);
 
   try {
-    const btn = await popup.waitForSelector('#hcapt-solve-btn', {
-      visible: true, timeout: 5_000
-    });
+    const btn = await popup.waitForSelector('#hcapt-solve-btn', { visible: true, timeout: 5_000 });
     await btn.click();
     console.log('🔧 HCAPT Solve clicked');
   } catch {
     console.warn('HCAPT Solve button не найден');
   }
+
   await popup.close();
 }
