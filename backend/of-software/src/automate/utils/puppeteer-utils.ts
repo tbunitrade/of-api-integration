@@ -1547,29 +1547,40 @@ export class PuppeteerUtil {
    */
   async login(cfg?: any): Promise<boolean> {
     const config = cfg!; // здесь должен быть ваш CONFIG из step-config.ts
+    console.log('login(): начало работы с конфигом', {
+      workflow: config.login_workflow,
+      idValue: config.login.idValue,
+      passwordValue: Boolean(config.login.passwordValue),
+      hasProKey: Boolean(config.login_captcha_extension?.proKey),
+    });
     try {
       for (let i = 0; i < config.login_workflow.length; i++) {
         const _configKey = config.login_workflow[i];
         const _config = config[_configKey];
         const recaptchaUtil = new RecaptchaUtil();
 
+        console.log(`login(): шаг ${i} — "${_configKey}"`);
+
         if (_config.isReload) {
           // «Перезагрузка страницы»
+          console.log('login(): выполняем reload');
           await this._page.reload({ waitUntil: 'networkidle2' });
 
         } else if (_config.isCheckPage) {
           // «Проверка, что страница загрузилась»
+          console.log(`login(): жду селектор "${_config.pageSelector}" для проверки, залогинен ли уже`);
           try {
             await this._page.waitForTimeout(10000);
             await this._page.waitForSelector(_config.pageSelector as string, { timeout: 10000 });
-            console.log('----------------- Login async login puppeteer Success -----------------');
+            console.log('----------------- Login async login puppeteer Success  login(): селектор страницы найден — значит, мы уже залогинены -----------------');
             return true;
           } catch {
-            console.log(`Check selector "${_config.pageSelector}" not found`);
+            console.log(`login(): селектор Check selector "${_config.pageSelector}" not found`);
           }
 
         } else if (_config.isRecaptcha) {
           // Сценарий «login_captcha» – стандартная встроенная reCAPTCHA/Turnstile
+          console.log('login(): попали в ветку solve inline recaptcha');
           await this._page.waitForSelector(_config.pageSelector as string, { timeout: 10_000 });
 
           // Если есть «дефолтная» капча (defaultCaptcha)
@@ -1742,6 +1753,7 @@ export class PuppeteerUtil {
       console.log('Error in login():', error);
       return false;
     }
+    console.log('login(): ни одна ветка не вернула true, возвращаем false');
     return false;
   }
 
