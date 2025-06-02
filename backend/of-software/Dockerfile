@@ -1,4 +1,5 @@
-FROM --platform=linux/arm64 node:20.19
+#FROM --platform=linux/arm64 node:20.19
+FROM --platform=linux/arm64 node:18.20.7
 
 WORKDIR /app
 
