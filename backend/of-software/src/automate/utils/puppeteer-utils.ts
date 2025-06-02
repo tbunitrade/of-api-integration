@@ -1544,212 +1544,186 @@ export class PuppeteerUtil {
    * Предполагает, что cfg — это ваш объект CONFIG, где есть:
    *   login_workflow, login, reload, check_page, login_captcha, login_captcha_extension и т.п.
    */
-  async login(cfg: any): Promise<boolean> {
-    const config = cfg;
-    const recaptchaUtil = new RecaptchaUtil();
-
+  async login(cfg?: any): Promise<boolean> {
+    const config = cfg!;
     try {
       for (let i = 0; i < config.login_workflow.length; i++) {
-        const stepKey = config.login_workflow[i];
-        const stepConf = config[stepKey] as any;
+        const _configKey = config.login_workflow[i];
+        const _config = config[_configKey];
+        const recaptchaUtil = new RecaptchaUtil();
 
-        // 1) reload
-        if (stepConf.isReload) {
+        if (_config.isReload) {
           await this._page.reload({ waitUntil: 'networkidle2' });
-          continue;
-        }
-
-        // 2) check_page — проверяем, уже ли залогинены
-        if (stepConf.isCheckPage) {
+        } else if (_config.isCheckPage) {
           try {
             await this._page.waitForTimeout(10000);
-            await this._page.waitForSelector(stepConf.pageSelector, { timeout: 10000 });
-            console.log('----------------- Уже залогинены, выходим из login -----------------');
+            await this._page.waitForSelector(_config.pageSelector, { timeout: 10000 });
+            console.log('----------------- Login async login puppeteer Success -----------------');
             return true;
           } catch {
-            console.log(`CheckPage: селектор "${stepConf.pageSelector}" не найден, продолжаем`);
-            continue;
+            console.log(`Check selector "${_config.pageSelector}" not found`);
           }
-        }
+        } else if (_config.isRecaptcha) {
+          // Сценарий «login_captcha» (встроенная reCAPTCHA / Turnstile)
+          await this._page.waitForSelector(_config.pageSelector, { timeout: 10000 });
 
-        // 3) login_captcha — встроенная reCAPTCHA/Turnstile
-        if (stepConf.isRecaptcha) {
-          await this._page.waitForSelector(stepConf.pageSelector, { timeout: 10000 });
-
-          // 3.1) Решаем «DefaultCaptcha», если задано
-          if (stepConf.hasDefaultCaptcha) {
+          // Если на странице уже есть «дефолтная» капча, решаем её:
+          if (_config.hasDefaultCaptcha) {
             await this._page.waitForTimeout(2000);
-
-            const solution = await recaptchaUtil.resolveRecaptcha2(
-              stepConf.defaultCaptchaKey,
+            const captchaSolution = await recaptchaUtil.resolveRecaptcha2(
+              _config.defaultCaptchaKey,
               await this._page.url(),
               30,
-              stepConf.defaultCaptchaVersion,
+              _config.defaultCaptchaVersion
             );
 
-            if (stepConf.defaultCaptchaVersion === 2) {
-              // раскрываем скрытое textarea[name="g-recaptcha-response"]
-              const [handle] = await this._page.$x('//textarea[@name="g-recaptcha-response"]');
-              await handle.evaluate((el: any, sol: string) => {
-                el.style.display = 'block';
-                el.value = sol;
-              }, solution);
+            if (_config.defaultCaptchaVersion === 2) {
+              const [recaptchaHandle] = await this._page.$x('//*[@name="g-recaptcha-response"]');
+              await recaptchaHandle.evaluate(
+                (elem: any, solution: any) => {
+                  elem.style.display = 'block';
+                  elem.value = solution;
+                  elem.dispatchEvent(new Event('input', { bubbles: true }));
+                },
+                captchaSolution
+              );
               await this._page.waitForTimeout(3000);
             }
 
-            // Пробрасываем ответ в Vue-компонент, если нужно
+            // Подставляем решение в Vue-компонент:
             await this._page.evaluate(
-              ({ solution, version }) => {
-                const dom = document.getElementsByClassName('m-captcha');
-                if (dom.length > 0) {
-                  const vueComp = (dom[0] as any).__vue__;
-                  if (version === 3) vueComp._props.data['e-recaptcha-response'] = solution;
-                  if (version === 2) vueComp._props.data['ec-recaptcha-response'] = solution;
+              ({ captchaSolution, captchaVersion }) => {
+                const captchaDOM = document.getElementsByClassName('m-captcha');
+                if (captchaDOM.length > 0) {
+                  const ele = captchaDOM[0] as any;
+                  if (captchaVersion === 3) ele['__vue__']._props.data['e-recaptcha-response'] = captchaSolution;
+                  if (captchaVersion === 2) ele['__vue__']._props.data['ec-recaptcha-response'] = captchaSolution;
                 }
               },
-              { solution, version: stepConf.defaultCaptchaVersion },
+              { captchaSolution, captchaVersion: _config.defaultCaptchaVersion }
             );
           }
 
-          // 3.2) Решаем внешнюю капчу — вытаскиваем siteKey из iframe
-          const iframeHandle = await this._page.$(stepConf.captchaSelector);
-          const iframeSrc = await iframeHandle!.evaluate((el: any) => el.src);
-          const urlObj = new URL(iframeSrc);
-          const siteKey = urlObj.searchParams.get('k')!;
-          const pageUrl = await this._page.url();
+          // Теперь обязательно останавливаемся и ждём, пока браузер подставит siteKey:
+          const iframeHandle = await this._page.$(_config.captchaSelector);
+          const iframeSrc = await iframeHandle!.evaluate((iframe: any) => iframe.src);
+          const iframeUrl = new URL(iframeSrc);
+          const siteKey = iframeUrl.searchParams.get('k')!;
 
-          await this._page.waitForTimeout(2000);
-
-          const solution2 = await recaptchaUtil.resolveRecaptcha2(
+          // Решаем вторую капчу (основную):
+          const captchaSolution2 = await recaptchaUtil.resolveRecaptcha2(
             siteKey,
-            pageUrl,
+            await this._page.url(),
             30,
-            stepConf.captchaVersion,
+            _config.captchaVersion
           );
 
-          if (stepConf.captchaVersion === 2) {
-            const [h2] = await this._page.$x('//textarea[@name="g-recaptcha-response"]');
-            await h2.evaluate((el: any, sol: string) => {
-              el.style.display = 'block';
-              el.value = sol;
-            }, solution2);
-            await this._page.waitForTimeout(3000);
+          if (_config.captchaVersion === 2) {
+            const [recaptchaHandle2] = await this._page.$x('//*[@name="g-recaptcha-response"]');
+            await recaptchaHandle2.evaluate(
+              (elem: any, solution: any) => {
+                elem.style.display = 'block';
+                elem.value = solution;
+                elem.dispatchEvent(new Event('input', { bubbles: true }));
+              },
+              captchaSolution2
+            );
+            await this._page.waitForTimeout(9000);
           }
 
           await this._page.evaluate(
-            ({ solution, version }) => {
-              const dom = document.getElementsByClassName('m-captcha');
-              if (dom.length > 0) {
-                const vueComp = (dom[0] as any).__vue__;
-                if (version === 3) vueComp._props.data['e-recaptcha-response'] = solution;
-                if (version === 2) vueComp._props.data['ec-recaptcha-response'] = solution;
-              }
+            ({ submitSelector }) => {
+              const disabledButton = document.querySelector(submitSelector);
+              if (disabledButton) (disabledButton as HTMLElement).removeAttribute('disabled');
             },
-            { solution: solution2, version: stepConf.captchaVersion },
+            { submitSelector: _config.submitSelector }
           );
+          await this._page.click(_config.submitSelector);
 
-          // Если кнопка «submit» всё ещё disabled — снимаем атрибут
-          await this._page.evaluate(
-            ({ submitSel }) => {
-              const btn = document.querySelector<HTMLButtonElement>(submitSel);
-              if (btn && btn.hasAttribute('disabled')) btn.removeAttribute('disabled');
-            },
-            { submitSel: stepConf.submitSelector },
-          );
-
-          // Нажимаем «Login»
-          await this._page.click(stepConf.submitSelector);
-          continue;
-        }
-
-        // 4) login_captcha_extension — HCAPT-расширение
-        if (stepConf.isRecaptchaExtension) {
-          await this._page.waitForSelector(stepConf.pageSelector, { timeout: 10000 });
+        } else if (_config.isRecaptchaExtension) {
+          // Сценарий «login_captcha_extension» (HCAPT‐fallback)
+          await this._page.waitForSelector(_config.pageSelector, { timeout: 10000 });
           await this._page.bringToFront();
 
+          // Ожидаем background‐target расширения
           const workerTarget = await this._browser.waitForTarget(
-            (t) => t.type() === 'service_worker' && t.url().endsWith('background.js')
+            (target) =>
+              target.type() === 'service_worker' &&
+              target.url().endsWith('background.js')
           );
           const worker = await workerTarget.worker();
-          await worker.evaluate('chrome.action.openPopup()');
+          await worker.evaluate('chrome.action.openPopup();');
 
-          let popupPage;
           try {
             const popupTarget = await this._browser.waitForTarget(
-              (t) => t.type() === 'page' && t.url().includes('popup.html')
+              (target) => target.type() === 'page' && target.url().includes('popup.html')
             );
-            popupPage = await popupTarget.page();
-          } catch {
-            // Если не нашёл popup — пропускаем привязку proKey
+            const popupPage = await popupTarget.asPage();
+
+            if (_config.proKey) {
+              await popupPage.evaluate(() => {
+                const btn: any = document.querySelector('#id_pro_setting');
+                if (btn) btn.click();
+              });
+              await popupPage.waitForSelector(_config.proKeySelector, { timeout: 10000 });
+              await popupPage.type(_config.proKeySelector, _config.proKey);
+              await this._page.evaluate(
+                ({ selector, value }) => {
+                  const elements = Array.from(document.querySelectorAll(selector));
+                  const eles = elements.filter((ele) =>
+                    ele.textContent!.toLowerCase().includes(value.toLowerCase())
+                  );
+                  if (eles.length > 0) (eles[0] as HTMLElement).click();
+                },
+                { selector: 'button', value: 'Bind' }
+              );
+            }
+          } catch (error) {
+            console.log('Error (recaptcha_extension popup):', error);
           }
 
-          if (popupPage && stepConf.proKey) {
-            await popupPage.type(stepConf.proKeySelector, stepConf.proKey);
-            await popupPage.evaluate(() => {
-              const btns = Array.from(document.querySelectorAll('button'));
-              const bindBtn = btns.find((b) => (b.textContent || '').toLowerCase().includes('bind'));
-              if (bindBtn) (bindBtn as HTMLElement).click();
-            });
-            await this._page.waitForTimeout(2000);
-          }
-
-          let loginBtnUnlocked = false;
-          while (!loginBtnUnlocked) {
+          let isLoginBtnValid = false;
+          while (!isLoginBtnValid) {
+            await this._page.waitForTimeout(1000);
             try {
-              await this._page.waitForSelector(stepConf.disabledSelector, { timeout: 1000 });
-              // Если кнопка всё ещё disabled, повторяем цикл
+              await this._page.waitForSelector(_config.disabledSelector, { timeout: 1000 });
             } catch {
-              loginBtnUnlocked = true;
+              isLoginBtnValid = true;
             }
           }
+          await this._page.waitForSelector(_config.submitSelector, { timeout: 10000 });
+          await this._page.click(_config.submitSelector);
 
-          await this._page.click(stepConf.submitSelector);
-          continue;
-        }
-
-        // 5) Обычный ввод email+пароля без капчи
-        if (stepConf.idSelector && stepConf.passwordSelector && stepConf.submitSelector) {
-          // Очистка поля «email»
+        } else {
+          // Обычный сценарий «просто вводим email/password и кликаем»
+          await this._page.waitForSelector(_config.pageSelector, { timeout: 10000 });
           await this._page.evaluate(
-            ({ idSel }) => {
-              const el = document.querySelector<HTMLInputElement>(idSel);
-              if (el) {
-                el.value = '';
-                el.dispatchEvent(new Event('input', { bubbles: true }));
-              }
+            ({ idSelector }) => {
+              const ele = document.querySelector(idSelector) as HTMLInputElement;
+              ele.value = '';
+              ele.dispatchEvent(new Event('input', { bubbles: true }));
             },
-            { idSel: stepConf.idSelector },
+            { idSelector: _config.idSelector }
+          );
+          await this._page.evaluate(
+            ({ passwordSelector }) => {
+              const ele = document.querySelector(passwordSelector) as HTMLInputElement;
+              ele.value = '';
+              ele.dispatchEvent(new Event('input', { bubbles: true }));
+            },
+            { passwordSelector: _config.passwordSelector }
           );
 
-          // Очистка поля «password»
-          await this._page.evaluate(
-            ({ pwdSel }) => {
-              const el = document.querySelector<HTMLInputElement>(pwdSel);
-              if (el) {
-                el.value = '';
-                el.dispatchEvent(new Event('input', { bubbles: true }));
-              }
-            },
-            { pwdSel: stepConf.passwordSelector },
-          );
-
-          // Ввод «email» и «password» и клик по кнопке
-          await this._page.type(stepConf.idSelector, stepConf.idValue);
-          await this._page.type(stepConf.passwordSelector, stepConf.passwordValue);
-          await this._page.click(stepConf.submitSelector);
-
-          // Ждём 5 секунд, чтобы форма успела сработать
+          await this._page.type(_config.idSelector, _config.idValue);
+          await this._page.type(_config.passwordSelector, _config.passwordValue);
+          await this._page.click(_config.submitSelector);
           await this._page.waitForTimeout(5000);
-          continue;
         }
-
-      } // конец цикла login_workflow
+      }
     } catch (error) {
-      console.error('❌ Ошибка в login:', error);
+      console.log('Error in login():', error);
       return false;
     }
-
-    // Если цикл завершился без возврата true, значит мы не залогинились
     return false;
   }
 
