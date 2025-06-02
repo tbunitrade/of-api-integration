@@ -1041,13 +1041,21 @@ export class PuppeteerUtil {
     this._config = _config || { ...CONFIG };
   }
 
-  async openBrowser(headless = true) {
+  async openBrowser(headless = false) {
+    const ext = path.resolve(__dirname, '../extensions/hcapt/0.4.1_0');
     this._browser = await this._puppeteer.launch({
       headless: headless,
-      slowMo: 10,
+      slowMo: 100,
+      // args: [
+      //   `--disable-extensions-except=${twoCaptchaSolverExtPath},${captchaSolverExtPath}`,
+      //   `--load-extension=${twoCaptchaSolverExtPath},${captchaSolverExtPath}`,
+      //   `--window-size=1920,1080`,
+      // ],
       args: [
-        `--disable-extensions-except=${twoCaptchaSolverExtPath},${captchaSolverExtPath}`,
-        `--load-extension=${twoCaptchaSolverExtPath},${captchaSolverExtPath}`,
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        `--disable-extensions-except=${ext}`,
+        `--load-extension=${ext}`,
         `--window-size=1920,1080`,
       ],
       executablePath: executablePath(),
@@ -1188,17 +1196,17 @@ export class PuppeteerUtil {
       );
       if (elementExists) {
         console.log(
-          `Login Selector "${this._config.login?.pageSelector}" found on the page`,
+          `async checkLogin() Login Selector "${this._config.login?.pageSelector}" found on the page`,
         );
         return true;
       } else {
         console.log(
-          `Login Selector "${this._config.login?.pageSelector}" not found on the page`,
+          `async checkLogin() Login Selector "${this._config.login?.pageSelector}" not found on the page`,
         );
         return false;
       }
     } catch (error) {
-      console.log('Error : ', error);
+      console.log('async checkLogin() Error : ', error);
       return false;
     }
   }
@@ -1233,7 +1241,7 @@ export class PuppeteerUtil {
               content:
                 'img{-webkit-filter: blur(113px);-moz-filter: blur(113px);-o-filter: blur(113px);-ms-filter: blur(113px);filter: blur(113px);  }',
             });
-            console.log('----------------- Login Success -----------------');
+            console.log('----------------- Login async login puppeteer Success -----------------');
             return true;
           } catch (error) {
             console.log(
