@@ -71,7 +71,7 @@ export class CronService {
    */
   async manualStart(isPost = false, manualStart = false, user?: any) {
     //this is test line and need to be deleted
-    const startJob = this.createCron(isPost, true, user);
+    const startJob = this.createCron(isPost, manualStart, user);
     await startJob();
     return true;
   }
