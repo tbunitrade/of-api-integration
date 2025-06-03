@@ -1065,6 +1065,7 @@ export class PuppeteerUtil {
 
     // 3) подключаем нашу капчу
     const ext = path.resolve(__dirname, '../extensions/hcapt/0.4.1_0');
+    console.log(">>> Я точно собираюсь запустить Puppeteer.launch() …");
     this._browser = await this._puppeteer.launch({
       headless:  this.headless,
       slowMo: 100,

@@ -138,6 +138,13 @@ export class CronService {
   private createCron = (isPost = false, manualStart = false, user?: any) => {
     const MaxOpeningBrowserCount = 1;
     return async () => {
+      // ← вот сюда вставляем логи
+      console.log('>>> CRON handler: пытаюсь запустить AutomateService');
+      console.log(`>>> CRON handler: режим = ${isPost ? 'Post' : 'Message'}, manualStart = ${manualStart}`);
+      console.log('>>> ENV.HEADLESS_MODE =', process.env.HEADLESS_MODE);
+      console.log('>>> ENV.DISPLAY      =', process.env.DISPLAY);
+      console.log('>>> ENV.PUPPETEER_EXECUTABLE_PATH =', process.env.PUPPETEER_EXECUTABLE_PATH);
+
       console.log(
         `[CRON START] ${isPost ? 'Post' : 'Message'} job ${
           manualStart ? '(manual)' : '(scheduled)'

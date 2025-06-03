@@ -69,6 +69,10 @@ export class AutomateService {
       const puppeteerUtil = new PuppeteerUtil();
       puppeteerUtil.initialize();
       puppeteerUtil.setConfig();
+      // ДО ВЫЗОВА openBrowser() — добавляем логи:
+      console.log('>>> [startMessage] ENV.HEADLESS_MODE =', process.env.HEADLESS_MODE);
+      console.log('>>> [startMessage] ENV.DISPLAY      =', process.env.DISPLAY);
+      console.log('>>> [startMessage] ENV.PUPPETEER_EXECUTABLE_PATH =', process.env.PUPPETEER_EXECUTABLE_PATH);
       // recaptcha solving can be wrong sometime
       const headless = !manualStart;
       try {
@@ -263,6 +267,10 @@ export class AutomateService {
       const puppeteerUtil = new PuppeteerUtil();
       puppeteerUtil.initialize();
       puppeteerUtil.setConfig();
+      // ДО ВЫЗОВА openBrowser() — добавляем логи:
+      console.log('>>> [startPost] ENV.HEADLESS_MODE =', process.env.HEADLESS_MODE);
+      console.log('>>> [startPost] ENV.DISPLAY      =', process.env.DISPLAY);
+      console.log('>>> [startPost] ENV.PUPPETEER_EXECUTABLE_PATH =', process.env.PUPPETEER_EXECUTABLE_PATH);
       // recaptcha solving can be wrong sometime
       const headless = !manualStart;
       await puppeteerUtil.openBrowser();
