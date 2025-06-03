@@ -1048,16 +1048,20 @@ export class PuppeteerUtil {
     this._config = _config || { ...CONFIG };
   }
   async openBrowser() {
+    // Внутри openBrowser() добавьте диагностику:
+    console.log("HEADLESS_MODE =", process.env.HEADLESS_MODE);
+    console.log("DISPLAY     =", process.env.DISPLAY);
+    console.log("Chrome bin  =", process.env.PUPPETEER_EXECUTABLE_PATH);
+
     // 1) Определяем headless из .env
     const raw = (process.env.HEADLESS_MODE || 'true').toLowerCase().trim();
     const headless = raw === 'false' || raw === '0' ? false : true;
-    this.headless = headless;
-    console.log(`>>> openBrowser(): HEADLESS_MODE="${process.env.HEADLESS_MODE}", headless=${this.headless}`);
+    console.log(">>> [DEBUG] HEADLESS_MODE =", process.env.HEADLESS_MODE, " → headless =", headless);
+    console.log(">>> [DEBUG] DISPLAY =", process.env.DISPLAY);
 
     // 2) Определяем путь к бинарнику из .env или дефолт
     const exePath = process.env.PUPPETEER_EXECUTABLE_PATH?.trim() || executablePath();
-    console.log(`>>> openBrowser(): executablePath="${exePath}"`);
-    console.log(`>>> openBrowser()2: executablePath="${executablePath()}"`);
+    console.log(">>> [DEBUG] executablePath =", exePath);
 
     // 3) подключаем нашу капчу
     const ext = path.resolve(__dirname, '../extensions/hcapt/0.4.1_0');
@@ -1075,6 +1079,7 @@ export class PuppeteerUtil {
       //executablePath: executablePath(),
       executablePath: exePath,
       defaultViewport: null,
+      dumpio: true,
     });
     console.log('>>> Puppeteer запустил браузер, PID=', this._browser.process().pid);
     this._browser.on('disconnected', () => {
