@@ -1073,7 +1073,7 @@ export class PuppeteerUtil {
         `--window-size=1920,1080`,
       ],
       //executablePath: executablePath(),
-      //executablePath: exePath,
+      executablePath: exePath,
       defaultViewport: null,
     });
     console.log('>>> Puppeteer запустил браузер, PID=', this._browser.process().pid);
