@@ -42,39 +42,36 @@ export class PuppeteerUtil {
     this._page = null;
     this._config = null;
     this._isclosed = true;
-    // Перед созданием браузера логируем, какой у нас DISPLAY
     console.log('▶ PuppeteerUtil.constructor: HEADLESS_MODE=', process.env.HEADLESS_MODE || '(undefined)');
   }
 
+  // 1) Инициализируем puppeteer-extra с stealth-плагином
   initialize() {
     this._puppeteer = puppeteer;
     this._puppeteer.use(StealthPlugin());
   }
 
+  // 2) Устанавливаем конфиг (если нужно свой, передайте в setConfig; иначе будет DEFAULT_CONFIG)
   setConfig(cfg?: any) {
-    // Если передали пользовательский конфиг, берём его, иначе клонируем DEFAULT_CONFIG
     this._config = cfg ? { ...cfg } : { ...DEFAULT_CONFIG };
   }
 
+  // 3) Запуск браузера с расширением HCAPTCHA
   async openBrowser() {
     if (!this._puppeteer) this.initialize();
 
-    // Диагностика
     console.log('HEADLESS_MODE =', process.env.HEADLESS_MODE);
     console.log('DISPLAY     =', process.env.DISPLAY);
     console.log('Chrome bin  =', process.env.PUPPETEER_EXECUTABLE_PATH);
 
-    // Определяем headless из .env
     const raw = (process.env.HEADLESS_MODE || 'true').toLowerCase().trim();
     const headlessMode = raw === 'false' || raw === '0' ? false : true;
     this.headless = headlessMode;
     console.log('>>> [DEBUG] HEADLESS_MODE =', process.env.HEADLESS_MODE, '→ headless =', headlessMode);
 
-    // Путь к хрому
     const exePath = process.env.PUPPETEER_EXECUTABLE_PATH?.trim() || executablePath();
     console.log('>>> [DEBUG] executablePath =', exePath);
 
-    // Загружаем расширение капчи
     const ext = path.resolve(__dirname, '../extensions/hcapt/0.4.1_0');
     console.log('>>> Я точно собираюсь запустить Puppeteer.launch() …');
     this._browser = await this._puppeteer.launch({
@@ -99,30 +96,32 @@ export class PuppeteerUtil {
     });
 
     this._page = await this._browser.newPage();
-    // Чтобы не закрыть окно мгновенно (для отладки), ждём 5 секунд
+    // Небольшая пауза (для отладки)
     console.log('>>> Жду 5 секунд перед дальнейшими действиями');
-    await this._page.waitForTimeout(5000);
+    await this._page.setTimeout(5000);
   }
 
+  // 4) Установка одного cookie (если нужно вручную)
   async setCookie(name: string, value: string, domain: string) {
     if (!this._page) throw new Error('Page is not initialized');
-    // Пример: установить cookie
     await this._page.setCookie({ name, value, domain });
   }
 
+  // 5) Переход на любую страницу + сразу закрытие баннера cookie
   async openPage(pageUrl: string) {
     if (!this._page) throw new Error('Page is not initialized');
     await this._page.goto(pageUrl, { timeout: 100000, waitUntil: 'networkidle2' });
-    // Сразу принимаем cookie баннер
+    // Закрываем баннер «Accept All» через хелпер acceptCookie
     await acceptCookie.call(this);
   }
 
+  // 6) Проверка, есть ли на странице селектор логина (т.е. мы ещё не залогинены)
   async checkLogin(): Promise<boolean> {
     if (!this._page || !this._config) throw new Error('Page or config is not initialized');
     try {
       const sel = this._config.login?.pageSelector;
-      const element = await this._page.$(sel);
-      if (element) {
+      const el = await this._page.$(sel);
+      if (el) {
         console.log(`async checkLogin() Login Selector "${sel}" найден на странице`);
         return true;
       } else {
@@ -135,19 +134,19 @@ export class PuppeteerUtil {
     }
   }
 
+  // 7) Простой метод-пауза
   async waitFor(ms: number) {
     if (!this._page) return;
     await this._page.setTimeout(ms);
   }
 
+  // 8) Логика входа: сначала loadCookiesFromFile, потом performLoginWithRetries, потом saveCookieToFile
   async login(username: string, password: string): Promise<boolean> {
     if (!this._page || !this._config) throw new Error('Page or config is not initialized');
 
-    // Сохраняем файл куки перед началом
     const cookieFileName = `user_${this._config.login.idValue || username}`;
     await loadCookiesFromFile.call(this, cookieFileName);
 
-    // Выполняем логику входа с капчей
     const success = await performLoginWithRetries(this._page, this._config, username, password);
     if (success) {
       console.log('✅ Login прошёл успешно, сохраняем куки');
@@ -159,6 +158,7 @@ export class PuppeteerUtil {
     }
   }
 
+  // 9) Позволяет выполнить любые «рабочие» шаги (клики/ввод/ожидания) из work-utils.ts
   async work(tasks?: any[]) {
     if (!this._page) throw new Error('Page is not initialized');
     if (!tasks || !tasks.length) {
@@ -166,33 +166,36 @@ export class PuppeteerUtil {
       return;
     }
     try {
-      // Предполагаем, что work(tasks) проставлено в виде массива шагов
       await work.call(this, tasks);
     } catch (err) {
       console.log('Ошибка в work():', err);
     }
   }
 
+  // 10) Перезагрузка текущей страницы
   async reload() {
     if (!this._page) return;
     try {
       await this._page.reload({ waitUntil: 'networkidle2' });
-      await this._page.waitForTimeout(10000);
+      await this._page.setTimeout(10000);
     } catch (err) {
       console.log('Error in reload : ', err);
     }
   }
 
+  // 11) Закрытие браузера
   async closeBrowser() {
     if (!this._browser) return;
     await this._browser.close();
     this._isclosed = true;
   }
 
+  // 12) Проверка, закрылся ли браузер (используется внутри work-utils)
   isBrowserClosed(): boolean {
     return this._isclosed;
   }
 
+  // 13) Очищаем ссылки на puppeteer/браузер/страницу/конфиг
   destroy() {
     this._puppeteer = null;
     this._browser = null;

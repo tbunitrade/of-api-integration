@@ -40,13 +40,6 @@ export async function performLoginOnce(
   const { idSelector, passwordSelector, submitSelector } = config.login;
   const { loginErrorMessage: errorSel, profileFeed: feedSel } = config.selectors;
 
-  // old config
-  // selectors: {
-  //   loginErrorMessage: '.v-text-field__details .v-messages__message',
-  //     profileContainer: '#app.main-wrapper #content',
-  //     profileFeed: '#app.main-wrapper #content .b-feed'
-  // },
-
   resetCaptchaFlag();
 
   // 1) вводим email + password
@@ -193,13 +186,14 @@ export async function performLoginWithRetries(
       return false;
     }
     console.log('❌ Сброс формы и перезагрузка…');
-    await page.evaluate(() => {
-      (document.querySelector('input[name="email"]') as HTMLInputElement).value = '';
-      (document.querySelector('input[name="password"]') as HTMLInputElement).value = '';
-    });
+
+    // await page.evaluate(() => {
+    //   (document.querySelector('input[name="email"]') as HTMLInputElement).value = '';
+    //   (document.querySelector('input[name="password"]') as HTMLInputElement).value = '';
+    // });
     await setTimeout(1_000);
     await page.reload({ waitUntil: 'networkidle2' });
-    await acceptCookie(page);
+    //await acceptCookie.call(page);
   }
   console.error('⛔ Не удалось войти за все попытки');
   return false;

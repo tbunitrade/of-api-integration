@@ -6,17 +6,18 @@ export const CONFIG = {
     'check_page',
     'login',
     'check_page',
-    //'login_captcha_extension',
     'login_captcha',
     'check_page',
   ],
+  selectors: {
+    loginErrorMessage: '.v-text-field__details .v-messages__message',
+    profileFeed: '#app.main-wrapper #content .b-feed'
+  },
   login: {
     pageSelector: '.login_content',
     idSelector: 'input[name="email"]',
     passwordSelector: 'input[name="password"]',
     submitSelector: '.b-loginreg__form button[type="submit"]',
-    idValue: '$value',
-    passwordValue: '$value',
   },
   reload: {
     isReload: true,

@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { PuppeteerUtil, CONFIG } from './utils/puppeteer-utils';
+import { PuppeteerUtil } from './utils/puppeteer-utils';
+import {CONFIG as DEFAULT_CONFIG} from './utils/config/step-config';
 import * as _ from 'lodash';
 import testRecaptchaSolver from './utils/test-recaptcha-solver';
 import { getRandomNumber } from 'src/cron/utils';
@@ -84,7 +85,7 @@ export class AutomateService {
       }
       const cookieFileName = 'user_' + data.model_id + '.' + data.platform_id;
       await puppeteerUtil.openPage('https://onlyfans.com/my/chats/send');
-      await puppeteerUtil.acceptCookie();
+      //await acceptCookie.call();
       // await puppeteerUtil.loadCookiesFromFile(cookieFileName);
       // await puppeteerUtil.reload();
       const isLoginPage = await puppeteerUtil.checkLogin();
@@ -93,35 +94,47 @@ export class AutomateService {
 
       while (1) {
         try {
-          let _config = _.cloneDeep(CONFIG);
+          let _config = _.cloneDeep(DEFAULT_CONFIG);
           _config['model_id'] = data.model_id;
           _config['platform_id'] = data.platform_id;
           let isLoggedIn = false;
           if (!data.username) break;
+          // if (isLoginPage) {
+          //   _config.login.idValue = _config.login.idValue.replace(
+          //     '$value',
+          //     data.username,
+          //   );
+          //   _config.login.passwordValue = _config.login.passwordValue.replace(
+          //     '$value',
+          //     data.password,
+          //   );
+          //   if (data.prokey) {
+          //     _config.login_captcha_extension.proKey =
+          //       _config.login_captcha_extension.proKey.replace(
+          //         '$value',
+          //         data.prokey,
+          //       );
+          //   }
+          //
+          //   //isLoggedIn = await puppeteerUtil.login.call(_config);
+          //   isLoggedIn = await puppeteerUtil.login(data.username, data.password);
+          //   loginTried++;
+          //   if (loginTried >= 3) await puppeteerUtil.waitFor(200000);
+          // } else {
+          //   console.log('----------------- Login function startMessage Success -----------------');
+          //   isLoggedIn = true;
+          // }
           if (isLoginPage) {
-            _config.login.idValue = _config.login.idValue.replace(
-              '$value',
-              data.username,
-            );
-            _config.login.passwordValue = _config.login.passwordValue.replace(
-              '$value',
-              data.password,
-            );
-            if (data.prokey) {
-              _config.login_captcha_extension.proKey =
-                _config.login_captcha_extension.proKey.replace(
-                  '$value',
-                  data.prokey,
-                );
-            }
-
-            isLoggedIn = await puppeteerUtil.login(_config);
+            // просто передаём username и password, конфиг уже есть в PuppeteerUtil
+            isLoggedIn = await puppeteerUtil.login(data.username, data.password);
             loginTried++;
             if (loginTried >= 3) await puppeteerUtil.waitFor(200000);
           } else {
             console.log('----------------- Login function startMessage Success -----------------');
             isLoggedIn = true;
           }
+
+
           if (isLoggedIn) {
             //start cron
             console.log('----------------- Start func startMessage cron -----------------');
@@ -141,7 +154,7 @@ export class AutomateService {
               const group = groupsWithMessages[i];
               for (let j = 0; j < group.messages.length; j++) {
                 _config = null;
-                _config = _.cloneDeep(CONFIG);
+                _config = _.cloneDeep(DEFAULT_CONFIG);
                 try {
                   const msg = group.messages[j];
                   const [_hour, minutes, secs] = msg.message_time?.split(':');
@@ -194,10 +207,10 @@ export class AutomateService {
                     return { ...c };
                   });
                   const result = await puppeteerUtil.work(config);
-                  if (result === 'browser_closed') {
-                    console.log('Browser Closed');
-                    return scheduledCount;
-                  }
+                  // if (result === 'browser_closed') {
+                  //   console.log('Browser Closed');
+                  //   return scheduledCount;
+                  // }
                 } catch (error) {
                   console.log('Error : ', error);
                   continue;
@@ -278,7 +291,7 @@ export class AutomateService {
       const cookieFileName =
         'user_' + modelPlatform.model_id + '.' + modelPlatform.platform_id;
       await puppeteerUtil.openPage('https://onlyfans.com/posts/create');
-      await puppeteerUtil.acceptCookie();
+      // await puppeteerUtil.acceptCookie();
       // await puppeteerUtil.loadCookiesFromFile(cookieFileName);
       // await puppeteerUtil.reload();
       const isLoginPage = await puppeteerUtil.checkLogin();
@@ -287,34 +300,46 @@ export class AutomateService {
 
       while (1) {
         try {
-          let _config = _.cloneDeep(CONFIG);
+          let _config = _.cloneDeep(DEFAULT_CONFIG);
           _config['model_id'] = modelPlatform.model_id;
           _config['platform_id'] = modelPlatform.platform_id;
           let isLoggedIn = false;
           if (!modelPlatform.username) break;
+          // if (isLoginPage) {
+          //   _config.login.idValue = _config.login.idValue.replace(
+          //     '$value',
+          //     modelPlatform.username,
+          //   );
+          //   _config.login.passwordValue = _config.login.passwordValue.replace(
+          //     '$value',
+          //     modelPlatform.password,
+          //   );
+          //
+          //   if (prokey) {
+          //     _config.login_captcha_extension.proKey =
+          //       _config.login_captcha_extension.proKey.replace(
+          //         '$value',
+          //         prokey,
+          //       );
+          //   }
+          //   //isLoggedIn = await puppeteerUtil.login.call(_config);
+          //   isLoggedIn = await puppeteerUtil.login(data.username, data.password);
+          //   loginTried++;
+          //   if (loginTried >= 3) await puppeteerUtil.waitFor(300000);
+          // } else {
+          //   console.log('----------------- Login function startPost Success -----------------');
+          //   isLoggedIn = true;
+          // }
           if (isLoginPage) {
-            _config.login.idValue = _config.login.idValue.replace(
-              '$value',
-              modelPlatform.username,
-            );
-            _config.login.passwordValue = _config.login.passwordValue.replace(
-              '$value',
-              modelPlatform.password,
-            );
-
-            if (prokey) {
-              _config.login_captcha_extension.proKey =
-                _config.login_captcha_extension.proKey.replace(
-                  '$value',
-                  prokey,
-                );
-            }
-            isLoggedIn = await puppeteerUtil.login(_config);
-            loginTried++;
-            if (loginTried >= 3) await puppeteerUtil.waitFor(300000);
+             isLoggedIn = await puppeteerUtil.login(
+             modelPlatform.username,
+             modelPlatform.password,
+             );
+             loginTried++;
+             if (loginTried >= 3) await puppeteerUtil.waitFor(300000);
           } else {
-            console.log('----------------- Login function startPost Success -----------------');
-            isLoggedIn = true;
+             console.log('----------------- Login function startPost Success -----------------');
+             isLoggedIn = true;
           }
           if (isLoggedIn) {
             //start cron
@@ -363,7 +388,7 @@ export class AutomateService {
                       (_, ii) => ii,
                     );
                   }
-                  _config = _.cloneDeep(CONFIG);
+                  _config = _.cloneDeep(DEFAULT_CONFIG);
                   const postTime = postWithTimesAndCaptions.post_times[j];
                   if (!postTime) continue;
                   const [_hour, minutes, secs] = postTime.time?.split(':');
@@ -405,11 +430,12 @@ export class AutomateService {
                     }
                     return { ...c };
                   });
-                  const result = await puppeteerUtil.work(config);
-                  if (result === 'browser_closed') {
-                    console.log('Browser Closed');
-                    return scheduledCount;
-                  }
+                  //const result = await puppeteerUtil.work(config);
+                  // if (result === 'browser_closed') {
+                  //   console.log('Browser Closed');
+                  //   return scheduledCount;
+                  // }
+                  await puppeteerUtil.work(config);
                 } catch (error) {
                   console.log('Error : ', error);
                   continue;

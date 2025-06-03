@@ -156,7 +156,10 @@ export class CronService {
 
       try {
         const modelPlatforms = await this.modelPlatformService.findAll(false);
-        console.log(`>>> [CRON] Найдено modelPlatforms: ${modelPlatforms.length}`); // ←
+        console.log(`>>> [CRON] Найдено modelPlatforms: ${modelPlatforms.length}`); // ← забор моделей
+        for (const mp of modelPlatforms) {
+          console.log(`→ mp.id=${mp.id}, username="${mp.username}", password="${mp.password ? '••••••' : '(пусто)'}"`);
+        }
         const sendAMessage = async (mp: ModelPlatform, manualStart) => {
           let groups = await this.groupService.findNGroupsByPlatformId(
             mp.platform_id,
