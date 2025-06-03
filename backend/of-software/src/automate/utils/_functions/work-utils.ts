@@ -33,7 +33,8 @@ export async function work(_config: any = null) {
         }
       } catch (err) {}
       try {
-        await this._page.setTimeout(1000);
+        //await this._page.setTimeout(1000);
+        await setTimeout(1000);
       } catch (err) {}
 
       const step = workConfig[i];
@@ -126,11 +127,13 @@ export async function work(_config: any = null) {
             ]);
             const fileName = filePathList[fidx];
             await fileChooser.accept([fileName]);
-            await this._page.setTimeout(100);
+            //await this._page.setTimeout(100);
+            await setTimeout(100);
           }
 
           // await fileChooser.accept(filePathList);
-          await this._page.setTimeout(500);
+          //await this._page.setTimeout(500);
+          await setTimeout(500);
 
           const waitForUploadDone = async () => {
             while (1) {
@@ -167,7 +170,8 @@ export async function work(_config: any = null) {
           break;
         case 'waitForTime':
           try {
-            await this._page.setTimeout(step.value);
+            //await this._page.setTimeout(step.value);
+            await  setTimeout(step.value);
           } catch (error) {}
 
           break;

@@ -8,6 +8,7 @@ import _fs from 'fs';
 import dotenv from 'dotenv';
 dotenv.config();
 import * as process from 'node:process';
+import { setTimeout } from 'node:timers/promises';
 
 const fs = _fs.promises;
 
@@ -98,7 +99,8 @@ export class PuppeteerUtil {
     this._page = await this._browser.newPage();
     // Небольшая пауза (для отладки)
     console.log('>>> Жду 5 секунд перед дальнейшими действиями');
-    await this._page.setTimeout(5000);
+    //await this._page.setTimeout(5000);
+    await setTimeout(5000);
   }
 
   // 4) Установка одного cookie (если нужно вручную)
@@ -137,7 +139,8 @@ export class PuppeteerUtil {
   // 7) Простой метод-пауза
   async waitFor(ms: number) {
     if (!this._page) return;
-    await this._page.setTimeout(ms);
+    //await this._page.setTimeout(ms);
+    await setTimeout(ms);
   }
 
   // 8) Логика входа: сначала loadCookiesFromFile, потом performLoginWithRetries, потом saveCookieToFile
@@ -177,7 +180,8 @@ export class PuppeteerUtil {
     if (!this._page) return;
     try {
       await this._page.reload({ waitUntil: 'networkidle2' });
-      await this._page.setTimeout(10000);
+      //await this._page.setTimeout(10000);
+      await setTimeout(10000);
     } catch (err) {
       console.log('Error in reload : ', err);
     }
