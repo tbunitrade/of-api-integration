@@ -4,7 +4,11 @@ import { promises as fs } from 'fs';
 import { setTimeout } from 'node:timers/promises';
 import _fs from 'fs';
 
-export async function acceptCookie() {
+/**
+ * Закрывает баннер «Accept All» через механизм work(...)
+ * (будет вызвано с контекстом PuppeteerUtil, где this._page и this.work уже определены).
+ */
+export async function acceptCookie(this: any) {
   const acceptCookieWork = [
     {
       type: 'waitForSelector',
@@ -20,25 +24,10 @@ export async function acceptCookie() {
   await this.work(acceptCookieWork);
 }
 
-export async function  setCookie(cookies?: any) {
-  try {
-    if (cookies) {
-      await this._page.setCookie(...cookies);
-    }
-  } catch (error) {
-    console.log('Error : ', error);
-  }
-}
-export async function  getCookie() {
-  try {
-    const cookies = await this._page.cookies();
-    return cookies;
-  } catch (error) {
-    console.log('Error: ', error);
-  }
-}
-
-export async function  saveCookieToFile(fileName: string) {
+/**
+ * Сохраняем cookie в файл (парочку JSON-ок)
+ */
+export async function  saveCookieToFile(this: any, fileName: string) {
   const cookies = await this.getCookie();
   const localStorageData = await this._page.evaluate(() =>
     JSON.stringify(localStorage),
@@ -64,13 +53,14 @@ export async function  saveCookieToFile(fileName: string) {
   console.log('Cookies saved to file:', `./${fileName}_***.json`);
 }
 
-export async function  loadCookiesFromFile(fileName: string) {
+/**
+ * Загружаем cookie из файлов и правим localStorage / sessionStorage
+ */
+export async function  loadCookiesFromFile(this: any, fileName: string) {
   try {
     const cookiesString = await fs.readFile(
       `./cookies/${fileName}_cookie.json`,
-      {
-        encoding: 'utf-8',
-      },
+      { encoding: 'utf-8' },
     );
 
     if (cookiesString) {
@@ -118,3 +108,34 @@ export async function  loadCookiesFromFile(fileName: string) {
     console.error('Error loading cookies from file:', error);
   }
 }
+
+/**
+ * Устанавливает cookie в текущей странице
+ */
+export async function  setCookie(this:any, cookies?: any[]) {
+  try {
+    if (cookies) {
+      await this._page.setCookie(...cookies);
+    }
+  } catch (error) {
+    console.log('Error setting cookies : ', error);
+  }
+}
+
+/**
+ * Получаем список cookie из текущей страницы
+ */
+export async function  getCookie(this: any) {
+  try {
+    if (this._page) {
+      return this._page.cookies()
+    }
+  } catch (error) {
+    console.log('Error getting cookies: ', error);
+  }
+  return [];
+}
+
+
+
+

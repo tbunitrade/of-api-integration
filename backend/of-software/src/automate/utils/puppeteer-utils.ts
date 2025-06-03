@@ -14,7 +14,7 @@ const fs = _fs.promises;
 // ==== Ваши «модули» ====
 import { performLoginWithRetries } from './_functions/login-utils';
 import { RecaptchaUtil, handleCaptchaBeforeClick, checkLoginError, startCaptchaExtension } from './_functions/recaptcha-utils';
-import { acceptCookie, saveCookieToFile, loadCookiesFromFile, setCookie } from './_functions/cookies-utils';
+import { acceptCookie, saveCookieToFile, loadCookiesFromFile, setCookie, getCookie } from './_functions/cookies-utils';
 import { CONFIG as DEFAULT_CONFIG } from './config/step-config';
 import { work } from './_functions/work-utils';
 
@@ -114,7 +114,7 @@ export class PuppeteerUtil {
     if (!this._page) throw new Error('Page is not initialized');
     await this._page.goto(pageUrl, { timeout: 100000, waitUntil: 'networkidle2' });
     // Сразу принимаем cookie баннер
-    await acceptCookie(this._page);
+    await acceptCookie.call(this);
   }
 
   async checkLogin(): Promise<boolean> {
@@ -137,7 +137,7 @@ export class PuppeteerUtil {
 
   async waitFor(ms: number) {
     if (!this._page) return;
-    await this._page.waitForTimeout(ms);
+    await this._page.setTimeout(ms);
   }
 
   async login(username: string, password: string): Promise<boolean> {
@@ -145,13 +145,13 @@ export class PuppeteerUtil {
 
     // Сохраняем файл куки перед началом
     const cookieFileName = `user_${this._config.login.idValue || username}`;
-    await loadCookiesFromFile(this._page, cookieFileName);
+    await loadCookiesFromFile.call(this, cookieFileName);
 
     // Выполняем логику входа с капчей
     const success = await performLoginWithRetries(this._page, this._config, username, password);
     if (success) {
       console.log('✅ Login прошёл успешно, сохраняем куки');
-      await saveCookieToFile(this._page, cookieFileName);
+      await saveCookieToFile.call(this, cookieFileName);
       return true;
     } else {
       console.log('❌ Login не удался');
@@ -167,7 +167,7 @@ export class PuppeteerUtil {
     }
     try {
       // Предполагаем, что work(tasks) проставлено в виде массива шагов
-      await work(this._page, tasks);
+      await work.call(this, tasks);
     } catch (err) {
       console.log('Ошибка в work():', err);
     }
