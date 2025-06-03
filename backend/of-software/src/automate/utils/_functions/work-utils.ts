@@ -1,0 +1,233 @@
+// src/_functions/work-utils.ts
+
+import type { Page } from 'puppeteer';
+import { setTimeout } from 'node:timers/promises';
+import process from "node:process";
+
+export async function work(_config: any = null) {
+  //wait for page loaded
+  let compareResultValue = null;
+  let workConfig = _config;
+  if (!Array.isArray(_config)) {
+    workConfig = [_config];
+  }
+  for (let i = 0; i < workConfig.length; i++) {
+    try {
+      const browserClosed = this.isBrowserClosed();
+      console.log('BrowserClosed', browserClosed);
+      if (browserClosed) return 'browser_closed';
+
+      try {
+        const alertEle = await this._page.$('#ModalAlert button');
+        if (alertEle) {
+          const actualValue = await this._page.evaluate((selector) => {
+            const div = document.querySelector(selector);
+            return div ? div.textContent.trim() : null;
+          }, '#ModalAlert .dialog_message');
+          const shouldClickModal = actualValue
+            .toLowerCase()
+            .includes('No microphone detected'.toLowerCase());
+          if (shouldClickModal) {
+            await alertEle.click();
+          }
+        }
+      } catch (err) {}
+      try {
+        await this._page.setTimeout(1000);
+      } catch (err) {}
+
+      const step = workConfig[i];
+      console.log(`Step: ${step.type}, Value: ${step.value}`);
+      switch (step.type) {
+        case 'click':
+          const ele = await this._page.$(step.value);
+          if (ele) {
+            await ele.click();
+          }
+
+          break;
+        case 'waitForSelector':
+          await this._page.waitForSelector(step.value, {
+            timeout: 10000,
+          });
+          break;
+        case 'loop':
+          const messageListStr = step.value;
+          const _messageList = messageListStr
+            ? messageListStr.split(',')
+            : [];
+          if (_messageList.length === 0) compareResultValue = false;
+          const messageList = _messageList.map((m) => m.trim());
+          for (let mi = 0; mi < messageList.length; mi++) {
+            const msg = messageList[mi];
+            for (let li = 0; li < step.childs.length; li++) {
+              const _step = { ...step.childs[li] };
+              if (_step.value) {
+                _step.value = _step.value.replaceAll('$value', msg);
+              }
+
+              await this.work(_step);
+            }
+          }
+
+          break;
+
+        case 'type':
+          await this._page.evaluate(
+            ({ selector, value }) => {
+              const ele = document.querySelector(selector);
+              if (ele) {
+                ele.value = '';
+                ele.dispatchEvent(new Event('input', { bubbles: true })); // As this is vue website, it doens't chagne state value though we set value on input box
+                ele.value = value;
+                ele.dispatchEvent(new Event('input', { bubbles: true })); // As this is vue website, it doens't chagne state value though we set value on input box
+              }
+            },
+            { selector: step.selector, value: step.value },
+          );
+          // await this._page.type(step.selector, step.value);
+          break;
+        case 'keyboardType':
+          await this.typeWithShiftEnter(step.value);
+          // await this._page.keyboard.type(step.value);
+          // await this._page.type(step.selector, step.value);
+          break;
+        case 'clickForValue':
+          await this._page.evaluate(
+            ({ selector, value }) => {
+              const elements = Array.from(
+                document.querySelectorAll(selector),
+              );
+              const eles = elements.filter((ele) =>
+                ele.textContent.toLowerCase().includes(value.toLowerCase()),
+              );
+              if (eles.length > 0) {
+                eles[0].click();
+              }
+            },
+            { selector: step.selector, value: step.value },
+          );
+
+          // await this._page.click(`${step.selector}:contains("${step.value})`);
+          break;
+
+        case 'appendMedias':
+          if (!step.value || step.value?.length === 0) break;
+          const fileNameList = step.value.split(',') || [];
+
+          const filePathList = fileNameList.map((it) => {
+            const fileName = it.replace(/^.*[\\/]/, '');
+            return `${process.env.UPLOAD_FOLDER_URL}/${fileName}`;
+          });
+          for (let fidx = 0; fidx < filePathList.length; fidx++) {
+            const [fileChooser] = await Promise.all([
+              this._page.waitForFileChooser(),
+              this._page.$eval(step.selector, (element) => element.click()),
+            ]);
+            const fileName = filePathList[fidx];
+            await fileChooser.accept([fileName]);
+            await this._page.setTimeout(100);
+          }
+
+          // await fileChooser.accept(filePathList);
+          await this._page.setTimeout(500);
+
+          const waitForUploadDone = async () => {
+            while (1) {
+              try {
+                await this._page.waitForFunction(
+                  () =>
+                    !document.querySelector(
+                      'span.b-dropzone__preview__progress',
+                    ),
+                  {
+                    timeout: 3000,
+                  },
+                );
+                break;
+              } catch (err) {
+                console.log('Waiting for uploading done: ', err);
+              }
+            }
+          };
+          await waitForUploadDone();
+          const closeFileTypeNotAllowed = [
+            {
+              type: 'click',
+              value: '#ModalAlert___BV_modal_content_ footer button',
+            },
+          ];
+          await this.work(closeFileTypeNotAllowed);
+          // await this._page.waitForSelector(
+          //   'button.b-dropzone__preview__edit',
+          //   {
+          //     timeout: 60000,
+          //   },
+          // );
+          break;
+        case 'waitForTime':
+          try {
+            await this._page.setTimeout(step.value);
+          } catch (error) {}
+
+          break;
+        case 'clickUntil':
+          while (1) {
+            const domValue = await this._page.evaluate((selector) => {
+              const div = document.querySelector(selector);
+              return div ? div.textContent.trim() : null;
+            }, step.selector);
+            const isIncluding = domValue
+              .toLowerCase()
+              .includes(step.value.toLowerCase());
+            if (!isIncluding) {
+              const ele = await this._page.$(step.btnSelector);
+              if (ele) {
+                await ele.click();
+              }
+            } else {
+              break;
+            }
+          }
+          break;
+        case 'compareValue':
+          const actualValue = await this._page.evaluate((selector) => {
+            const div = document.querySelector(selector);
+            return div ? div.textContent.trim() : null;
+          }, step.selector);
+          compareResultValue = actualValue
+            .toLowerCase()
+            .includes(step.value.toLowerCase());
+          break;
+        case 'condition':
+          const conditions = step.childs;
+          if (compareResultValue === true) {
+            await this.work(conditions['yes']);
+          } else {
+            await this.work(conditions['no']);
+          }
+          compareResultValue = null;
+          break;
+        case 'runScript':
+          await this._page.evaluate(
+            ({ value }) => {
+              eval(value);
+            },
+            { value: step.value },
+          );
+          break;
+        case 'waitForNavigation':
+          await this._page.waitForNavigation();
+          break;
+        case 'close':
+          await this._browser.close();
+          break;
+        default:
+          break;
+      }
+    } catch (error) {
+      console.log('Error in work: ', error);
+    }
+  }
+}
+
