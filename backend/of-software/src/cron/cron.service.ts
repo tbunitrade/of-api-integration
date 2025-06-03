@@ -156,6 +156,7 @@ export class CronService {
 
       try {
         const modelPlatforms = await this.modelPlatformService.findAll(false);
+        console.log(`>>> [CRON] Найдено modelPlatforms: ${modelPlatforms.length}`); // ←
         const sendAMessage = async (mp: ModelPlatform, manualStart) => {
           let groups = await this.groupService.findNGroupsByPlatformId(
             mp.platform_id,
@@ -184,6 +185,7 @@ export class CronService {
             data.prokey = user.prokey;
           }
           data.groupsWithMessages = groupsWithMessages;
+          console.log(`>>> [CRON] Собираюсь запустить startMessage для ModelPlatform id=${mp.id}`);
           const result = await this.automateService.startMessage(
             data,
             manualStart,
@@ -213,9 +215,15 @@ export class CronService {
           }
         };
         const postAPost = async (mp: ModelPlatform, manualStart) => {
+          console.log(`>>> [CRON] Собираюсь запустить startPost для ModelPlatform id=${mp.id}`);
+
           const postWithTimesAndCaptions = await this.postService.findById(
             mp.id,
           );
+          if (!postWithTimesAndCaptions?.post_times || !postWithTimesAndCaptions?.captions) {
+            console.log(`>>> [CRON] У mp.id=${mp.id} нет post_times или captions → пропускаем`);
+            return;
+          }
 
           const postFiles = await this.postFileService.findByPostId(
             postWithTimesAndCaptions.id,
@@ -237,6 +245,7 @@ export class CronService {
             data,
             manualStart,
           );
+          console.log(`>>> [CRON] startPost вернул:`, result);
           if (result) {
             const now =
               manualStart && new Date(data.scheduledDate) > new Date()
