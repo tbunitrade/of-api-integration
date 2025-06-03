@@ -1057,6 +1057,7 @@ export class PuppeteerUtil {
     // 2) Определяем путь к бинарнику из .env или дефолт
     const exePath = process.env.PUPPETEER_EXECUTABLE_PATH?.trim() || executablePath();
     console.log(`>>> openBrowser(): executablePath="${exePath}"`);
+    console.log(`>>> openBrowser()2: executablePath="${executablePath()}"`);
 
     // 3) подключаем нашу капчу
     const ext = path.resolve(__dirname, '../extensions/hcapt/0.4.1_0');
@@ -1066,14 +1067,14 @@ export class PuppeteerUtil {
       args: [
         `--no-sandbox`,
         `--disable-gpu`,
-        `--single-process`,
         `--disable-setuid-sandbox`,
         `--disable-extensions-except=${ext}`,
         `--load-extension=${ext}`,
         `--window-size=1920,1080`,
       ],
-      executablePath: executablePath(),
+      //executablePath: executablePath(),
       //executablePath: exePath,
+      defaultViewport: null,
     });
     console.log('>>> Puppeteer запустил браузер, PID=', this._browser.process().pid);
     this._browser.on('disconnected', () => {
