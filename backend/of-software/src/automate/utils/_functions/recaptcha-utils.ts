@@ -143,7 +143,7 @@ export async function startCaptchaExtension(page: Page): Promise<void> {
   );
   if (!resp || resp.status() !== 200) {
     await mf.close();
-    throw new Error('Не удалось загрузить манифест HCAPT');
+    throw new Error('Не удалось загрузить манифест HCAPT  if (!resp || resp.status() !== 200) await mf.close();');
   }
   const manifest = JSON.parse(await mf.evaluate(() => document.body.innerText));
   await mf.close();

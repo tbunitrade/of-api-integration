@@ -121,7 +121,7 @@ export async function performLoginOnce(
 
   // === result === 'button' — кнопка всё ещё disabled: polling (до 60 000 ms) ===
   let elapsed = 0;
-  while (elapsed < 120_000) {
+  while (elapsed < 60_000) {
     if (await page.$(feedSel)) {
       console.log('✅ Лента появилась в polling, считаем логин успешным');
       return true;
