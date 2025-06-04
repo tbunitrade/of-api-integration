@@ -1,3 +1,9 @@
+export interface SelectorsConfig {
+  loginErrorMessage: string;
+  profileContainer: string;
+  profileFeed: string;
+}
+
 /**
  * Config variables*/
 export const CONFIG = {
@@ -11,13 +17,16 @@ export const CONFIG = {
   ],
   selectors: {
     loginErrorMessage: '.v-text-field__details .v-messages__message',
+    profileContainer: '#app.main-wrapper #content',
     profileFeed: '#app.main-wrapper #content .b-feed'
-  },
+  } as SelectorsConfig,
   login: {
     pageSelector: '.login_content',
     idSelector: 'input[name="email"]',
     passwordSelector: 'input[name="password"]',
     submitSelector: '.b-loginreg__form button[type="submit"]',
+    idValue: '$value',             // сюда, при вызове login(...), заменяется на реальный username
+    passwordValue: '$value',
   },
   reload: {
     isReload: true,

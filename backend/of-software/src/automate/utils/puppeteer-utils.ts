@@ -73,7 +73,8 @@ export class PuppeteerUtil {
     const exePath = process.env.PUPPETEER_EXECUTABLE_PATH?.trim() || executablePath();
     console.log('>>> [DEBUG] executablePath =', exePath);
 
-    const ext = path.resolve(__dirname, '../extensions/hcapt/0.4.1_0');
+    const ext = path.resolve(__dirname, '../../extensions/hcapt/0.4.1_0');
+    console.log('EXTENSION PATH for extensions/hcapt/0.4.1_0:', ext);
     console.log('>>> Я точно собираюсь запустить Puppeteer.launch() …');
     this._browser = await this._puppeteer.launch({
       headless: this.headless,
@@ -91,6 +92,9 @@ export class PuppeteerUtil {
       dumpio: true,
     });
     console.log('>>> Puppeteer запустил браузер, PID=', this._browser.process().pid);
+
+    const targets = await this._browser.targets();
+    console.log('All targets:', targets.map(t => t.url()));
 
     this._browser.on('disconnected', () => {
       this._isclosed = true;
