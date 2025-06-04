@@ -78,7 +78,7 @@ export class PuppeteerUtil {
     console.log('>>> Я точно собираюсь запустить Puppeteer.launch() …');
     this._browser = await this._puppeteer.launch({
       headless: this.headless,
-      slowMo: 100,
+      slowMo: 50,
       args: [
         '--no-sandbox',
         '--disable-gpu',
@@ -148,11 +148,15 @@ export class PuppeteerUtil {
   }
 
   // 8) Логика входа: сначала loadCookiesFromFile, потом performLoginWithRetries, потом saveCookieToFile
-  async login(username: string, password: string): Promise<boolean> {
+  async login(username: string, password: string, cookieFileName: string): Promise<boolean> {
     if (!this._page || !this._config) throw new Error('Page or config is not initialized');
 
-    const cookieFileName = `user_${this._config.login.idValue || username}`;
-    await loadCookiesFromFile.call(this, cookieFileName);
+    //const cookieFileName = `user_${username}_cookie.json`;
+    try {
+      await loadCookiesFromFile.call(this, cookieFileName);
+    } catch (error) {
+      console.log('Не удалось загрузить файл "${cookieFileName}", продолжим без него:', error)
+    }
 
     const success = await performLoginWithRetries(this._page, this._config, username, password);
     if (success) {

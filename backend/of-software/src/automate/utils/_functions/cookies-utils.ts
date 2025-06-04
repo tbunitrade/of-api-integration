@@ -3,12 +3,13 @@ import type { Page } from 'puppeteer';
 import { promises as fs } from 'fs';
 import { setTimeout } from 'node:timers/promises';
 import _fs from 'fs';
+import {PuppeteerUtil} from "../puppeteer-utils";
 
 /**
  * Закрывает баннер «Accept All» через механизм work(...)
  * (будет вызвано с контекстом PuppeteerUtil, где this._page и this.work уже определены).
  */
-export async function acceptCookie(this: any) {
+export async function acceptCookie(this: PuppeteerUtil) {
   const acceptCookieWork = [
     {
       type: 'waitForSelector',
@@ -27,7 +28,7 @@ export async function acceptCookie(this: any) {
 /**
  * Сохраняем cookie в файл (парочку JSON-ок)
  */
-export async function  saveCookieToFile(this: any, fileName: string) {
+export async function  saveCookieToFile(this: PuppeteerUtil, fileName: string) {
   const cookies = await this.getCookie();
   const localStorageData = await this._page.evaluate(() =>
     JSON.stringify(localStorage),
@@ -56,7 +57,7 @@ export async function  saveCookieToFile(this: any, fileName: string) {
 /**
  * Загружаем cookie из файлов и правим localStorage / sessionStorage
  */
-export async function  loadCookiesFromFile(this: any, fileName: string) {
+export async function  loadCookiesFromFile(this: PuppeteerUtil, fileName: string) {
   try {
     const cookiesString = await fs.readFile(
       `./cookies/${fileName}_cookie.json`,

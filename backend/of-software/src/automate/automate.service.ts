@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PuppeteerUtil } from './utils/puppeteer-utils';
-import {CONFIG as DEFAULT_CONFIG} from './utils/config/step-config';
+import {CONFIG, CONFIG as DEFAULT_CONFIG} from './utils/config/step-config';
 import * as _ from 'lodash';
 import testRecaptchaSolver from './utils/test-recaptcha-solver';
 import { getRandomNumber } from 'src/cron/utils';
@@ -8,6 +8,7 @@ import { ModelPlatform } from 'src/modelPlatform/model_platform.entity';
 import { PostTime } from 'src/postTime/post_time.entity';
 import { PostFile } from 'src/postFile/post_file.entity';
 import { Post } from 'src/post/post.entity';
+import {acceptCookie, loadCookiesFromFile} from "./utils/_functions/cookies-utils";
 
 /* Logic of login_captcha
 The OnlyFans website has 2 captcha google recaptcha v2 and v3. (v2 enterprise, v3 enterprise)
@@ -83,11 +84,21 @@ export class AutomateService {
         console.log('Error: ', error);
         return;
       }
-      const cookieFileName = 'user_' + data.model_id + '.' + data.platform_id;
+      const cookieFileName = 'user_' + data.model_id + '.' + data.platform_id + '_cookie.json';
       await puppeteerUtil.openPage('https://onlyfans.com/my/chats/send');
       //await acceptCookie.call();
       // await puppeteerUtil.loadCookiesFromFile(cookieFileName);
       // await puppeteerUtil.reload();
+
+      await acceptCookie.call(PuppeteerUtil);
+
+      try {
+        await loadCookiesFromFile.call(cookieFileName);
+        // need reload for new cookies
+        await puppeteerUtil.reload();
+      } catch (err) {
+        console.log(`Не удалось загрузить файл "${cookieFileName}", продолжим без него.`, err);
+      }
       const isLoginPage = await puppeteerUtil.checkLogin();
       let repeatCount = 50;
       let loginTried = 0;
@@ -126,7 +137,7 @@ export class AutomateService {
           // }
           if (isLoginPage) {
             // просто передаём username и password, конфиг уже есть в PuppeteerUtil
-            isLoggedIn = await puppeteerUtil.login(data.username, data.password);
+            isLoggedIn = await puppeteerUtil.login(data.username, data.password, cookieFileName);
             loginTried++;
             if (loginTried >= 3) await puppeteerUtil.waitFor(200000);
           } else {
@@ -288,12 +299,22 @@ export class AutomateService {
       const headless = !manualStart;
       await puppeteerUtil.openBrowser();
       //await puppeteerUtil.openBrowser(headless);
-      const cookieFileName =
-        'user_' + modelPlatform.model_id + '.' + modelPlatform.platform_id;
+      const cookieFileName = 'user_' + modelPlatform.model_id + '.' + modelPlatform.platform_id + '_cookie.json';
       await puppeteerUtil.openPage('https://onlyfans.com/posts/create');
       // await puppeteerUtil.acceptCookie();
       // await puppeteerUtil.loadCookiesFromFile(cookieFileName);
       // await puppeteerUtil.reload();
+
+      await acceptCookie.call(PuppeteerUtil);
+
+      try {
+        await loadCookiesFromFile.call(cookieFileName);
+        // после loadCookies рекомендуем сделать reload(), чтобы эти куки вступили в силу
+        await puppeteerUtil.reload();
+      } catch (err) {
+        console.log(`Не удалось загрузить файл "${cookieFileName}", продолжим без него.`, err);
+      }
+
       const isLoginPage = await puppeteerUtil.checkLogin();
       let repeatCount = 20;
       let loginTried = 0;
@@ -331,9 +352,21 @@ export class AutomateService {
           //   isLoggedIn = true;
           // }
           if (isLoginPage) {
+            // подставляем учётные данные в _config и отправляем форму:
+            let _config = _.cloneDeep(CONFIG);
+            _config['model_id'] = modelPlatform.model_id;
+            _config['platform_id'] = modelPlatform.platform_id;
+            _config.login.idValue = _config.login.idValue.replace('$value', modelPlatform.username);
+            _config.login.passwordValue = _config.login.passwordValue.replace('$value', modelPlatform.password);
+            if (prokey) {
+              _config.login_captcha_extension.proKey =
+                _config.login_captcha_extension.proKey.replace('$value', prokey);
+            }
+
              isLoggedIn = await puppeteerUtil.login(
-             modelPlatform.username,
-             modelPlatform.password,
+              modelPlatform.username,
+              modelPlatform.password,
+              cookieFileName
              );
              loginTried++;
              if (loginTried >= 3) await puppeteerUtil.waitFor(300000);
