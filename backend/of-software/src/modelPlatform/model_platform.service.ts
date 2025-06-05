@@ -62,10 +62,12 @@ export class ModelPlatformService {
 
       //return result;
 
-
       return await this.modelPlatformRepository.findOne({
         where: { id : result.id},
-        relations: { 'models' : 'platforms' }
+        relations: {
+          models : true,
+          platforms: true
+        }
       })
     } catch (err) {
       console.error('ModelPlatform create error', err);
