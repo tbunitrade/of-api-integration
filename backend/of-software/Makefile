@@ -41,3 +41,5 @@ restore-db:
 		pg_restore -U $(PG_USER) -d $(PG_DB) /$(DUMP_FILE)
 	@echo "✅ Готово! База восстановлена."
 
+backend-logs:
+	docker exec -it nest_backend tail -f /app/startup.log
