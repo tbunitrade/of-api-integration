@@ -1,5 +1,8 @@
 #!/bin/bash
 
+echo "[entrypoint] Creating cookies dir if missing ..."
+mkdir -p /app/cookies
+
 export DISPLAY=:0
 
 # Запускаем виртуальный X сервер

@@ -5,8 +5,12 @@ import { setTimeout } from 'node:timers/promises';
 import _fs from 'fs';
 import { PuppeteerUtil } from "../puppeteer-utils";
 import * as path from 'path';
+
 console.log('cookies-utils __dirname:', __dirname);
 console.log('cookies-utils  cwd:', process.cwd());
+
+//Absolute path for cookies dir
+const cookiesDir = path.resolve(__dirname, '../../../../cookies');
 
 /**
  * Закрывает баннер «Accept All» через механизм work(...)
@@ -37,7 +41,6 @@ export async function  saveCookieToFile(this: PuppeteerUtil, fileName: string) {
   const localStorageData = await page.evaluate(() => JSON.stringify( localStorage ));
   const sessionStorageData = await page.evaluate(() => JSON.stringify( sessionStorage ));
 
-  const cookiesDir = path.resolve(__dirname, '../../../../cookies');
   if (!_fs.existsSync(cookiesDir)) {
     _fs.mkdirSync(cookiesDir, {recursive: true});
   }
@@ -46,12 +49,14 @@ export async function  saveCookieToFile(this: PuppeteerUtil, fileName: string) {
   const localPath = path.join(cookiesDir, `${fileName}_localstorage.json`);
   const sessionPath = path.join(cookiesDir, `${fileName}_sessionstorage.json`);
 
+  console.log('[COOKIE]', 'process.cwd() =', process.cwd());
+  console.log('[COOKIE]', 'cookiesDir =', cookiesDir);
+
   await fs.writeFile(cookiePath, JSON.stringify(cookies));
   await fs.writeFile(localPath, JSON.stringify( localStorageData ));
   await fs.writeFile(sessionPath, JSON.stringify( sessionStorageData ));
 
   console.log('Cookies saved to file:', `./${fileName}_***.json`);
-  console.log('saveCookieToFile:  [cwd]', process.cwd())
 }
 
 /**
@@ -60,32 +65,20 @@ export async function  saveCookieToFile(this: PuppeteerUtil, fileName: string) {
 export async function  loadCookiesFromFile(this: PuppeteerUtil, fileName: string) {
   const page = (this as any)._page;
   try {
-    const cookiesString = await fs.readFile(
-      `./cookies/${fileName}_cookie.json`,
-      { encoding: 'utf-8' },
-    );
+    const cookiePath = path.join(cookiesDir, `${fileName}_cookie.json`);
+    const localPath = path.join(cookiesDir, `${fileName}_localstorage.json`);;
+    const sessionPath = path.join(cookiesDir, `${fileName}_sessionstorage.json`);;
+
+    const cookiesString = await fs.readFile(cookiePath, { encoding: 'utf-8' });
 
     if ( cookiesString ) {
       const cookies = JSON.parse(cookiesString);
       await this.setCookie.call(cookies);
-      console.log(
-        'Cookies loaded from file:',
-        `./cookies/${fileName}_cookie.json`,
-      );
+      console.log('Cookies loaded from file:', cookiePath);
     }
 
-    const localStorageData = await fs.readFile(
-      `./cookies/${fileName}_localstorage.json`,
-      {
-        encoding: 'utf-8',
-      },
-    );
-    const sessionStorageData = await fs.readFile(
-      `./cookies/${fileName}_sessionstorage.json`,
-      {
-        encoding: 'utf-8',
-      },
-    );
+    const localStorageData = await fs.readFile(cookiePath, { encoding: 'utf-8' });
+    const sessionStorageData = await fs.readFile(cookiePath, { encoding: 'utf-8' });
 
     if (!!localStorageData && !!sessionStorageData) {
       await page.evaluate(

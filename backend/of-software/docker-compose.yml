@@ -5,6 +5,7 @@ networks:
 volumes:
   local_pgdata:
   pgadmin-data:
+  cookies-data:
 
 services:
   db:

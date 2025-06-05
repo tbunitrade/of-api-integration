@@ -33,9 +33,11 @@ RUN npm install --only=production --no-package-lock
 
 # Копирование всего остального
 COPY . .
+RUN mkdir -p /app/cookies/
 COPY .env .env
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
+
 
 # Сборка проекта
 RUN npm run build
