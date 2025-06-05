@@ -1,73 +1,117 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="200" alt="Nest Logo" /></a>
-</p>
+### 🧠 OF Software – Backend Automation Platform
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+### 📦 Установка зависимостей
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://coveralls.io/github/nestjs/nest?branch=master" target="_blank"><img src="https://coveralls.io/repos/github/nestjs/nest/badge.svg?branch=master#9" alt="Coverage" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## engines
+node 18.20 & 20.19
+npm install
+package-json.lock #< - for front end
+backend/of-software #< - for back end
 
-## Description
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
 
-## Installation
+### 🚀 Запуск приложения
 
-```bash
-$ yarn install
-```
+### ⛳ Development
 
-## Running the app
+npm run start:dev  #<-  for front-end, node -v 20.19
+&
+make #<- for docker backend // also restart mode in db ok
+make restore-db #<- for first make need to do init process for sql archive
 
-```bash
-# development
-$ yarn run start
 
-# watch mode
-$ yarn run start:dev
+### 🧪 Продакшен (локальный стенд)
 
-# production mode
-$ yarn run start:prod
-```
+npm run start:server #<-- Will start pm2 backend to suppoer fe Vue components
 
-## Test
+Внутри команды запускается:
 
-```bash
-# unit tests
-$ yarn run test
+билд NestJS
 
-# e2e tests
-$ yarn run test:e2e
+запуск виртуального X-сервера через Xvfb
 
-# test coverage
-$ yarn run test:cov
-```
+запуск Fluxbox + x11vnc
 
-## Support
+и сам backend (NestJS) в режиме start:prod
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+### ⚠️ Убедитесь, что БД Postgres запущена до старта backend!
 
-## Stay in touch
+### 🐳 Docker
 
-- Author - [Kamil Myśliwiec](https://kamilmysliwiec.com)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+### ✅ Локальный запуск с Docker
 
-## License
+make
 
-Nest is [MIT licensed](LICENSE).
+### Это поднимет:
+
+db (PostgreSQL)
+
+pgadmin
+
+backend (NestJS + Puppeteer)
+
+Используемый файл: docker-compose.yml
+
+### ⚙️ Основные Docker команды
+
+docker-compose logs -f backend      # смотреть логи бекенда
+
+docker exec -it nest_backend sh # start bash in nest_backend
+
+docker-compose exec backend bash    # войти в контейнер бекенда
+
+💾 Cookie-файлы сохраняются в /app/cookies (смонтировано в volume cookies-data)
+
+### migrations
+
+npm run migrate-generate  # <-- backend
+npm run migrate-run
+
+### 📂 Структура проекта
+
+##
+------
+backend/
+├── Dockerfile
+├── Makefile
+├── .env
+├── Dockerfile
+├── docker-compose.yml
+├── entrypoint.shecosystem.config.js
+├── ecosystem.config.jstest-puppeteer.ts
+├── cookies/              # <-- cookie-файлы puppeteer
+│   └── .gitkeep
+├── dist/                 # собранный JS код
+├── src/
+│   ├── automate/
+│   │   └── utils/_functions/cookies-utils.ts
+│   └── ...
+└── ...
+├── test-puppeteer.ts # <-- fast test chronium web browser clean
+├── test # <-- 2 test case.
+│   └── post-file.e2e-spec.ts
+│   └── app.e2e-spec.ts
+------
+##
+📌 Примечания
+
+Cookie-файлы .json не пушатся в Git (см. .gitignore)
+
+entrypoint.sh автоматически создаёт /app/cookies, если нет
+
+Билд копирует папку extensions и создаёт .cron-data
+
+Файл .env должен быть сконфигурирован вручную
+
+### 🧪 Тесты
+
+yarn run test           # unit
+yarn run test:e2e       # e2e
+yarn run test:cov       # coverage
+
+## 🛠 Feature list
+
+## support: @devaleksonich
+
+# Stack: NestJS, Puppeteer, TypeORM, Docker, VNC, Xvfb
+
