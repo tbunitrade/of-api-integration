@@ -1,0 +1,15 @@
+session.screen0.rootCommand: feh --bg-scale /root/.fluxbox/background.jpg
+session.screen0.toolbar.visible: true
+session.screen0.toolbar.height: 18
+session.screen0.titlebar.left: Stick
+session.screen0.titlebar.right: Minimize Maximize Close
+session.screen0.tab.placement: Top
+session.screen0.window.focus.alpha: 255
+session.screen0.window.unfocus.alpha: 128
+session.screen0.menu.alpha: 200
+session.screen0.overlay.lineWidth: 1
+session.screen0.overlay.lineStyle: LineSolid
+session.screen0.overlay.joinStyle: JoinMiter
+session.screen0.overlay.capStyle: CapButt
+session.screen0.overlay.foreground: red
+session.screen0.overlay.background: black
