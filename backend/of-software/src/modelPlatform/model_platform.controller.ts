@@ -74,7 +74,8 @@ export class ModelPlatformController {
   ) {
     try {
       const result = await this.modelPlatformService.create(modelPlatform);
-      return result;
+      const grouped = this.makeGroupByModelId(result);
+      return grouped[0];
     } catch (error) {
       throw error;
     }

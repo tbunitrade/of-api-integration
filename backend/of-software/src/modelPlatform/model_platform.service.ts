@@ -38,7 +38,14 @@ export class ModelPlatformService {
       };
       const prevPost = await this.postRepository.findOne(prevPostOption);
       if (prevPost) {
-        await this.postRepository.remove(prevPost);
+        //await this.postRepository.delete(prevPost.id);
+
+        const posts = await this.postRepository.find({ where: { model_platform_id : result.id } });
+        await this.postRepository.remove(posts);
+
+        // #todo fast delete can be used
+        // #todo for improvements
+        //  await this.postRepository.delete({ model_platform_id: result.id });
       }
       const newPostOption: PostDto = {
         model_platform_id: result.id,
@@ -53,7 +60,13 @@ export class ModelPlatformService {
         data,
       );
 
-      return result;
+      //return result;
+
+
+      return await this.modelPlatformRepository.findOne({
+        where: { id : result.id},
+        relations: { 'models' : 'platforms' }
+      })
     } catch (err) {
       console.error('ModelPlatform create error', err);
     }

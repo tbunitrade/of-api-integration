@@ -58,14 +58,16 @@ export class ModelPlatform {
     onUpdate: 'NO ACTION',
   })
   @JoinColumn([{ name: 'model_id', referencedColumnName: 'id' }])
-  models: Model[];
+  //models: Model[];
+  models: Model;
 
   @ManyToOne(() => Platform, (platform) => platform.models, {
     onDelete: 'NO ACTION',
     onUpdate: 'NO ACTION',
   })
   @JoinColumn([{ name: 'platform_id', referencedColumnName: 'id' }])
-  platforms: Platform[];
+  //platforms: Platform[];
+  platforms: Platform;
 
   @OneToOne(() => Post, (post) => post.model_platform)
   @JoinColumn([{ name: 'post_id', referencedColumnName: 'id' }])
