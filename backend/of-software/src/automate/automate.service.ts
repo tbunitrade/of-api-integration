@@ -90,7 +90,8 @@ export class AutomateService {
       // await puppeteerUtil.loadCookiesFromFile(cookieFileName);
       // await puppeteerUtil.reload();
 
-      await acceptCookie.call(PuppeteerUtil);
+      //await acceptCookie.call(PuppeteerUtil);
+      await acceptCookie.call(puppeteerUtil);
 
       try {
         await loadCookiesFromFile.call(cookieFileName);
@@ -305,7 +306,8 @@ export class AutomateService {
       // await puppeteerUtil.loadCookiesFromFile(cookieFileName);
       // await puppeteerUtil.reload();
 
-      await acceptCookie.call(PuppeteerUtil);
+      //await acceptCookie.call(PuppeteerUtil);
+      await acceptCookie.call(puppeteerUtil);
 
       try {
         await loadCookiesFromFile.call(cookieFileName);
