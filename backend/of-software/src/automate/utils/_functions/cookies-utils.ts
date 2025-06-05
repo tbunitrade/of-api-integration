@@ -3,7 +3,7 @@ import type { Page } from 'puppeteer';
 import { promises as fs } from 'fs';
 import { setTimeout } from 'node:timers/promises';
 import _fs from 'fs';
-import {PuppeteerUtil} from "../puppeteer-utils";
+import { PuppeteerUtil } from "../puppeteer-utils";
 
 /**
  * Закрывает баннер «Accept All» через механизм work(...)
@@ -22,35 +22,23 @@ export async function acceptCookie(this: PuppeteerUtil) {
         '.b-cookies-informer__container .b-cookies-informer__nav button',
     },
   ];
-  await this.work(acceptCookieWork);
+  await this.work( acceptCookieWork );
 }
 
 /**
  * Сохраняем cookie в файл (парочку JSON-ок)
  */
 export async function  saveCookieToFile(this: PuppeteerUtil, fileName: string) {
-  const cookies = await this.getCookie();
-  const localStorageData = await this._page.evaluate(() =>
-    JSON.stringify(localStorage),
-  );
-  const sessionStorageData = await this._page.evaluate(() =>
-    JSON.stringify(sessionStorage),
-  );
+  const page = (this as any)._page;
+  const cookies = await getCookie.call(this);
+  const localStorageData = await page.evaluate(() => JSON.stringify( localStorage ));
+  const sessionStorageData = await page.evaluate(() => JSON.stringify( sessionStorage ));
   if (!_fs.existsSync('./cookies')) {
     _fs.mkdirSync('./cookies', { recursive: true });
   }
-  await fs.writeFile(
-    `./cookies/${fileName}_cookie.json`,
-    JSON.stringify(cookies),
-  );
-  await fs.writeFile(
-    `./cookies/${fileName}_localstorage.json`,
-    JSON.stringify(localStorageData),
-  );
-  await fs.writeFile(
-    `./cookies/${fileName}_sessionstorage.json`,
-    JSON.stringify(sessionStorageData),
-  );
+  await fs.writeFile(`./cookies/${fileName}_cookie.json`, JSON.stringify(cookies));
+  await fs.writeFile(`./cookies/${fileName}_localstorage.json`, JSON.stringify( localStorageData ));
+  await fs.writeFile(`./cookies/${fileName}_sessionstorage.json`, JSON.stringify( sessionStorageData ));
   console.log('Cookies saved to file:', `./${fileName}_***.json`);
 }
 
@@ -58,15 +46,16 @@ export async function  saveCookieToFile(this: PuppeteerUtil, fileName: string) {
  * Загружаем cookie из файлов и правим localStorage / sessionStorage
  */
 export async function  loadCookiesFromFile(this: PuppeteerUtil, fileName: string) {
+  const page = (this as any)._page;
   try {
     const cookiesString = await fs.readFile(
       `./cookies/${fileName}_cookie.json`,
       { encoding: 'utf-8' },
     );
 
-    if (cookiesString) {
+    if ( cookiesString ) {
       const cookies = JSON.parse(cookiesString);
-      await this.setCookie(cookies);
+      await this.setCookie.call(cookies);
       console.log(
         'Cookies loaded from file:',
         `./cookies/${fileName}_cookie.json`,
@@ -87,20 +76,14 @@ export async function  loadCookiesFromFile(this: PuppeteerUtil, fileName: string
     );
 
     if (!!localStorageData && !!sessionStorageData) {
-      await this._page.evaluate(
-        (data) => {
+      await page.evaluate(
+        ( data ) => {
           localStorage.clear();
           sessionStorage.clear();
-          const parsedLocalStorageData = JSON.parse(data.localStorageData);
-          const parsedSessionStorageData = JSON.parse(
-            data.sessionStorageData,
-          );
-          for (const key in parsedLocalStorageData) {
-            localStorage.setItem(key, parsedLocalStorageData[key]);
-          }
-          for (const key in parsedSessionStorageData) {
-            sessionStorage.setItem(key, parsedSessionStorageData[key]);
-          }
+          const parsedLocalStorageData = JSON.parse( data.localStorageData );
+          const parsedSessionStorageData = JSON.parse( data.sessionStorageData );
+          for (const key in parsedLocalStorageData) { localStorage.setItem(key, parsedLocalStorageData[key]); }
+          for (const key in parsedSessionStorageData) { sessionStorage.setItem(key, parsedSessionStorageData[key]); }
         },
         { localStorageData, sessionStorageData },
       );
