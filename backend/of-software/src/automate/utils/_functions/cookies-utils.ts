@@ -4,6 +4,9 @@ import { promises as fs } from 'fs';
 import { setTimeout } from 'node:timers/promises';
 import _fs from 'fs';
 import { PuppeteerUtil } from "../puppeteer-utils";
+import * as path from 'path';
+console.log('cookies-utils __dirname:', __dirname);
+console.log('cookies-utils  cwd:', process.cwd());
 
 /**
  * Закрывает баннер «Accept All» через механизм work(...)
@@ -33,13 +36,22 @@ export async function  saveCookieToFile(this: PuppeteerUtil, fileName: string) {
   const cookies = await getCookie.call(this);
   const localStorageData = await page.evaluate(() => JSON.stringify( localStorage ));
   const sessionStorageData = await page.evaluate(() => JSON.stringify( sessionStorage ));
-  if (!_fs.existsSync('./cookies')) {
-    _fs.mkdirSync('./cookies', { recursive: true });
+
+  const cookiesDir = path.resolve(__dirname, '../../../../cookies');
+  if (!_fs.existsSync(cookiesDir)) {
+    _fs.mkdirSync(cookiesDir, {recursive: true});
   }
-  await fs.writeFile(`./cookies/${fileName}_cookie.json`, JSON.stringify(cookies));
-  await fs.writeFile(`./cookies/${fileName}_localstorage.json`, JSON.stringify( localStorageData ));
-  await fs.writeFile(`./cookies/${fileName}_sessionstorage.json`, JSON.stringify( sessionStorageData ));
+
+  const cookiePath = path.join(cookiesDir, `${fileName}_cookie.json`);
+  const localPath = path.join(cookiesDir, `${fileName}_localstorage.json`);
+  const sessionPath = path.join(cookiesDir, `${fileName}_sessionstorage.json`);
+
+  await fs.writeFile(cookiePath, JSON.stringify(cookies));
+  await fs.writeFile(localPath, JSON.stringify( localStorageData ));
+  await fs.writeFile(sessionPath, JSON.stringify( sessionStorageData ));
+
   console.log('Cookies saved to file:', `./${fileName}_***.json`);
+  console.log('saveCookieToFile:  [cwd]', process.cwd())
 }
 
 /**
