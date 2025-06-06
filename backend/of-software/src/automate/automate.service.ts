@@ -35,25 +35,6 @@ const checkIfExpired = (
 @Injectable()
 export class AutomateService {
   constructor() {}
-
-  //test data
-  // data = {
-  //   username: 'chadstevens578@gmail.com',
-  //   password: 'Duvo1234!',
-  //   number_of_days: 5,
-  //   scheduled_date: '2023-02-20',
-  //   model_id: 1,
-  //   platform_id: 1,
-  //   groupsWithMessages: [
-  //     {
-  //       messages: [
-  //         {
-  //           message_time: '00:00:00',
-  //         },
-  //       ],
-  //     },
-  //   ],
-  // };
   async startMessage(data: any = {}, manualStart = false) {
     console.log('start function startMessage');
     let scheduledCount = 0;
@@ -63,19 +44,17 @@ export class AutomateService {
         data.scheduled_date,
       );
       if (!isExpired && !manualStart) return false;
-      // Test recaptcha v2 enterprise Start
-      // await testRecaptchaSolver();
-      // return;
-      // Test recaptcha v2 enterprise End
 
       const puppeteerUtil = new PuppeteerUtil();
       puppeteerUtil.initialize();
       puppeteerUtil.setConfig();
+
       // ДО ВЫЗОВА openBrowser() — добавляем логи:
       console.log('>>> [startMessage] ENV.HEADLESS_MODE =', process.env.HEADLESS_MODE);
       console.log('>>> [startMessage] ENV.DISPLAY      =', process.env.DISPLAY);
       console.log('>>> [startMessage] ENV.PUPPETEER_EXECUTABLE_PATH =', process.env.PUPPETEER_EXECUTABLE_PATH);
       // recaptcha solving can be wrong sometime
+
       const headless = !manualStart;
       try {
         await puppeteerUtil.openBrowser();
@@ -86,11 +65,6 @@ export class AutomateService {
       }
       const cookieFileName = 'user_' + data.model_id + '.' + data.platform_id;
       await puppeteerUtil.openPage('https://onlyfans.com/my/chats/send');
-      //await acceptCookie.call();
-      // await puppeteerUtil.loadCookiesFromFile(cookieFileName);
-      // await puppeteerUtil.reload();
-
-      //await acceptCookie.call(PuppeteerUtil);
       await acceptCookie.call(puppeteerUtil);
 
       try {
@@ -111,31 +85,6 @@ export class AutomateService {
           _config['platform_id'] = data.platform_id;
           let isLoggedIn = false;
           if (!data.username) break;
-          // if (isLoginPage) {
-          //   _config.login.idValue = _config.login.idValue.replace(
-          //     '$value',
-          //     data.username,
-          //   );
-          //   _config.login.passwordValue = _config.login.passwordValue.replace(
-          //     '$value',
-          //     data.password,
-          //   );
-          //   if (data.prokey) {
-          //     _config.login_captcha_extension.proKey =
-          //       _config.login_captcha_extension.proKey.replace(
-          //         '$value',
-          //         data.prokey,
-          //       );
-          //   }
-          //
-          //   //isLoggedIn = await puppeteerUtil.login.call(_config);
-          //   isLoggedIn = await puppeteerUtil.login(data.username, data.password);
-          //   loginTried++;
-          //   if (loginTried >= 3) await puppeteerUtil.waitFor(200000);
-          // } else {
-          //   console.log('----------------- Login function startMessage Success -----------------');
-          //   isLoggedIn = true;
-          // }
           if (isLoginPage) {
             // просто передаём username и password, конфиг уже есть в PuppeteerUtil
             isLoggedIn = await puppeteerUtil.login(data.username, data.password, cookieFileName);
@@ -145,10 +94,7 @@ export class AutomateService {
             console.log('----------------- Login function startMessage Success -----------------');
             isLoggedIn = true;
           }
-
-
           if (isLoggedIn) {
-            //start cron
             console.log('----------------- Start func startMessage cron -----------------');
             const groupsWithMessages = data.groupsWithMessages;
 
@@ -219,10 +165,6 @@ export class AutomateService {
                     return { ...c };
                   });
                   const result = await puppeteerUtil.work(config);
-                  // if (result === 'browser_closed') {
-                  //   console.log('Browser Closed');
-                  //   return scheduledCount;
-                  // }
                 } catch (error) {
                   console.log('Error : ', error);
                   continue;
