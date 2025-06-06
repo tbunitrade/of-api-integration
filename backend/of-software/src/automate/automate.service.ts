@@ -221,15 +221,6 @@ export class AutomateService {
       prokey,
     } = allData;
     try {
-      // const isExpired = checkIfExpired(
-      //   modelPlatform.number_of_days,
-      //   modelPlatform.scheduled_date,
-      // );
-      // if (!isExpired && !manualStart) return false;
-      // Test recaptcha v2 enterprise Start
-      // await testRecaptchaSolver();
-      // return;
-      // Test recaptcha v2 enterprise End
       console.log('start function startPost');
       const puppeteerUtil = new PuppeteerUtil();
       puppeteerUtil.initialize();
@@ -241,25 +232,25 @@ export class AutomateService {
       // recaptcha solving can be wrong sometime
       const headless = !manualStart;
       await puppeteerUtil.openBrowser();
-      //await puppeteerUtil.openBrowser(headless);
-      const cookieFileName = 'user_' + modelPlatform.model_id + '.' + modelPlatform.platform_id + '.json';
+      const cookieFileName = 'user_' + modelPlatform.model_id + '.' + modelPlatform.platform_id ;
       await puppeteerUtil.openPage('https://onlyfans.com/posts/create');
-      // await puppeteerUtil.acceptCookie();
-      // await puppeteerUtil.loadCookiesFromFile(cookieFileName);
-      // await puppeteerUtil.reload();
-
-      //await acceptCookie.call(PuppeteerUtil);
       await acceptCookie.call(puppeteerUtil);
 
       try {
-        await loadCookiesFromFile.call(cookieFileName);
+        await loadCookiesFromFile.call(puppeteerUtil, cookieFileName);
         // после loadCookies рекомендуем сделать reload(), чтобы эти куки вступили в силу
         await puppeteerUtil.reload();
+        //const isLoginPage = await puppeteerUtil.checkLogin();
+        if (isLoginPage) {
+          await puppeteerUtil.login(modelPlatform.username, modelPlatform.password, cookieFileName);
+        } else {
+          console.log('✅ Cookie сработали, логин не нужен');
+        }
       } catch (err) {
         console.log(`Не удалось загрузить файл "${cookieFileName}", продолжим без него.`, err);
       }
 
-      const isLoginPage = await puppeteerUtil.checkLogin();
+      //const isLoginPage = await puppeteerUtil.checkLogin();
       let repeatCount = 20;
       let loginTried = 0;
 
@@ -270,31 +261,7 @@ export class AutomateService {
           _config['platform_id'] = modelPlatform.platform_id;
           let isLoggedIn = false;
           if (!modelPlatform.username) break;
-          // if (isLoginPage) {
-          //   _config.login.idValue = _config.login.idValue.replace(
-          //     '$value',
-          //     modelPlatform.username,
-          //   );
-          //   _config.login.passwordValue = _config.login.passwordValue.replace(
-          //     '$value',
-          //     modelPlatform.password,
-          //   );
-          //
-          //   if (prokey) {
-          //     _config.login_captcha_extension.proKey =
-          //       _config.login_captcha_extension.proKey.replace(
-          //         '$value',
-          //         prokey,
-          //       );
-          //   }
-          //   //isLoggedIn = await puppeteerUtil.login.call(_config);
-          //   isLoggedIn = await puppeteerUtil.login(data.username, data.password);
-          //   loginTried++;
-          //   if (loginTried >= 3) await puppeteerUtil.waitFor(300000);
-          // } else {
-          //   console.log('----------------- Login function startPost Success -----------------');
-          //   isLoggedIn = true;
-          // }
+
           if (isLoginPage) {
             // подставляем учётные данные в _config и отправляем форму:
             let _config = _.cloneDeep(CONFIG);
@@ -323,9 +290,6 @@ export class AutomateService {
             console.log('----------------- Start function startPost cron -----------------');
 
             const postCaptions = postWithTimesAndCaptions.captions || [];
-
-            // if (!postCaptions) return;
-            // if (postCaptions.length === 0) return;
             let captionIndexes = Array.from(
               { length: postCaptions.length || 0 },
               (_, i) => i,
@@ -465,9 +429,9 @@ export class AutomateService {
     config.login.idValue = config.login.idValue.replace('$value', username);
     config.login.passwordValue = config.login.passwordValue.replace('$value', password);
 
-    if (prokey) {
-      config.login_captcha_extension.proKey = config.login_captcha_extension.proKey.replace('$value', prokey);
-    }
+    // if (prokey) {
+    //   config.login_captcha_extension.proKey = config.login_captcha_extension.proKey.replace('$value', prokey);
+    // }
 
     console.log('[TEST LOGIN] Пытаемся войти...');
     //const isLoggedIn = await puppeteerUtil.login(config);
