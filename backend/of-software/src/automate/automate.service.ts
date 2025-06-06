@@ -68,7 +68,7 @@ export class AutomateService {
       await acceptCookie.call(puppeteerUtil);
 
       try {
-        await loadCookiesFromFile.call(cookieFileName);
+        await loadCookiesFromFile.call(puppeteerUtil, cookieFileName);
         // need reload for new cookies
         await puppeteerUtil.reload();
       } catch (err) {
@@ -242,7 +242,7 @@ export class AutomateService {
       const headless = !manualStart;
       await puppeteerUtil.openBrowser();
       //await puppeteerUtil.openBrowser(headless);
-      const cookieFileName = 'user_' + modelPlatform.model_id + '.' + modelPlatform.platform_id + '_cookie.json';
+      const cookieFileName = 'user_' + modelPlatform.model_id + '.' + modelPlatform.platform_id + '.json';
       await puppeteerUtil.openPage('https://onlyfans.com/posts/create');
       // await puppeteerUtil.acceptCookie();
       // await puppeteerUtil.loadCookiesFromFile(cookieFileName);
@@ -445,5 +445,42 @@ export class AutomateService {
       console.error('Error: ', err);
       return 0;
     }
+  }
+
+  async testLogin() {
+    const puppeteerUtil = new PuppeteerUtil();
+    puppeteerUtil.initialize();
+    puppeteerUtil.setConfig();
+
+    const username = 'mail@frontporchswingers.com';
+    const password = 'тут_введи_пароль';
+    const prokey = ''; // если капча нужна — сюда ключ
+
+    console.log('[TEST LOGIN] Стартуем Puppeteer...');
+    await puppeteerUtil.openBrowser(); // показываем браузер (не headless)
+    await puppeteerUtil.openPage('https://onlyfans.com/my/chats/send');
+    await puppeteerUtil.acceptCookie();
+
+    const config = _.cloneDeep(CONFIG);
+    config.login.idValue = config.login.idValue.replace('$value', username);
+    config.login.passwordValue = config.login.passwordValue.replace('$value', password);
+
+    if (prokey) {
+      config.login_captcha_extension.proKey = config.login_captcha_extension.proKey.replace('$value', prokey);
+    }
+
+    console.log('[TEST LOGIN] Пытаемся войти...');
+    //const isLoggedIn = await puppeteerUtil.login(config);
+    const cookieFileName = 'user_12.1_cookie.json';
+    const isLoggedIn = await puppeteerUtil.login(username,password, cookieFileName);
+
+    if (isLoggedIn) {
+      console.log('[✅ LOGIN OK]');
+    } else {
+      console.log('[❌ LOGIN FAILED]');
+    }
+
+    await puppeteerUtil.waitFor(10000); // подождать 10 сек, чтобы успеть увидеть
+    await puppeteerUtil.closeBrowser();
   }
 }

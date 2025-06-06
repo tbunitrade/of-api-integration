@@ -12,4 +12,10 @@ export class AutomateController {
     await this.automateService.startMessage();
     return true;
   }
+
+  @Get('test-login')
+  async testLogin() {
+    await this.automateService.testLogin();
+    return { message: 'testLogin completed — смотри pm2 logs' };
+  }
 }

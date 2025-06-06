@@ -49,6 +49,10 @@ export class PuppeteerUtil {
     console.log('▶ PuppeteerUtil.constructor: HEADLESS_MODE=', process.env.HEADLESS_MODE || '(undefined)');
   }
 
+  public async acceptCookie() {
+    return await acceptCookie.call(this);
+  }
+
   // 1) Инициализируем puppeteer-extra с stealth-плагином
   initialize() {
     this._puppeteer = puppeteer;
