@@ -117,7 +117,7 @@ export async function  loadCookiesFromFile(this: PuppeteerUtil, fileName: string
 /**
  * Устанавливает cookie в текущей странице
  */
-export async function  setCookie(this:any, cookies?: any[]) {
+export async function setCookie(this:any, cookies?: any[]) {
   try {
     if (cookies) {
       const context = this._page.browserContext();
