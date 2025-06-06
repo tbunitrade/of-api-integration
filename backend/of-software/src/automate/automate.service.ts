@@ -203,20 +203,19 @@ export class AutomateService {
       const puppeteerUtil = new PuppeteerUtil();
       puppeteerUtil.initialize();
       puppeteerUtil.setConfig();
-      // ДО ВЫЗОВА openBrowser() — добавляем логи:
+
       console.log('>>> [startPost] ENV.HEADLESS_MODE =', process.env.HEADLESS_MODE);
       console.log('>>> [startPost] ENV.DISPLAY      =', process.env.DISPLAY);
       console.log('>>> [startPost] ENV.PUPPETEER_EXECUTABLE_PATH =', process.env.PUPPETEER_EXECUTABLE_PATH);
-      // recaptcha solving can be wrong sometime
+
       const headless = !manualStart;
       await puppeteerUtil.openBrowser();
-      const cookieFileName = 'user_' + modelPlatform.model_id + '.' + modelPlatform.platform_id ;
+      const cookieFileName = 'user_' + modelPlatform.model_id + '.' + modelPlatform.platform_id;
       await puppeteerUtil.openPage('https://onlyfans.com/posts/create');
       await acceptCookie.call(puppeteerUtil);
 
       try {
         await loadCookiesFromFile.call(puppeteerUtil, cookieFileName);
-        // после loadCookies рекомендуем сделать reload(), чтобы эти куки вступили в силу
         await puppeteerUtil.reload();
         const isLoginPage = await puppeteerUtil.checkLogin();
         if (isLoginPage) {
@@ -241,7 +240,6 @@ export class AutomateService {
           if (!modelPlatform.username) break;
 
           if (isLoginPage) {
-            // подставляем учётные данные в _config и отправляем форму:
             let _config = _.cloneDeep(CONFIG);
             _config['model_id'] = modelPlatform.model_id;
             _config['platform_id'] = modelPlatform.platform_id;
@@ -252,19 +250,19 @@ export class AutomateService {
                 _config.login_captcha_extension.proKey.replace('$value', prokey);
             }
 
-             isLoggedIn = await puppeteerUtil.login(
+            isLoggedIn = await puppeteerUtil.login(
               modelPlatform.username,
               modelPlatform.password,
               cookieFileName
-             );
-             loginTried++;
-             if (loginTried >= 3) await puppeteerUtil.waitFor(300000);
+            );
+            loginTried++;
+            if (loginTried >= 3) await puppeteerUtil.waitFor(300000);
           } else {
-             console.log('----------------- Login function startPost Success -----------------');
-             isLoggedIn = true;
+            console.log('----------------- Login function startPost Success -----------------');
+            isLoggedIn = true;
           }
+
           if (isLoggedIn) {
-            //start cron
             console.log('----------------- Start function startPost cron -----------------');
 
             const postCaptions = postWithTimesAndCaptions.captions || [];
@@ -289,11 +287,8 @@ export class AutomateService {
                 scheduledDt = new Date();
               }
               scheduledDt.setDate(scheduledDt.getDate() + i + 1);
-              for (
-                let j = 0;
-                j < postWithTimesAndCaptions.post_times.length;
-                j++
-              ) {
+
+              for (let j = 0; j < postWithTimesAndCaptions.post_times.length; j++) {
                 try {
                   if (captionIndexes.length === 0) {
                     captionIndexes = Array.from(
@@ -343,17 +338,14 @@ export class AutomateService {
                     idValue: modelPlatform.username,
                     passwordValue: modelPlatform.password,
                   };
+
                   const config = _config.post.map((c) => {
                     if (c['key']) {
                       c.value = c.value.replace('$value', msgData[c['key']]);
                     }
                     return { ...c };
                   });
-                  //const result = await puppeteerUtil.work(config);
-                  // if (result === 'browser_closed') {
-                  //   console.log('Browser Closed');
-                  //   return scheduledCount;
-                  // }
+
                   await puppeteerUtil.work(config);
                 } catch (error) {
                   console.log('Error : ', error);
@@ -376,7 +368,7 @@ export class AutomateService {
           }
         } catch (error) {
           console.log('Error: ', error);
-          repeatCount--; // IF error occurs over 50 times, break and exit;
+          repeatCount--;
           if (repeatCount < 0) break;
           continue;
         }
@@ -388,6 +380,7 @@ export class AutomateService {
       return 0;
     }
   }
+
 
   async testLogin() {
     const puppeteerUtil = new PuppeteerUtil();
