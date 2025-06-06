@@ -43,13 +43,13 @@ export async function performLoginOnce(
   resetCaptchaFlag();
 
   // 1) вводим email + password
-  await page.type(idSelector, username, { delay: 130 });
-  await page.type(passwordSelector, password, { delay: 200 });
+  await page.type(idSelector, username, { delay: 830 });
+  await page.type(passwordSelector, password, { delay: 20000 });
 
   // 2) ждём кнопку или ошибку (10 с)
   const phase1 = await Promise.race<'failure' | 'enabled'>([
     page.waitForSelector(errorSel, { timeout: 10_000 }).then(() => 'failure'),
-    page.waitForSelector(`${submitSelector}:not([disabled])`, { timeout: 10_000 }).then(() => 'enabled'),
+    page.waitForSelector(`${submitSelector}:not([disabled])`, { timeout: 30_000 }).then(() => 'enabled'),
   ]);
   if (phase1 === 'failure') {
     const msg = await page.$eval(errorSel, el => el.textContent?.trim() || '');
@@ -59,9 +59,9 @@ export async function performLoginOnce(
 
   // 3) краткая проверка капчи (7 с)
   const [capRecap, capTurn] = await Promise.all([
-    page.waitForSelector('.captcha_wrapper iframe[title="reCAPTCHA"]', { timeout: 7_000 })
+    page.waitForSelector('.captcha_wrapper iframe[title="reCAPTCHA"]', { timeout: 70_000 })
       .then(() => true).catch(() => false),
-    page.waitForSelector('iframe[title*="challenge"]', { timeout: 7_000 })
+    page.waitForSelector('iframe[title*="challenge"]', { timeout: 70_000 })
       .then(() => true).catch(() => false),
   ]);
 
@@ -89,6 +89,22 @@ export async function performLoginOnce(
   // 6) перед кликом решаем капчу, если она ещё не решена
   await handleCaptchaBeforeClick(page);
   console.log('▶️ handleCaptchaBeforeClick');
+
+  let elapsed = 0;
+  while (elapsed < 20_000) {
+    if (await page.$(feedSel)) {
+      console.log('✅ Лента появилась в polling, считаем логин успешным');
+      return true;
+    }
+    const postErr = await checkLoginError(page, errorSel);
+    if (postErr) {
+      console.error(`🚨 Ошибка в polling: "${postErr}" — выходим`);
+      return false;
+    }
+    console.log('⏱ Ещё не в ленте, ждём 5 сек…');
+    await setTimeout(5_000);
+    elapsed += 5_000;
+  }
 
   // === Первый клик ===
   await page.click(submitSelector);
@@ -120,8 +136,9 @@ export async function performLoginOnce(
   }
 
   // === result === 'button' — кнопка всё ещё disabled: polling (до 60 000 ms) ===
-  let elapsed = 0;
-  while (elapsed < 300_000) {
+
+  elapsed = 0;
+  while (elapsed < 20_000) {
     if (await page.$(feedSel)) {
       console.log('✅ Лента появилась в polling, считаем логин успешным');
       return true;
@@ -131,9 +148,9 @@ export async function performLoginOnce(
       console.error(`🚨 Ошибка в polling: "${postErr}" — выходим`);
       return false;
     }
-    console.log('⏱ Ещё не в ленте, ждём 15 сек…');
-    await setTimeout(15_000);
-    elapsed += 15_000;
+    console.log('⏱ Ещё не в ленте, ждём 5 сек…');
+    await setTimeout(5_000);
+    elapsed += 5_000;
   }
 
   console.warn('⚠️ Таймаут ожидания ленты/ошибки после первого клика');
@@ -143,7 +160,7 @@ export async function performLoginOnce(
 
   // === После extension: финальный клик ===
   await page.waitForSelector(`${submitSelector}:not([disabled])`, { timeout: 200_000 }).catch(() => {});
-  await setTimeout(1_000);
+  await setTimeout(5_000);
   await handleCaptchaBeforeClick(page);
   console.log('▶️ Click after extension');
   await page.click(submitSelector);

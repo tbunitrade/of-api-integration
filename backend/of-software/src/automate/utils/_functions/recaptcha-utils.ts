@@ -103,6 +103,8 @@ export async function triggerRecaptcha(page: Page): Promise<void> {
 
 export async function triggerTurnstile(page: Page): Promise<void> {
   console.log('🔄 Turnstile обнаружен, решаем…');
+
+  //setTimeout(1000);
   const iframe = await page.waitForSelector('iframe[title*="challenge"]', { timeout: 10_000 });
   const frame = await iframe.contentFrame();
   if (!frame) throw new Error('Не удалось получить Turnstile iframe');
