@@ -37,6 +37,9 @@ export class PuppeteerUtil {
   private _isclosed;
   private headless: boolean;
 
+  private _username: string;
+  private _password: string;
+
   constructor() {
     this._puppeteer = null;
     this._browser = null;
@@ -149,6 +152,14 @@ export class PuppeteerUtil {
 
   // 8) Логика входа: сначала loadCookiesFromFile, потом performLoginWithRetries, потом saveCookieToFile
   async login(username: string, password: string, cookieFileName: string): Promise<boolean> {
+
+    this._username = username;
+    this._password = password;
+
+    console.log('[LOGIN] Username:', this._username);
+    console.log('[LOGIN] Password:', this._password);
+
+
     if (!this._page || !this._config) throw new Error('Page or config is not initialized');
 
     //const cookieFileName = `user_${username}_cookie.json`;
