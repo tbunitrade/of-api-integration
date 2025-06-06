@@ -210,7 +210,8 @@ export class AutomateService {
 
       const headless = !manualStart;
       await puppeteerUtil.openBrowser();
-      const cookieFileName = 'user_' + modelPlatform.model_id + '.' + modelPlatform.platform_id;
+      //const cookieFileName = 'user_' + modelPlatform.model_id + '.' + modelPlatform.platform_id + '.json';
+      const cookieFileName = `user_${modelPlatform.model_id}.${modelPlatform.platform_id}.json`;
       await puppeteerUtil.openPage('https://onlyfans.com/posts/create');
       await acceptCookie.call(puppeteerUtil);
 

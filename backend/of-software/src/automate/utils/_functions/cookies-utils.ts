@@ -36,6 +36,11 @@ export async function acceptCookie(this: PuppeteerUtil) {
  * Сохраняем cookie в файл (парочку JSON-ок)
  */
 export async function  saveCookieToFile(this: PuppeteerUtil, fileName: string) {
+
+  const fullPath = path.join(__dirname, '../cookies', fileName);
+  console.log('[cookies-utils] Сохраняем куки в файл:', fullPath);
+
+
   const page = (this as any)._page;
   const cookies = await getCookie.call(this);
   const localStorageData = await page.evaluate(() => JSON.stringify( localStorage ));
@@ -45,18 +50,26 @@ export async function  saveCookieToFile(this: PuppeteerUtil, fileName: string) {
     _fs.mkdirSync(cookiesDir, {recursive: true});
   }
 
-  const cookiePath = path.join(cookiesDir, `${fileName}_cookie.json`);
-  const localPath = path.join(cookiesDir, `${fileName}_localstorage.json`);
-  const sessionPath = path.join(cookiesDir, `${fileName}_sessionstorage.json`);
-
+  const basePath = path.join(cookiesDir, fileName);
+  console.log('[cookies-utils] Сохраняем куки в базу:', basePath);
   console.log('[COOKIE]', 'process.cwd() =', process.cwd());
   console.log('[COOKIE]', 'cookiesDir =', cookiesDir);
 
-  await fs.writeFile(cookiePath, JSON.stringify(cookies));
-  await fs.writeFile(localPath, JSON.stringify( localStorageData ));
-  await fs.writeFile(sessionPath, JSON.stringify( sessionStorageData ));
+  await fs.writeFile(`${basePath}_cookie.json`, JSON.stringify(cookies));
+  await fs.writeFile(`${basePath}_localstorage.json`, JSON.stringify(localStorageData));
+  await fs.writeFile(`${basePath}_sessionstorage.json`, JSON.stringify(sessionStorageData));
 
-  console.log('Cookies saved to file:', `./${fileName}_***.json`);
+
+  // const cookiePath = path.join(cookiesDir, `${fileName}_cookie.json`);
+  // const localPath = path.join(cookiesDir, `${fileName}_localstorage.json`);
+  // const sessionPath = path.join(cookiesDir, `${fileName}_sessionstorage.json`);
+
+  // await fs.writeFile(cookiePath, JSON.stringify(cookies));
+  // await fs.writeFile(localPath, JSON.stringify( localStorageData ));
+  // await fs.writeFile(sessionPath, JSON.stringify( sessionStorageData ));
+
+  //console.log('Cookies saved to file:', `./${fileName}_***.json`);
+  console.log('[cookies-utils] ✅ Cookies сохранены:', `${basePath}_***.json`);
 }
 
 /**
