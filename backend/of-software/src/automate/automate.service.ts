@@ -84,7 +84,7 @@ export class AutomateService {
         console.log('Error: ', error);
         return;
       }
-      const cookieFileName = 'user_' + data.model_id + '.' + data.platform_id + '_cookie.json';
+      const cookieFileName = 'user_' + data.model_id + '.' + data.platform_id;
       await puppeteerUtil.openPage('https://onlyfans.com/my/chats/send');
       //await acceptCookie.call();
       // await puppeteerUtil.loadCookiesFromFile(cookieFileName);
