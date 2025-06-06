@@ -44,35 +44,38 @@ export async function performLoginOnce(
 
   // 1) вводим email + password
   await page.type(idSelector, username, { delay: 830 });
-  await page.type(passwordSelector, password, { delay: 20000 });
+  await page.type(passwordSelector, password, { delay: 2000 });
 
   // 2) ждём кнопку или ошибку (10 с)
   const phase1 = await Promise.race<'failure' | 'enabled'>([
-    page.waitForSelector(errorSel, { timeout: 10_000 }).then(() => 'failure'),
+    page.waitForSelector(errorSel, { timeout: 20_000 }).then(() => 'failure'),
     page.waitForSelector(`${submitSelector}:not([disabled])`, { timeout: 30_000 }).then(() => 'enabled'),
   ]);
+
+
   if (phase1 === 'failure') {
     const msg = await page.$eval(errorSel, el => el.textContent?.trim() || '');
     console.log(`❌ Ошибка до клика: "${msg}"`);
     return false;
   }
-
-  // 3) краткая проверка капчи (7 с)
+  console.log('load balancer');
+  // 3) краткая проверка капчи (70-- с)
   const [capRecap, capTurn] = await Promise.all([
-    page.waitForSelector('.captcha_wrapper iframe[title="reCAPTCHA"]', { timeout: 70_000 })
+    page.waitForSelector('.captcha_wrapper iframe[title="reCAPTCHA"]', { timeout: 200_000 })
       .then(() => true).catch(() => false),
-    page.waitForSelector('iframe[title*="challenge"]', { timeout: 70_000 })
+    page.waitForSelector('iframe[title*="challenge"]', { timeout: 30_000 })
       .then(() => true).catch(() => false),
   ]);
 
   // 4) решаем встроенные капчи
   if (capTurn) {
-    console.log('🔄 Решаем Turnstile до клика…');
     try {
-      await triggerTurnstile(page);
-    } catch {
-      console.log('⚠️ Turnstile упал — решаем reCAPTCHA');
       await triggerRecaptcha(page);
+      console.log('⚠️ Turnstile упал — решаем reCAPTCHA');
+
+    } catch {
+      console.log('🔄 Решаем Turnstile до клика…');
+      await triggerTurnstile(page);
     }
   } else if (capRecap) {
     console.log('🔐 Решаем reCAPTCHA до клика…');
