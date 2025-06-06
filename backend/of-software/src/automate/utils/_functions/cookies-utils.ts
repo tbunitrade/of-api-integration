@@ -70,15 +70,18 @@ export async function  loadCookiesFromFile(this: PuppeteerUtil, fileName: string
     const sessionPath = path.join(cookiesDir, `${fileName}_sessionstorage.json`);;
 
     const cookiesString = await fs.readFile(cookiePath, { encoding: 'utf-8' });
+    const localStorageData = await fs.readFile(localPath, { encoding: 'utf-8' });
+    const sessionStorageData = await fs.readFile(sessionPath, { encoding: 'utf-8' });
 
     if ( cookiesString ) {
       const cookies = JSON.parse(cookiesString);
-      await this.setCookie.call(cookies);
+      await this.setCookie.call(this, cookies);
+      //await this.setCookie();
       console.log('Cookies loaded from file:', cookiePath);
     }
 
-    const localStorageData = await fs.readFile(cookiePath, { encoding: 'utf-8' });
-    const sessionStorageData = await fs.readFile(cookiePath, { encoding: 'utf-8' });
+    //const localStorageData = await fs.readFile(cookiePath, { encoding: 'utf-8' });
+    //const sessionStorageData = await fs.readFile(cookiePath, { encoding: 'utf-8' });
 
     if (!!localStorageData && !!sessionStorageData) {
       await page.evaluate(
