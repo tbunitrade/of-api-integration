@@ -197,6 +197,7 @@ export async function performLoginWithRetries(
     const ok = await performLoginOnce(page, config, username, password);
     if (ok) {
       console.log('✅ Успешно вошли');
+      console.log('[LOGIN RETRIES] Login успешен для:', username);
       return true;
     }
     // если «Wrong email or password» — сразу прекратить

@@ -212,6 +212,7 @@ export class AutomateService {
       await puppeteerUtil.openBrowser();
       //const cookieFileName = 'user_' + modelPlatform.model_id + '.' + modelPlatform.platform_id + '.json';
       const cookieFileName = `user_${modelPlatform.model_id}.${modelPlatform.platform_id}.json`;
+      console.log('Check file before start Autopost cookieFileName', cookieFileName);
       await puppeteerUtil.openPage('https://onlyfans.com/posts/create');
       await acceptCookie.call(puppeteerUtil);
 
@@ -221,6 +222,7 @@ export class AutomateService {
         const isLoginPage = await puppeteerUtil.checkLogin();
         if (isLoginPage) {
           await puppeteerUtil.login(modelPlatform.username, modelPlatform.password, cookieFileName);
+          console.log('[AUTOMATE] Login вызван, ожидаем файл:', cookieFileName);
         } else {
           console.log('✅ Cookie сработали, логин не нужен');
         }

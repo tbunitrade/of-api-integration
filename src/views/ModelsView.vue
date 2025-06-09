@@ -127,12 +127,14 @@ const onSubmitPlatform = async () => {
           });
           $mpv.value.$reset();
           modelStore.getAllModelsWithPlatforms();
-        }
 
+          console.log(edit_result, 'FRONT: отправка payload ', selectedModelPlatform.value);
+        }
+        console.log(edit_result, 'FRONT: отправка payload false ', selectedModelPlatform.value);
         isPlatformModelActive.value = false;
       }
     }).catch((err) => {
-      console.log(err);
+      console.log(edit_result, 'FRONT: отправка payload error ', err);
     });
   } else {
     const result = $mpv.value.$validate();
@@ -147,6 +149,7 @@ const onSubmitPlatform = async () => {
           });
           $mpv.value.$reset();
           modelStore.getAllModelsWithPlatforms();
+          console.log(add_result, 'Model Platform added successfully',selectedModelPlatform.value );
         }
 
         isPlatformModelActive.value = false;

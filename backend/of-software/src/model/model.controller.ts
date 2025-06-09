@@ -29,6 +29,7 @@ export class ModelController {
   async findAll() {
     try {
       const result = await this.modelService.findAll();
+      console.log('Model controller all', result);
       return result;
     } catch (error) {
       throw error;
@@ -41,6 +42,7 @@ export class ModelController {
   async findAllWithPlatform() {
     try {
       const result = await this.modelService.findModelWithPlatform();
+      console.log('Model controller all-with-platform', result);
       return result;
     } catch (error) {
       throw error;
@@ -52,6 +54,7 @@ export class ModelController {
   @UseGuards(JwtAuthGuard)
   async addModel(@Body(new ValidationPipe()) model: ModelDto): Promise<Model> {
     try {
+      console.log('Model controller addModel')
       return await this.modelService.create(model);
     } catch (error) {
       throw error;
@@ -76,6 +79,7 @@ export class ModelController {
   async getModelById(@Param('id') id: number): Promise<Model> {
     try {
       const result = await this.modelService.findById(id);
+      console.log('Model controller getModelById', result);
       return result;
     } catch (error) {
       throw error;
@@ -91,6 +95,7 @@ export class ModelController {
   ): Promise<Model> {
     try {
       const result = await this.modelService.update(id, updateModelDto);
+      console.log('Model controller updateModel', result);
       return result;
     } catch (error) {
       throw error;
@@ -103,6 +108,7 @@ export class ModelController {
   async deleteModel(@Param('id') id: number): Promise<Model> {
     try {
       const result = await this.modelService.deleteModel(id);
+      console.log('Model controller deleteModel', result);
       return result;
     } catch (error) {
       throw error;

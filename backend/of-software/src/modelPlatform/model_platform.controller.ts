@@ -74,6 +74,11 @@ export class ModelPlatformController {
   ) {
     try {
       const result = await this.modelPlatformService.create(modelPlatform);
+
+      // 🔥 запускаем логин + генерацию cookies
+      const cookieFileName = `user_${result.model_id}.${result.platform_id}.json`;
+      console.log('[MODEL_PLATFORM_CONTROLLER] Calling testLogin for', cookieFileName);
+
       const grouped = this.makeGroupByModelId(result);
       return grouped[0];
     } catch (error) {
