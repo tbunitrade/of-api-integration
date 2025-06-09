@@ -108,7 +108,7 @@ export class ModelController {
   async deleteModel(@Param('id') id: number): Promise<Model> {
     try {
       const result = await this.modelService.deleteModel(id);
-      console.log('Model controller deleteModel', result);
+      console.log('Model controller deleteModel', result); // <- тут уже пустой объект
       console.log('🟡 Удаление модели завершено, ID был:', id);
       console.log(`✅ Модель удалена. ID: ${id}`);
       console.log('✅ Model удалён:', {
