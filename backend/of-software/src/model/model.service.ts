@@ -122,14 +122,17 @@ export class ModelService {
         where: { id },
       };
       const model = await this.modelRepository.findOne(options);
+      console.log('Удаляем модель Model Service: ', model);
 
       if (!model) {
-        throw new NotFoundException(`Model with ID ${id} not found`);
+        throw new NotFoundException(`Model Service with ID ${id} not found`);
+      } else {
+        console.log('catch !model');
       }
 
       return await this.modelRepository.remove(model);
     } catch (err) {
-      console.error('Model deleteModel error', err);
+      console.error('Model Service deleteModel error', err);
     }
   }
 }

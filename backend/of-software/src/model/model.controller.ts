@@ -109,6 +109,12 @@ export class ModelController {
     try {
       const result = await this.modelService.deleteModel(id);
       console.log('Model controller deleteModel', result);
+      console.log('🟡 Удаление модели завершено, ID был:', id);
+      console.log(`✅ Модель удалена. ID: ${id}`);
+      console.log('✅ Model удалён:', {
+        id,
+        name: result?.name,
+      });
       return result;
     } catch (error) {
       throw error;
