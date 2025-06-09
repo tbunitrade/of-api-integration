@@ -70,6 +70,9 @@ export async function  saveCookieToFile(this: PuppeteerUtil, fileName: string) {
 
   //console.log('Cookies saved to file:', `./${fileName}_***.json`);
   console.log('[cookies-utils] ✅ Cookies сохранены:', `${basePath}_***.json`);
+  console.log('[cookies-utils] cookies:', cookies);
+  console.log('[cookies-utils] localStorageData:', localStorageData);
+  console.log('[cookies-utils] sessionStorageData:', sessionStorageData);
 }
 
 /**
@@ -80,7 +83,9 @@ export async function  loadCookiesFromFile(this: PuppeteerUtil, fileName: string
   try {
     const cookiePath = path.join(cookiesDir, `${fileName}_cookie.json`);
     const localPath = path.join(cookiesDir, `${fileName}_localstorage.json`);;
-    const sessionPath = path.join(cookiesDir, `${fileName}_sessionstorage.json`);;
+    const sessionPath = path.join(cookiesDir, `${fileName}_sessionstorage.json`);
+
+    console.log ('check loadCookies From File ', fileName);
 
     const cookiesString = await fs.readFile(cookiePath, { encoding: 'utf-8' });
     const localStorageData = await fs.readFile(localPath, { encoding: 'utf-8' });
