@@ -1,9 +1,11 @@
 import { MigrationInterface, QueryRunner } from "typeorm";
 
 export class InitSchema1749140000000 implements MigrationInterface {
+  name = 'InitSchema1749140000000'
+
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`
-      CREATE TABLE "user" (
+      CREATE TABLE public."user" (
         id SERIAL PRIMARY KEY,
         "firstName" VARCHAR,
         "lastName" VARCHAR,
@@ -12,7 +14,10 @@ export class InitSchema1749140000000 implements MigrationInterface {
         password VARCHAR NOT NULL,
         prokey VARCHAR
       );
-      CREATE TABLE model (
+    `);
+
+    await queryRunner.query(`
+      CREATE TABLE public.model (
         id SERIAL PRIMARY KEY,
         name VARCHAR NOT NULL,
         photo VARCHAR,
@@ -20,17 +25,23 @@ export class InitSchema1749140000000 implements MigrationInterface {
         created_at TIMESTAMP DEFAULT now() NOT NULL,
         updated_at TIMESTAMP DEFAULT now() NOT NULL
       );
-      CREATE TABLE platform (
+    `);
+
+    await queryRunner.query(`
+      CREATE TABLE public.platform (
         id SERIAL PRIMARY KEY,
         name VARCHAR NOT NULL,
         created_at TIMESTAMP DEFAULT now() NOT NULL,
         updated_at TIMESTAMP DEFAULT now() NOT NULL
       );
-      CREATE TABLE model_platform (
+    `);
+
+    await queryRunner.query(`
+      CREATE TABLE public.model_platform (
         id SERIAL PRIMARY KEY,
-        model_id INTEGER NOT NULL REFERENCES model(id),
-        platform_id INTEGER NOT NULL REFERENCES platform(id),
-        post_id INTEGER,
+        model_id INTEGER NOT NULL REFERENCES public.model(id),
+        platform_id INTEGER NOT NULL REFERENCES public.platform(id),
+        post_id INTEGER UNIQUE,
         username VARCHAR,
         password VARCHAR,
         site_url VARCHAR,
@@ -39,10 +50,12 @@ export class InitSchema1749140000000 implements MigrationInterface {
         latest_group_id INTEGER,
         created_at TIMESTAMP DEFAULT now() NOT NULL,
         updated_at TIMESTAMP DEFAULT now() NOT NULL,
-        prokey VARCHAR,
-        UNIQUE (post_id)
+        prokey VARCHAR
       );
-      CREATE TABLE "group" (
+    `);
+
+    await queryRunner.query(`
+      CREATE TABLE public."group" (
         id SERIAL PRIMARY KEY,
         name VARCHAR NOT NULL,
         model_id INTEGER NOT NULL,
@@ -52,7 +65,10 @@ export class InitSchema1749140000000 implements MigrationInterface {
         updated_at TIMESTAMP DEFAULT now() NOT NULL,
         "order" INTEGER
       );
-      CREATE TABLE message (
+    `);
+
+    await queryRunner.query(`
+      CREATE TABLE public.message (
         id SERIAL PRIMARY KEY,
         name VARCHAR NOT NULL,
         message_time TIME DEFAULT now(),
@@ -69,25 +85,34 @@ export class InitSchema1749140000000 implements MigrationInterface {
         created_at TIMESTAMP DEFAULT now() NOT NULL,
         updated_at TIMESTAMP DEFAULT now() NOT NULL
       );
-      CREATE TABLE group_message (
+    `);
+
+    await queryRunner.query(`
+      CREATE TABLE public.group_message (
         id SERIAL PRIMARY KEY,
-        group_id INTEGER NOT NULL REFERENCES "group"(id),
-        message_id INTEGER NOT NULL REFERENCES message(id),
+        group_id INTEGER NOT NULL REFERENCES public."group"(id),
+        message_id INTEGER NOT NULL REFERENCES public.message(id),
         status INTEGER DEFAULT 1 NOT NULL,
         created_at TIMESTAMP DEFAULT now() NOT NULL,
         updated_at TIMESTAMP DEFAULT now() NOT NULL
       );
-      CREATE TABLE platform_group (
+    `);
+
+    await queryRunner.query(`
+      CREATE TABLE public.platform_group (
         id SERIAL PRIMARY KEY,
-        platform_id INTEGER NOT NULL REFERENCES platform(id),
-        group_id INTEGER NOT NULL REFERENCES "group"(id),
+        platform_id INTEGER NOT NULL REFERENCES public.platform(id),
+        group_id INTEGER NOT NULL REFERENCES public."group"(id),
         status INTEGER DEFAULT 1 NOT NULL,
         created_at TIMESTAMP DEFAULT now() NOT NULL,
         updated_at TIMESTAMP DEFAULT now() NOT NULL
       );
-      CREATE TABLE post (
+    `);
+
+    await queryRunner.query(`
+      CREATE TABLE public.post (
         id SERIAL PRIMARY KEY,
-        model_platform_id INTEGER NOT NULL REFERENCES model_platform(id),
+        model_platform_id INTEGER NOT NULL REFERENCES public.model_platform(id),
         number_of_days INTEGER DEFAULT 0 NOT NULL,
         status INTEGER DEFAULT 1 NOT NULL,
         created_at TIMESTAMP DEFAULT now() NOT NULL,
@@ -96,25 +121,34 @@ export class InitSchema1749140000000 implements MigrationInterface {
         user_tags VARCHAR,
         form_tags VARCHAR
       );
-      CREATE TABLE post_caption (
+    `);
+
+    await queryRunner.query(`
+      CREATE TABLE public.post_caption (
         id SERIAL PRIMARY KEY,
-        post_id INTEGER NOT NULL REFERENCES post(id),
+        post_id INTEGER NOT NULL REFERENCES public.post(id),
         caption VARCHAR NOT NULL,
         status INTEGER DEFAULT 1 NOT NULL,
         created_at TIMESTAMP DEFAULT now() NOT NULL,
         updated_at TIMESTAMP DEFAULT now() NOT NULL
       );
-      CREATE TABLE post_file (
+    `);
+
+    await queryRunner.query(`
+      CREATE TABLE public.post_file (
         id SERIAL PRIMARY KEY,
-        post_id INTEGER NOT NULL REFERENCES post(id),
+        post_id INTEGER NOT NULL REFERENCES public.post(id),
         url VARCHAR,
         status INTEGER DEFAULT 1 NOT NULL,
         created_at TIMESTAMP DEFAULT now() NOT NULL,
         updated_at TIMESTAMP DEFAULT now() NOT NULL
       );
-      CREATE TABLE post_time (
+    `);
+
+    await queryRunner.query(`
+      CREATE TABLE public.post_time (
         id SERIAL PRIMARY KEY,
-        post_id INTEGER NOT NULL REFERENCES post(id),
+        post_id INTEGER NOT NULL REFERENCES public.post(id),
         "time" TIME DEFAULT now(),
         status INTEGER DEFAULT 1 NOT NULL,
         created_at TIMESTAMP DEFAULT now() NOT NULL,
@@ -124,9 +158,17 @@ export class InitSchema1749140000000 implements MigrationInterface {
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(`
-      DROP TABLE IF EXISTS post_time, post_file, post_caption, post, platform_group,
-      group_message, message, "group", model_platform, platform, model, "user" CASCADE;
-    `);
+    await queryRunner.query(`DROP TABLE IF EXISTS public.post_time CASCADE`);
+    await queryRunner.query(`DROP TABLE IF EXISTS public.post_file CASCADE`);
+    await queryRunner.query(`DROP TABLE IF EXISTS public.post_caption CASCADE`);
+    await queryRunner.query(`DROP TABLE IF EXISTS public.post CASCADE`);
+    await queryRunner.query(`DROP TABLE IF EXISTS public.platform_group CASCADE`);
+    await queryRunner.query(`DROP TABLE IF EXISTS public.group_message CASCADE`);
+    await queryRunner.query(`DROP TABLE IF EXISTS public.message CASCADE`);
+    await queryRunner.query(`DROP TABLE IF EXISTS public."group" CASCADE`);
+    await queryRunner.query(`DROP TABLE IF EXISTS public.model_platform CASCADE`);
+    await queryRunner.query(`DROP TABLE IF EXISTS public.platform CASCADE`);
+    await queryRunner.query(`DROP TABLE IF EXISTS public.model CASCADE`);
+    await queryRunner.query(`DROP TABLE IF EXISTS public."user" CASCADE`);
   }
 }
