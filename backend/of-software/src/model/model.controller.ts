@@ -54,7 +54,7 @@ export class ModelController {
   @UseGuards(JwtAuthGuard)
   async addModel(@Body(new ValidationPipe()) model: ModelDto): Promise<Model> {
     try {
-      console.log('Model controller addModel')
+      console.log('Model controller addModel, first add empty model', model);
       return await this.modelService.create(model);
     } catch (error) {
       throw error;
