@@ -99,7 +99,7 @@ const useModelPlatformStore = defineStore({
           data
         )
 
-        console.log('response from ', ${import.meta.env.VITE_APP_ROOT_API}/model_platform/${data.id}, response);
+        console.log('response from ', `${import.meta.env.VITE_APP_ROOT_API}/model_platform/${data.id}`, response);
 
         if (response.data) {
           const model_platform = response.data
