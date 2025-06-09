@@ -86,6 +86,8 @@ export class AutomateService {
             isLoggedIn = await puppeteerUtil.login(data.username, data.password, cookieFileName);
             loginTried++;
             if (loginTried >= 3) await puppeteerUtil.waitFor(200000);
+
+            console.log('01 [startMessage] ⚠️ Login required → вызываем login() с:', data.username, data.password, cookieFileName);
           } else {
             console.log('----------------- Login function startMessage Success -----------------');
             isLoggedIn = true;
@@ -223,6 +225,8 @@ export class AutomateService {
         if (isLoginPage) {
           await puppeteerUtil.login(modelPlatform.username, modelPlatform.password, cookieFileName);
           console.log('[AUTOMATE] Login вызван, ожидаем файл:', cookieFileName);
+          //console.log('02 [startMessage] ⚠️ Login required → вызываем login() с:', data.username, data.password, cookieFileName);
+          console.log('02 [startPost] ⚠️ Login required → вызываем login() с:', modelPlatform.username, modelPlatform.password, cookieFileName);
         } else {
           console.log('✅ Cookie сработали, логин не нужен');
         }
@@ -248,6 +252,10 @@ export class AutomateService {
             _config['platform_id'] = modelPlatform.platform_id;
             _config.login.idValue = _config.login.idValue.replace('$value', modelPlatform.username);
             _config.login.passwordValue = _config.login.passwordValue.replace('$value', modelPlatform.password);
+
+            //console.log('03 [startMessage] ⚠️ Login required → вызываем login() с:', data.username, data.password, cookieFileName);
+            console.log('03 [startPost] ⚠️ Login required → вызываем login() с:', modelPlatform.username, modelPlatform.password, cookieFileName);
+
             if (prokey) {
               _config.login_captcha_extension.proKey =
                 _config.login_captcha_extension.proKey.replace('$value', prokey);

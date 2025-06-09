@@ -39,6 +39,7 @@ export async function  saveCookieToFile(this: PuppeteerUtil, fileName: string) {
 
   const fullPath = path.join(__dirname, '../cookies', fileName);
   console.log('[cookies-utils] Сохраняем куки в файл:', fullPath);
+  console.log('[COOKIES] saveCookieToFile -> START, fileName =', fileName);
 
 
   const page = (this as any)._page;
@@ -55,10 +56,15 @@ export async function  saveCookieToFile(this: PuppeteerUtil, fileName: string) {
   console.log('[COOKIE]', 'process.cwd() =', process.cwd());
   console.log('[COOKIE]', 'cookiesDir =', cookiesDir);
 
+  console.log('[COOKIES] 📄 Пишем cookies в:', `${basePath}_cookie.json`);
+  console.log('[COOKIES] 📄 Пишем localStorage в:', `${basePath}_localstorage.json`);
+  console.log('[COOKIES] 📄 Пишем sessionStorage в:', `${basePath}_sessionstorage.json`);
+
   await fs.writeFile(`${basePath}_cookie.json`, JSON.stringify(cookies));
   await fs.writeFile(`${basePath}_localstorage.json`, JSON.stringify(localStorageData));
   await fs.writeFile(`${basePath}_sessionstorage.json`, JSON.stringify(sessionStorageData));
 
+  console.log('[COOKIES] ✅ Все файлы успешно записаны для', fileName);
 
   // const cookiePath = path.join(cookiesDir, `${fileName}_cookie.json`);
   // const localPath = path.join(cookiesDir, `${fileName}_localstorage.json`);

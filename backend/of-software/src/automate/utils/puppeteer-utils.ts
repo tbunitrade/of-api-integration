@@ -177,7 +177,9 @@ export class PuppeteerUtil {
     const success = await performLoginWithRetries(this._page, this._config, username, password);
     if (success) {
       console.log('✅ Login прошёл успешно, сохраняем куки - создаем файл?');
+      console.log('[LOGIN] ✅ Успешный вход. Готовимся вызвать saveCookieToFile');
       await saveCookieToFile.call(this, cookieFileName);
+      console.log('[LOGIN] ✅ saveCookieToFile завершён. Проверяем наличие файла:', cookieFileName);
       console.log('✅ File creation -> ', cookieFileName);
       return true;
     } else {
