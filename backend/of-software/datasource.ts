@@ -1,7 +1,7 @@
 import { DataSource } from 'typeorm';
 
 const isDocker = process.env.DB_HOST === 'local_pgdb';
-
+console.log('📦 Подключение к базе:', process.env.DB_NAME);
 export const config = new DataSource({
   type: 'postgres',
   host: isDocker ? 'local_pgdb' : 'localhost',
@@ -15,6 +15,10 @@ export const config = new DataSource({
   synchronize: false,
   logging: true,
 });
+
+
+
+
 
 // export const config = new DataSource({
 //   type: 'postgres',
