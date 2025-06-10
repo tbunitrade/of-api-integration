@@ -9,9 +9,14 @@ import * as path from 'path';
 console.log('cookies-utils __dirname:', __dirname);
 console.log('cookies-utils  cwd:', process.cwd());
 
-//Absolute path for cookies dir
-const cookiesDir = path.resolve(__dirname, '../../../../cookies');
+console.log(`[cookies-utils] loaded at ${new Date().toISOString()}, __dirname = ${__dirname}`);
 
+//Absolute path for cookies dir
+const cookiesDirtemp = path.resolve(__dirname, '../.../../../../../cookies');
+console.log('cookiesDirtemp ',cookiesDirtemp);
+
+const cookiesDir = path.join(process.cwd(), 'cookies');
+console.log('[cookies-utils] cookiesDir =', cookiesDir);
 /**
  * Закрывает баннер «Accept All» через механизм work(...)
  * (будет вызвано с контекстом PuppeteerUtil, где this._page и this.work уже определены).
@@ -40,6 +45,9 @@ export async function  saveCookieToFile(this: PuppeteerUtil, fileName: string) {
   const fullPath = path.join(__dirname, '../cookies', fileName);
   console.log('[cookies-utils] Сохраняем куки в файл:', fullPath);
   console.log('[COOKIES] saveCookieToFile -> START, fileName =', fileName);
+
+  console.log('[cookies-utils] saveCookieToFile called');
+  throw new Error('Test log from cookies-utils');
 
 
   const page = (this as any)._page;
