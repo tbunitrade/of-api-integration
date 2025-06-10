@@ -47,8 +47,10 @@ export async function performLoginOnce(
   await page.type(passwordSelector, password, { delay: 200 });
 
   // === Первый клик ===
+  await setTimeout(5000);
   await page.click(submitSelector);
   console.log('▶️ Первый клик по Login');
+  await setTimeout(5000);
 
   // 2) ждём кнопку или ошибку (10 с)
   const phase1 = await Promise.race<'failure' | 'enabled'>([
