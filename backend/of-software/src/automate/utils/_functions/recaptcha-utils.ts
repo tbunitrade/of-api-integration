@@ -99,6 +99,7 @@ export async function triggerRecaptcha(page: Page): Promise<void> {
     { polling: 500, timeout: 5 * 60_000 }
   );
   console.log('✔️ reCAPTCHA решена');
+  markCaptchaSolved();
 }
 
 export async function triggerTurnstile(page: Page): Promise<void> {
@@ -127,8 +128,10 @@ export async function triggerTurnstile(page: Page): Promise<void> {
 }
 
 export async function startCaptchaExtension(page: Page): Promise<void> {
+  console.log('>>> startCaptchaExtension called');
+
   const browser = page.browser();
-  const extTarget = browser.targets().find(
+  const extTarget = await browser.targets().find(
     (t) => t.url().startsWith('chrome-extension://') && ['background_page','service_worker'].includes(t.type())
   );
   if (!extTarget) {

@@ -65,15 +65,11 @@ export async function performLoginOnce(
   console.log(phase1,'< phase1, started const [capRecap, capTurn]', );
   // 3) краткая проверка капчи (70-- с)
   const [capRecap, capTurn] = await Promise.all([
-    page.waitForSelector('.captcha_wrapper iframe[title="reCAPTCHA"]', { timeout: 5_000 })
+    page.waitForSelector('.captcha_wrapper iframe[title="reCAPTCHA"]', { timeout: 10_000 })
       .then(() => true).catch(() => false),
     page.waitForSelector('iframe[title*="challenge"]', { timeout: 5_000 })
       .then(() => true).catch(() => false),
   ]);
-
-  console.log('🔧 Запускаем HCAPT-extension…');
-  await startCaptchaExtension(page);
-  markCaptchaSolved();
 
   // 4) решаем встроенные капчи
   if (capTurn) {
@@ -166,6 +162,8 @@ export async function performLoginOnce(
 
   console.warn('⚠️ Таймаут ожидания ленты/ошибки после первого клика');
 
+  await startCaptchaExtension(page);
+  markCaptchaSolved();
 
   // === После extension: финальный клик ===
   await page.waitForSelector(`${submitSelector}:not([disabled])`, { timeout: 200_000 }).catch(() => {});
