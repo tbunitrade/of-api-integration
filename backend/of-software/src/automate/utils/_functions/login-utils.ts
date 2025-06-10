@@ -53,8 +53,8 @@ export async function performLoginOnce(
 
   // 2) ждём кнопку или ошибку (10 с)
   const phase1 = await Promise.race<'failure' | 'enabled'>([
-    page.waitForSelector(errorSel, { timeout: 5_000 }).then(() => 'failure'),
-    page.waitForSelector(`${submitSelector}:not([disabled])`, { timeout: 5_000 }).then(() => 'enabled'),
+    page.waitForSelector(errorSel, { timeout: 7_000 }).then(() => 'failure'),
+    page.waitForSelector(`${submitSelector}:not([disabled])`, { timeout: 7_000 }).then(() => 'enabled'),
   ]);
 
   if (phase1 === 'failure') {
