@@ -88,16 +88,18 @@ export class PuppeteerUtil {
       slowMo: 50,
       args: [
         '--no-sandbox',
-        '--disable-gpu',
+        //'--disable-gpu',
         '--disable-setuid-sandbox',
         `--disable-extensions-except=${ext}`,
         `--load-extension=${ext}`,
         '--window-size=1920,1080',
       ],
       executablePath: exePath,
-      defaultViewport: null,
-      dumpio: true,
     });
+    // defaultViewport: null,
+    // dumpio: true,
+
+
     console.log('>>> Puppeteer запустил браузер, PID=', this._browser.process().pid);
 
     const targets = await this._browser.targets();

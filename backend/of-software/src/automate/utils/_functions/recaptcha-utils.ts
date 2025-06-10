@@ -132,8 +132,10 @@ export async function triggerTurnstile(page: Page): Promise<void> {
 export async function startCaptchaExtension(page: Page): Promise<void> {
   console.log('>>> startCaptchaExtension called');
 
-  const browser = page.browser();
-  const extTarget = await browser.targets().find(
+  const browser = page.browser();// синхронно получаем браузер
+  const targets = await browser.targets(); // асинхронно получаем targets
+  //const extTarget = (await browser.targets()).find(
+  const extTarget = targets.find(
     (t) => t.url().startsWith('chrome-extension://') && ['background_page','service_worker'].includes(t.type())
   );
   if (!extTarget) {
