@@ -71,6 +71,10 @@ export async function performLoginOnce(
       .then(() => true).catch(() => false),
   ]);
 
+  console.log('🔧 Запускаем HCAPT-extension…');
+  await startCaptchaExtension(page);
+  markCaptchaSolved();
+
   // 4) решаем встроенные капчи
   if (capTurn) {
     try {
@@ -161,9 +165,7 @@ export async function performLoginOnce(
   }
 
   console.warn('⚠️ Таймаут ожидания ленты/ошибки после первого клика');
-  console.log('🔧 Запускаем HCAPT-extension…');
-  await startCaptchaExtension(page);
-  markCaptchaSolved();
+
 
   // === После extension: финальный клик ===
   await page.waitForSelector(`${submitSelector}:not([disabled])`, { timeout: 200_000 }).catch(() => {});
