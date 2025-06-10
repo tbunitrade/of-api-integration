@@ -43,8 +43,8 @@ export async function performLoginOnce(
   resetCaptchaFlag();
 
   // 1) вводим email + password
-  await page.type(idSelector, username, { delay: 830 });
-  await page.type(passwordSelector, password, { delay: 2000 });
+  await page.type(idSelector, username, { delay: 1030 });
+  await page.type(passwordSelector, password, { delay: 1090 });
 
   // 2) ждём кнопку или ошибку (10 с)
   const phase1 = await Promise.race<'failure' | 'enabled'>([
@@ -61,7 +61,7 @@ export async function performLoginOnce(
   console.log('load balancer');
   // 3) краткая проверка капчи (70-- с)
   const [capRecap, capTurn] = await Promise.all([
-    page.waitForSelector('.captcha_wrapper iframe[title="reCAPTCHA"]', { timeout: 200_000 })
+    page.waitForSelector('.captcha_wrapper iframe[title="reCAPTCHA"]', { timeout: 30_000 })
       .then(() => true).catch(() => false),
     page.waitForSelector('iframe[title*="challenge"]', { timeout: 30_000 })
       .then(() => true).catch(() => false),
@@ -196,8 +196,8 @@ export async function performLoginWithRetries(
     console.log(`🔑 Попытка входа #${i}…`);
     const ok = await performLoginOnce(page, config, username, password);
     if (ok) {
-      console.log('✅ Успешно вошли');
-      console.log('[LOGIN RETRIES] Login успешен для:', username);
+      //console.log('✅ Успешно вошли');
+      console.log('✅ Успешно вошли [LOGIN RETRIES] Login успешен для:', username);
       return true;
     }
     // если «Wrong email or password» — сразу прекратить
@@ -208,13 +208,14 @@ export async function performLoginWithRetries(
     }
     console.log('❌ Сброс формы и перезагрузка…');
 
-    // await page.evaluate(() => {
-    //   (document.querySelector('input[name="email"]') as HTMLInputElement).value = '';
-    //   (document.querySelector('input[name="password"]') as HTMLInputElement).value = '';
-    // });
+    await page.evaluate(() => {
+      (document.querySelector('input[name="email"]') as HTMLInputElement).value = '';
+      (document.querySelector('input[name="password"]') as HTMLInputElement).value = '';
+    });
     await setTimeout(1_000);
     await page.reload({ waitUntil: 'networkidle2' });
-    //await acceptCookie.call(page);
+    await acceptCookie.call(page);
+    resetCaptchaFlag(); // сбрасываем капчу перед новой попыткой
   }
   console.error('⛔ Не удалось войти за все попытки');
   return false;
