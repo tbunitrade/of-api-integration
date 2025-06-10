@@ -95,8 +95,9 @@ export class PuppeteerUtil {
         '--window-size=1920,1080',
       ],
       executablePath: exePath,
+      defaultViewport: null,
     });
-    // defaultViewport: null,
+
     // dumpio: true,
 
 
@@ -110,6 +111,7 @@ export class PuppeteerUtil {
     });
 
     this._page = await this._browser.newPage();
+    //await this._page.setViewport({ width: 1920, height: 1080 });
     // Небольшая пауза (для отладки)
     console.log('>>> Жду 5 секунд перед дальнейшими действиями');
     //await this._page.setTimeout(5000);
