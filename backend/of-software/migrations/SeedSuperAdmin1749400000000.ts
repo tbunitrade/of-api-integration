@@ -16,7 +16,7 @@ export class SeedSuperAdmin1749400000000 implements MigrationInterface {
 
       await queryRunner.query(
         `INSERT INTO "user" (email, password, "firstName", "lastName", "prokey") VALUES ($1, $2, $3, $4, $5)`,
-        [email, passwordHash, 'John', 'Costa', 'superadmin']
+        [email, passwordHash, 'John', 'Costa', '']
       );
 
       console.log('Super admin user created');

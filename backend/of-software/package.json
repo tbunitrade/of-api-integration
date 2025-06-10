@@ -7,8 +7,9 @@
   "license": "UNLICENSED",
   "scripts": {
     "build": "nest build && npm run postbuild",
-    "postbuild": "npm run copy:extensions && npm run ensure:crondir && npm run ensure:cookies",
+    "postbuild": "npm run copy:extensions && npm run ensure:crondir && npm run ensure:cookies && ensure:dist-cookies",
     "ensure:cookies" : "mkdir -p \"$PWD/cookies\"",
+    "ensure:dist-cookies": "mkdir -p \"$PWD/dist/cookies\"",
     "copy:extensions": "mkdir -p \"$PWD/dist/extensions/hcapt/0.4.1_0\" && cp -r \"$PWD/extensions/hcapt/0.4.1_0/\"* \"$PWD/dist/extensions/hcapt/0.4.1_0\"",
     "copy:extensions2": "mkdir -p dist/extensions/hcapt/0.4.1_0 && cp -r extensions/hcapt/0.4.1_0/* dist/extensions/hcapt/0.4.1_0",
     "ensure:crondir": "mkdir -p \"$PWD/dist/.cron-data\"",
