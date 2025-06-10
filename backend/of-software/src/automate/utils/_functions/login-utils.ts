@@ -43,43 +43,40 @@ export async function performLoginOnce(
   resetCaptchaFlag();
 
   // 1) вводим email + password
-  await page.type(idSelector, username, { delay: 430 });
-  await page.type(passwordSelector, password, { delay: 390 });
+  await page.type(idSelector, username, { delay: 130 });
+  await page.type(passwordSelector, password, { delay: 200 });
 
   // === Первый клик ===
-  await setTimeout(5_000);
   await page.click(submitSelector);
   console.log('▶️ Первый клик по Login');
 
   // 2) ждём кнопку или ошибку (10 с)
   const phase1 = await Promise.race<'failure' | 'enabled'>([
-    page.waitForSelector(errorSel, { timeout: 7_000 }).then(() => 'failure'),
-    page.waitForSelector(`${submitSelector}:not([disabled])`, { timeout: 7_000 }).then(() => 'enabled'),
+    page.waitForSelector(errorSel, { timeout: 5_000 }).then(() => 'failure'),
+    page.waitForSelector(`${submitSelector}:not([disabled])`, { timeout: 10_000 }).then(() => 'enabled'),
   ]);
-
   if (phase1 === 'failure') {
     const msg = await page.$eval(errorSel, el => el.textContent?.trim() || '');
     console.log(`❌ Ошибка до клика: "${msg}"`);
     return false;
   }
-  console.log(phase1,'< phase1, started const [capRecap, capTurn]', );
-  // 3) краткая проверка капчи (70-- с)
+
+  // 3) краткая проверка капчи (7 с)
   const [capRecap, capTurn] = await Promise.all([
-    page.waitForSelector('.captcha_wrapper iframe[title="reCAPTCHA"]', { timeout: 10_000 })
+    page.waitForSelector('.captcha_wrapper iframe[title="reCAPTCHA"]', { timeout: 3_000 })
       .then(() => true).catch(() => false),
-    page.waitForSelector('iframe[title*="challenge"]', { timeout: 5_000 })
+    page.waitForSelector('iframe[title*="challenge"]', { timeout: 3_000 })
       .then(() => true).catch(() => false),
   ]);
 
   // 4) решаем встроенные капчи
   if (capTurn) {
+    console.log('🔄 Решаем Turnstile до клика…');
     try {
-      await triggerRecaptcha(page);
-      console.log('⚠️ Turnstile упал — решаем reCAPTCHA');
-
-    } catch {
-      console.log('🔄 Решаем Turnstile до клика…');
       await triggerTurnstile(page);
+    } catch {
+      console.log('⚠️ Turnstile упал — решаем reCAPTCHA');
+      await triggerRecaptcha(page);
     }
   } else if (capRecap) {
     console.log('🔐 Решаем reCAPTCHA до клика…');
@@ -97,25 +94,9 @@ export async function performLoginOnce(
   await handleCaptchaBeforeClick(page);
   console.log('▶️ handleCaptchaBeforeClick');
 
-  let elapsed = 0;
-  while (elapsed < 20_000) {
-    if (await page.$(feedSel)) {
-      console.log('✅ Лента появилась в polling, считаем логин успешным');
-      return true;
-    }
-    const postErr = await checkLoginError(page, errorSel);
-    if (postErr) {
-      console.error(`🚨 Ошибка в polling: "${postErr}" — выходим`);
-      return false;
-    }
-    console.log('⏱ Ещё не в ленте, ждём 5 сек…');
-    await setTimeout(5_000);
-    elapsed += 5_000;
-  }
-
-  // === еще клик ===
+  // === Второй клик ===
   await page.click(submitSelector);
-  console.log('▶️ еще клик по Login');
+  console.log('▶️ Второй клик по Login');
 
   // === Race: feed / error / кнопка разблокилась (5 с) ===
   const result = await Promise.race<'success'|'error'|'button'>([
@@ -143,9 +124,8 @@ export async function performLoginOnce(
   }
 
   // === result === 'button' — кнопка всё ещё disabled: polling (до 60 000 ms) ===
-
-  elapsed = 0;
-  while (elapsed < 20_000) {
+  let elapsed = 0;
+  while (elapsed < 60_000) {
     if (await page.$(feedSel)) {
       console.log('✅ Лента появилась в polling, считаем логин успешным');
       return true;
@@ -155,19 +135,19 @@ export async function performLoginOnce(
       console.error(`🚨 Ошибка в polling: "${postErr}" — выходим`);
       return false;
     }
-    console.log('⏱ Ещё не в ленте, ждём 5 сек…');
-    await setTimeout(5_000);
-    elapsed += 5_000;
+    console.log('⏱ Ещё не в ленте, ждём 15 сек…');
+    await setTimeout(15_000);
+    elapsed += 15_000;
   }
 
   console.warn('⚠️ Таймаут ожидания ленты/ошибки после первого клика');
-
+  console.log('🔧 Запускаем HCAPT-extension…');
   await startCaptchaExtension(page);
   markCaptchaSolved();
 
   // === После extension: финальный клик ===
   await page.waitForSelector(`${submitSelector}:not([disabled])`, { timeout: 200_000 }).catch(() => {});
-  await setTimeout(5_000);
+  await setTimeout(1_000);
   await handleCaptchaBeforeClick(page);
   console.log('▶️ Click after extension');
   await page.click(submitSelector);
@@ -200,8 +180,7 @@ export async function performLoginWithRetries(
     console.log(`🔑 Попытка входа #${i}…`);
     const ok = await performLoginOnce(page, config, username, password);
     if (ok) {
-      //console.log('✅ Успешно вошли');
-      console.log('✅ Успешно вошли [LOGIN RETRIES] Login успешен для:', username);
+      console.log('✅ Успешно вошли');
       return true;
     }
     // если «Wrong email or password» — сразу прекратить
@@ -212,14 +191,13 @@ export async function performLoginWithRetries(
     }
     console.log('❌ Сброс формы и перезагрузка…');
 
-    await page.evaluate(() => {
-      (document.querySelector('input[name="email"]') as HTMLInputElement).value = '';
-      (document.querySelector('input[name="password"]') as HTMLInputElement).value = '';
-    });
+    // await page.evaluate(() => {
+    //   (document.querySelector('input[name="email"]') as HTMLInputElement).value = '';
+    //   (document.querySelector('input[name="password"]') as HTMLInputElement).value = '';
+    // });
     await setTimeout(1_000);
     await page.reload({ waitUntil: 'networkidle2' });
-    await acceptCookie.call(page);
-    resetCaptchaFlag(); // сбрасываем капчу перед новой попыткой
+    //await acceptCookie.call(page);
   }
   console.error('⛔ Не удалось войти за все попытки');
   return false;

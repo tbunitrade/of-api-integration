@@ -57,6 +57,7 @@ export async function checkLoginError(
 }
 
 export async function handleCaptchaBeforeClick(page: Page): Promise<void> {
+  console.log('handleCaptchaBeforeClick');
   if (captchaAlreadySolved) return;
 
   const [hasRecap, hasTurn] = await Promise.all([
@@ -81,6 +82,7 @@ export async function handleCaptchaBeforeClick(page: Page): Promise<void> {
 }
 
 export async function triggerRecaptcha(page: Page): Promise<void> {
+  console.log('export async function triggerRecaptcha');
   const iframe = await page.waitForSelector(
     '.captcha_wrapper iframe[title="reCAPTCHA"]',
     { timeout: 10_000 }
