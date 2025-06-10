@@ -70,17 +70,18 @@ export async function performLoginOnce(
   ]);
 
   // 4) решаем встроенные капчи
-  if (capTurn) {
-    console.log('🔄 Решаем Turnstile до клика…');
+  if (capRecap) {
+    console.log('🔄 Найдена Капча');
     try {
-      await triggerTurnstile(page);
+      await triggerRecaptcha(page);
+
     } catch {
       console.log('⚠️ Turnstile упал — решаем reCAPTCHA');
-      await triggerRecaptcha(page);
+      //await triggerRecaptcha(page);
     }
-  } else if (capRecap) {
+  } else if (capTurn) {
     console.log('🔐 Решаем reCAPTCHA до клика…');
-    await triggerRecaptcha(page);
+    await triggerTurnstile(page);
   }
 
   // 5) проверяем ошибку логина перед кликом

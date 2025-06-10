@@ -99,7 +99,7 @@ export async function  loadCookiesFromFile(this: PuppeteerUtil, fileName: string
     const localPath = path.join(cookiesDir, `${fileName}_localstorage.json`);;
     const sessionPath = path.join(cookiesDir, `${fileName}_sessionstorage.json`);
 
-    console.log ('check loadCookies From File ', fileName);
+    console.log ('check loadCookies From File 00', fileName);
 
     const cookiesString = await fs.readFile(cookiePath, { encoding: 'utf-8' });
     const localStorageData = await fs.readFile(localPath, { encoding: 'utf-8' });
