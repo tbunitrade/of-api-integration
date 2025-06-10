@@ -43,8 +43,8 @@ export async function performLoginOnce(
   resetCaptchaFlag();
 
   // 1) вводим email + password
-  await page.type(idSelector, username, { delay: 1030 });
-  await page.type(passwordSelector, password, { delay: 1090 });
+  await page.type(idSelector, username, { delay: 430 });
+  await page.type(passwordSelector, password, { delay: 390 });
 
   // === Первый клик ===
   await setTimeout(5_000);
@@ -53,22 +53,21 @@ export async function performLoginOnce(
 
   // 2) ждём кнопку или ошибку (10 с)
   const phase1 = await Promise.race<'failure' | 'enabled'>([
-    page.waitForSelector(errorSel, { timeout: 20_000 }).then(() => 'failure'),
-    page.waitForSelector(`${submitSelector}:not([disabled])`, { timeout: 30_000 }).then(() => 'enabled'),
+    page.waitForSelector(errorSel, { timeout: 5_000 }).then(() => 'failure'),
+    page.waitForSelector(`${submitSelector}:not([disabled])`, { timeout: 5_000 }).then(() => 'enabled'),
   ]);
-
 
   if (phase1 === 'failure') {
     const msg = await page.$eval(errorSel, el => el.textContent?.trim() || '');
     console.log(`❌ Ошибка до клика: "${msg}"`);
     return false;
   }
-  console.log('load balancer');
+  console.log(phase1,'< phase1, started const [capRecap, capTurn]', );
   // 3) краткая проверка капчи (70-- с)
   const [capRecap, capTurn] = await Promise.all([
-    page.waitForSelector('.captcha_wrapper iframe[title="reCAPTCHA"]', { timeout: 30_000 })
+    page.waitForSelector('.captcha_wrapper iframe[title="reCAPTCHA"]', { timeout: 5_000 })
       .then(() => true).catch(() => false),
-    page.waitForSelector('iframe[title*="challenge"]', { timeout: 30_000 })
+    page.waitForSelector('iframe[title*="challenge"]', { timeout: 5_000 })
       .then(() => true).catch(() => false),
   ]);
 
