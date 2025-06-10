@@ -46,6 +46,11 @@ export async function performLoginOnce(
   await page.type(idSelector, username, { delay: 1030 });
   await page.type(passwordSelector, password, { delay: 1090 });
 
+  // === Первый клик ===
+  await setTimeout(5_000);
+  await page.click(submitSelector);
+  console.log('▶️ Первый клик по Login');
+
   // 2) ждём кнопку или ошибку (10 с)
   const phase1 = await Promise.race<'failure' | 'enabled'>([
     page.waitForSelector(errorSel, { timeout: 20_000 }).then(() => 'failure'),
@@ -109,9 +114,9 @@ export async function performLoginOnce(
     elapsed += 5_000;
   }
 
-  // === Первый клик ===
+  // === еще клик ===
   await page.click(submitSelector);
-  console.log('▶️ Первый клик по Login');
+  console.log('▶️ еще клик по Login');
 
   // === Race: feed / error / кнопка разблокилась (5 с) ===
   const result = await Promise.race<'success'|'error'|'button'>([
