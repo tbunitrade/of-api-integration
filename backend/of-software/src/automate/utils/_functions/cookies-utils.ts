@@ -177,7 +177,7 @@ export async function setCookie(this:any, cookies?: any[]) {
         value,
         domain,
         path,
-        expires,
+        expires: expires ? Math.floor(expires) : undefined,
         httpOnly,
         secure,
         sameSite
