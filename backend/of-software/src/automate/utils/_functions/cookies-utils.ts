@@ -64,16 +64,29 @@ export async function  saveCookieToFile(this: PuppeteerUtil, fileName: string) {
   console.log('[COOKIES] 📄 Пишем localStorage в:', `${basePath}_localstorage.json`);
   console.log('[COOKIES] 📄 Пишем sessionStorage в:', `${basePath}_sessionstorage.json`);
 
-  const filteredCookies = cookies.map(({name, value, domain, path, expires, httpOnly, secure, sameSite}) => ({
-    name,
-    value,
-    domain,
-    path,
-    expires: expires ? Math.floor(expires) : undefined,
-    httpOnly,
-    secure,
-    sameSite
-  }));
+  // const filteredCookies = cookies.map(({name, value, domain, path, expires, httpOnly, secure, sameSite}) => ({
+  //   name,
+  //   value,
+  //   domain,
+  //   path,
+  //   expires: expires ? Math.floor(expires) : undefined,
+  //   httpOnly,
+  //   secure,
+  //   sameSite
+  // }));
+  console.log('[saveCookieToFile] 🔬 Ключи в cookie:', cookies.map(c => Object.keys(c)));
+  const filteredCookies = cookies.map((cookie) => {
+    return {
+      name: String(cookie.name),
+      value: String(cookie.value),
+      domain: String(cookie.domain),
+      path: String(cookie.path),
+      expires: typeof cookie.expires === 'number' ? Math.floor(cookie.expires) : undefined,
+      httpOnly: !!cookie.httpOnly,
+      secure: !!cookie.secure,
+      sameSite: cookie.sameSite || undefined, // strict, lax, none
+    };
+  });
   await fs.writeFile(`${basePath}_cookie.json`, JSON.stringify(filteredCookies));
   //await fs.writeFile(`${basePath}_cookie.json`, JSON.stringify(cookies));
   await fs.writeFile(`${basePath}_localstorage.json`, JSON.stringify(localStorageData));
