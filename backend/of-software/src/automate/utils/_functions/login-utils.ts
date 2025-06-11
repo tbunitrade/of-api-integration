@@ -11,7 +11,7 @@ import {
   checkLoginError,
 } from './recaptcha-utils';
 import { setTimeout } from 'node:timers/promises';
-import { acceptCookie } from './cookies-utils';
+import { acceptCookie, saveCookieToFile, loadCookiesFromFile  } from './cookies-utils';
 
 /**
  * Один проход логина с поддержкой нескольких капч:
