@@ -214,7 +214,7 @@ export class AutomateService {
       await puppeteerUtil.openBrowser();
       //const cookieFileName = 'user_' + modelPlatform.model_id + '.' + modelPlatform.platform_id + '.json';
       //const cookieFileName = `user_${modelPlatform.model_id}.${modelPlatform.platform_id}.json`;
-      const cookieFileName = `user_${modelPlatform.model_id}.${modelPlatform.platform_id}.json`;
+      const cookieFileName = `user_${modelPlatform.model_id}.${modelPlatform.platform_id}_cookies.json`;
       console.log('Check file before start Autopost cookieFileName', cookieFileName);
       await puppeteerUtil.openPage('https://onlyfans.com/posts/create');
       await acceptCookie.call(puppeteerUtil);
