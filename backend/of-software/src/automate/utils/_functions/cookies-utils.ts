@@ -11,9 +11,9 @@ console.log('cookies-utils  cwd:', process.cwd());
 
 console.log(`[cookies-utils] loaded at ${new Date().toISOString()}, __dirname = ${__dirname}`);
 
-//Absolute path for cookies dir
-const cookiesDirtemp = path.resolve(__dirname, '../.../../../../../cookies');
-console.log('cookiesDirtemp ',cookiesDirtemp);
+// //Absolute path for cookies dir
+// const cookiesDirtemp = path.resolve(__dirname, '../.../../../../../cookies');
+// console.log('cookiesDirtemp ',cookiesDirtemp);
 
 const cookiesDir = path.join(process.cwd(), 'cookies');
 console.log('[cookies-utils] cookiesDir =', cookiesDir);
