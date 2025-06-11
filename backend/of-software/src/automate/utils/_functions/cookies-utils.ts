@@ -8,12 +8,7 @@ import * as path from 'path';
 
 console.log('cookies-utils __dirname:', __dirname);
 console.log('cookies-utils  cwd:', process.cwd());
-
 console.log(`[cookies-utils] loaded at ${new Date().toISOString()}, __dirname = ${__dirname}`);
-
-// //Absolute path for cookies dir
-// const cookiesDirtemp = path.resolve(__dirname, '../.../../../../../cookies');
-// console.log('cookiesDirtemp ',cookiesDirtemp);
 
 const cookiesDir = path.join(process.cwd(), 'cookies');
 console.log('[cookies-utils] cookiesDir =', cookiesDir);
@@ -70,7 +65,14 @@ export async function  saveCookieToFile(this: PuppeteerUtil, fileName: string) {
   console.log('[COOKIES] 📄 Пишем sessionStorage в:', `${basePath}_sessionstorage.json`);
 
   const filteredCookies = cookies.map(({name, value, domain, path, expires, httpOnly, secure, sameSite}) => ({
-    name, value, domain, path, expires, httpOnly, secure, sameSite
+    name,
+    value,
+    domain,
+    path,
+    expires: expires ? Math.floor(expires) : undefined,
+    httpOnly,
+    secure,
+    sameSite
   }));
   await fs.writeFile(`${basePath}_cookie.json`, JSON.stringify(filteredCookies));
   //await fs.writeFile(`${basePath}_cookie.json`, JSON.stringify(cookies));
@@ -101,7 +103,7 @@ export async function  loadCookiesFromFile(this: PuppeteerUtil, fileName: string
   const page = (this as any)._page;
   try {
     const cookiePath = path.join(cookiesDir, `${fileName}_cookie.json`);
-    const localPath = path.join(cookiesDir, `${fileName}_localstorage.json`);;
+    const localPath = path.join(cookiesDir, `${fileName}_localstorage.json`);
     const sessionPath = path.join(cookiesDir, `${fileName}_sessionstorage.json`);
 
     console.log ('check loadCookies From File 00', fileName);
@@ -159,8 +161,12 @@ export async function setCookie(this:any, cookies?: any[]) {
       // await this._page.setCookie(...cookies);
 
       // Отфильтровать куки, у которых есть валидное имя (строка непустая)
-      //const validCookies = cookies.filter(c => typeof c.name === 'string' && c.name.length > 0);
-      const validCookies = cookies.filter(c => typeof c.name === 'string' && c.name.trim() !== '');
+      //const validCookies = cookies.filter(c => typeof c.name === 'string' && c.name.trim() !== '');
+      const validCookies = cookies.filter(c =>
+        c && typeof c === 'object' &&
+        typeof c.name === 'string' && c.name.trim() !== '' &&
+        typeof c.value === 'string' && c.value.length > 0
+      );
 
       if (validCookies.length !== cookies.length) {
         console.warn(`[setCookie] Отфильтровано ${cookies.length - validCookies.length} куки с некорректным именем.`);
@@ -182,7 +188,7 @@ export async function setCookie(this:any, cookies?: any[]) {
         secure,
         sameSite
       }));
-
+      console.log('[setCookie] Устанавливаем куки:', cleanedCookies.map(c => ({name: c.name, expires: c.expires})));
       // Устанавливаем только валидные куки
       await this._page.setCookie(...cleanedCookies);
     }
