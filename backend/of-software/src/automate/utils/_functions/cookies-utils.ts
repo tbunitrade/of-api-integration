@@ -139,8 +139,9 @@ export async function  loadCookiesFromFile(this: PuppeteerUtil, fileName: string
 export async function setCookie(this:any, cookies?: any[]) {
   try {
     if (cookies) {
-      const context = this._page.browserContext();
-      await context.setCookie(...cookies);
+      // const context = this._page.browserContext();
+      // await context.setCookie(...cookies);
+      await this._page.setCookie(...cookies);
     }
   } catch (error) {
     console.log('Error setting cookies : ', error);
