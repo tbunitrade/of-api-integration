@@ -85,18 +85,14 @@ export async function performLoginOnce(
     await triggerRecaptcha(page);
   }
 
-  await setTimeout(2000);
-  console.log('stupid move 0');
-  await setTimeout(3000);
+
   // 5) проверяем ошибку логина перед кликом
   const preError = await checkLoginError(page, errorSel);
   if (preError) {
     console.error(`🚨 Ошибка перед кликом: "${preError}"`);
     return false;
   }
-  // await setTimeout(2000);
-  // console.log('stupid move 1');
-  // await setTimeout(3000);
+
   // 6) перед кликом решаем капчу, если она ещё не решена
   await handleCaptchaBeforeClick(page);
   console.log('▶️ handleCaptchaBeforeClick');
@@ -124,14 +120,26 @@ export async function performLoginOnce(
     return true;
   }
   if (result === 'error') {
+    await setTimeout(2000);
+    console.log('stupid move 0');
+    await setTimeout(3000);
     const errText = await page.$eval(errorSel, el => el.textContent?.trim() || '');
+    await setTimeout(2000);
+    console.log('stupid move 1');
+    await setTimeout(3000);
     console.error(`🚨 Ошибка после клика: "${errText}"`);
     if (errText.includes('Wrong email') || errText.includes('is not valid')) {
       console.error('🚫 Неверный email или пароль — прекращаем попытку');
+      await setTimeout(2000);
+      console.log('stupid move 2');
+      await setTimeout(3000);
       return false;
     }
     if (errText.includes('Too many requests')) {
       console.warn('⏱ Ограничение запросов — ждём 5 сек');
+      await setTimeout(2000);
+      console.log('stupid move 3');
+      //await setTimeout(3000);
       await setTimeout(5000);
       return false;
     }
