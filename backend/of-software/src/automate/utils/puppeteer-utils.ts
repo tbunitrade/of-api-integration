@@ -14,7 +14,8 @@ const fs = _fs.promises;
 
 // ==== Ваши «модули» ====
 import { performLoginWithRetries } from './_functions/login-utils';
-import { RecaptchaUtil, handleCaptchaBeforeClick, checkLoginError, startCaptchaExtension } from './_functions/recaptcha-utils';
+//import { RecaptchaUtil, handleCaptchaBeforeClick, checkLoginError, startCaptchaExtension } from './_functions/recaptcha-utils';
+//import { handleCaptchaBeforeClick, checkLoginError, startCaptchaExtension } from './_functions/recaptcha-utils';
 import { acceptCookie, saveCookieToFile, loadCookiesFromFile, setCookie, getCookie } from './_functions/cookies-utils';
 import { CONFIG as DEFAULT_CONFIG } from './config/step-config';
 import { work } from './_functions/work-utils';
@@ -87,12 +88,12 @@ export class PuppeteerUtil {
       headless: this.headless,
       slowMo: 50,
       args: [
-        '--no-sandbox',
-        //'--disable-gpu',
-        '--disable-setuid-sandbox',
+        `--no-sandbox`,
+        //`--disable-gpu`,
+        `--disable-setuid-sandbox`,
         `--disable-extensions-except=${ext}`,
         `--load-extension=${ext}`,
-        '--window-size=1920,1080',
+        `--window-size=1920,1080`,
       ],
       executablePath: exePath,
 

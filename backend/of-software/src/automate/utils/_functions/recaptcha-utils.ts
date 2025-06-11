@@ -1,49 +1,60 @@
 // src/_functions/recaptcha-utils.ts
 import type { Page } from 'puppeteer';
 
-let captchaAlreadySolved = false;
 
 /**
  * Экспортируем класс, чтобы его можно было
  * импортировать в старом файле login(...).
  */
-export class RecaptchaUtil {
-  /**
-   * Эмулирует ожидание решения reCAPTCHA v2/v3.
-   * Поскольку вы используете бесплатный плагин, он сам «поднимает» капчу
-   * и решает её, поэтому тут достаточно просто сделать setTimeout.
-   *
-   * @param siteKey – ключ капчи (из URL iframe)
-   * @param pageUrl – текущая страница (для логов, если нужно)
-   * @param timeoutSec – сколько секунд ждать (например, 30)
-   * @param version – 2 или 3
-   */
-  public async resolveRecaptcha2(
-    siteKey: string,
-    pageUrl: string,
-    timeoutSec: number,
-    version: number
-  ): Promise<string> {
-    console.log(`⏳ RecaptchaUtil: ждём ${timeoutSec} сек. для решения reCAPTCHA v${version} (siteKey=${siteKey})`);
-    await new Promise((res) => setTimeout(res, timeoutSec * 1000));
-    console.log('✔️ RecaptchaUtil: капча, судя по всему, решена (или пропущена плагином).');
-    return '';
-  }
-}
+// export class RecaptchaUtil {
+//   /**
+//    * Эмулирует ожидание решения reCAPTCHA v2/v3.
+//    * Поскольку вы используете бесплатный плагин, он сам «поднимает» капчу
+//    * и решает её, поэтому тут достаточно просто сделать setTimeout.
+//    *
+//    * @param siteKey – ключ капчи (из URL iframe)
+//    * @param pageUrl – текущая страница (для логов, если нужно)
+//    * @param timeoutSec – сколько секунд ждать (например, 30)
+//    * @param version – 2 или 3
+//    */
+//   public async resolveRecaptcha2(
+//     siteKey: string,
+//     pageUrl: string,
+//     timeoutSec: number,
+//     version: number
+//   ): Promise<string> {
+//     console.log(`⏳ RecaptchaUtil: ждём ${timeoutSec} сек. для решения reCAPTCHA v${version} (siteKey=${siteKey})`);
+//     await new Promise((res) => setTimeout(res, timeoutSec * 1000));
+//     console.log('✔️ RecaptchaUtil: капча, судя по всему, решена (или пропущена плагином).');
+//     return '';
+//   }
+// }
 
 
 // ---- Ниже идут старые функции «по работе с капчей».
 //     Они экспортируются, чтобы их можно было вызывать
 //     в вашей «fallback» логике, если потребуется.
+let captchaAlreadySolved = false;
 
+/**
+ * Сбрасывает флаг решения капчи.
+ * Вызывается в начале каждой новой попытки логина.
+ */
 export function resetCaptchaFlag(): void {
   captchaAlreadySolved = false;
 }
 
+/**
+ * Отмечает, что капча уже решена в этой попытке.
+ */
 export function markCaptchaSolved(): void {
   captchaAlreadySolved = true;
 }
 
+/**
+ * Проверяет, есть ли на странице сообщение об ошибке логина.
+ * @returns текст ошибки или null, если сообщения нет.
+ */
 export async function checkLoginError(
   page: Page,
   errorSelector: string
@@ -56,8 +67,14 @@ export async function checkLoginError(
   }
 }
 
+/**
+ * Если ещё не решали капчу в этой попытке, то:
+ * - детектит Turnstile и решает его,
+ * - или детектит reCAPTCHA и решает её,
+ * иначе — продолжает дальше.
+ */
 export async function handleCaptchaBeforeClick(page: Page): Promise<void> {
-  console.log('handleCaptchaBeforeClick');
+  console.log('handleCaptchaBeforeClick check ', captchaAlreadySolved);
   if (captchaAlreadySolved) return;
 
   const [hasRecap, hasTurn] = await Promise.all([
@@ -81,6 +98,10 @@ export async function handleCaptchaBeforeClick(page: Page): Promise<void> {
   }
 }
 
+/**
+ * Решает Google reCAPTCHA:
+ * 1) Находит iframe → кликает чекбокс → ждёт заполнения textarea.
+ */
 export async function triggerRecaptcha(page: Page): Promise<void> {
   console.log('export async function triggerRecaptcha');
   const iframe = await page.waitForSelector(
@@ -100,10 +121,15 @@ export async function triggerRecaptcha(page: Page): Promise<void> {
       ?.value.trim(),
     { polling: 500, timeout: 5 * 60_000 }
   );
-  console.log('✔️ reCAPTCHA решена');
+
   markCaptchaSolved();
+  console.log('✔️ reCAPTCHA решена captchaAlreadySolvedv->', captchaAlreadySolved);
 }
 
+/**
+ * Решает Cloudflare Turnstile:
+ * 1) Находит iframe → кликает чекбокс/button → ждёт появления ответа.
+ */
 export async function triggerTurnstile(page: Page): Promise<void> {
   console.log('🔄 Turnstile обнаружен, решаем…');
 
@@ -126,17 +152,25 @@ export async function triggerTurnstile(page: Page): Promise<void> {
     },
     { polling: 500, timeout: 120_000 }
   );
-  console.log('✔️ Turnstile решён');
+  markCaptchaSolved();
+  console.log('✔️ Turnstile решён captchaAlreadySolvedv->', captchaAlreadySolved);
+  //console.log('✔️ Turnstile решён');
 }
 
 export async function startCaptchaExtension(page: Page): Promise<void> {
   console.log('>>> startCaptchaExtension called');
 
-  const browser = page.browser();// синхронно получаем браузер
-  const targets = await browser.targets(); // асинхронно получаем targets
-  //const extTarget = (await browser.targets()).find(
-  const extTarget = targets.find(
-    (t) => t.url().startsWith('chrome-extension://') && ['background_page','service_worker'].includes(t.type())
+  // const browser = page.browser();// синхронно получаем браузер
+  // const targets = await browser.targets(); // асинхронно получаем targets
+  // //const extTarget = (await browser.targets()).find(
+  // const extTarget = targets.find(
+  //   (t) => t.url().startsWith('chrome-extension://') && ['background_page','service_worker'].includes(t.type())
+  // );
+
+  const browser = page.browser();
+  const extTarget = browser.targets().find(t =>
+    t.url().startsWith('chrome-extension://') &&
+    ['background_page','service_worker'].includes(t.type())
   );
   if (!extTarget) {
     console.warn('HCAPT-extension не найден среди targets');

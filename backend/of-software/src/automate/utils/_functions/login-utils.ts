@@ -48,13 +48,13 @@ export async function performLoginOnce(
 
   // === Первый клик ===
   await setTimeout(5000);
-  await page.click(submitSelector);
-  console.log('▶️ Первый клик по Login');
-  await setTimeout(5000);
+  // await page.click(submitSelector);
+  // console.log('▶️ Первый клик по Login');
+  // await setTimeout(5000);
 
   // 2) ждём кнопку или ошибку (10 с)
   const phase1 = await Promise.race<'failure' | 'enabled'>([
-    page.waitForSelector(errorSel, { timeout: 5_000 }).then(() => 'failure'),
+    page.waitForSelector(errorSel, { timeout: 10_000 }).then(() => 'failure'),
     page.waitForSelector(`${submitSelector}:not([disabled])`, { timeout: 10_000 }).then(() => 'enabled'),
   ]);
   if (phase1 === 'failure') {
@@ -65,25 +65,24 @@ export async function performLoginOnce(
 
   // 3) краткая проверка капчи (7 с)
   const [capRecap, capTurn] = await Promise.all([
-    page.waitForSelector('.captcha_wrapper iframe[title="reCAPTCHA"]', { timeout: 3_000 })
+    page.waitForSelector('.captcha_wrapper iframe[title="reCAPTCHA"]', { timeout: 3_500 })
       .then(() => true).catch(() => false),
-    page.waitForSelector('iframe[title*="challenge"]', { timeout: 3_000 })
+    page.waitForSelector('iframe[title*="challenge"]', { timeout: 3_500 })
       .then(() => true).catch(() => false),
   ]);
 
   // 4) решаем встроенные капчи
-  if (capRecap) {
-    console.log('🔄 Найдена Капча');
+  if (capTurn) {
+    console.log('🔄 Решаем Turnstile до клика…');
     try {
-      await triggerRecaptcha(page);
-
+      await triggerTurnstile(page);
     } catch {
       console.log('⚠️ Turnstile упал — решаем reCAPTCHA');
-      //await triggerRecaptcha(page);
+      await triggerRecaptcha(page);
     }
-  } else if (capTurn) {
+  } else if (capRecap) {
     console.log('🔐 Решаем reCAPTCHA до клика…');
-    await triggerTurnstile(page);
+    await triggerRecaptcha(page);
   }
 
   // 5) проверяем ошибку логина перед кликом
@@ -99,7 +98,7 @@ export async function performLoginOnce(
 
   // === Второй клик ===
   await page.click(submitSelector);
-  console.log('▶️ Второй клик по Login');
+  console.log('▶️ Первый клик по Login');
 
   // === Race: feed / error / кнопка разблокилась (5 с) ===
   const result = await Promise.race<'success'|'error'|'button'>([
@@ -128,7 +127,7 @@ export async function performLoginOnce(
 
   // === result === 'button' — кнопка всё ещё disabled: polling (до 60 000 ms) ===
   let elapsed = 0;
-  while (elapsed < 60_000) {
+  while (elapsed < 100_000) {
     if (await page.$(feedSel)) {
       console.log('✅ Лента появилась в polling, считаем логин успешным');
       return true;
@@ -194,10 +193,10 @@ export async function performLoginWithRetries(
     }
     console.log('❌ Сброс формы и перезагрузка…');
 
-    // await page.evaluate(() => {
-    //   (document.querySelector('input[name="email"]') as HTMLInputElement).value = '';
-    //   (document.querySelector('input[name="password"]') as HTMLInputElement).value = '';
-    // });
+    await page.evaluate(() => {
+      (document.querySelector('input[name="email"]') as HTMLInputElement).value = '';
+      (document.querySelector('input[name="password"]') as HTMLInputElement).value = '';
+    });
     await setTimeout(1_000);
     await page.reload({ waitUntil: 'networkidle2' });
     //await acceptCookie.call(page);
