@@ -239,7 +239,7 @@ export async function setCookie(this:any, cookies?: any[]) {
         }));
       console.log('[setCookie] Устанавливаем куки:', cleanedCookies.map(c => ({name: c.name, expires: c.expires})));
       // Устанавливаем только валидные куки
-      console.log('[DEBUG] Проверка куки перед установкой:');
+      console.log('[SET COOKIE] JSON payload:', JSON.stringify(cleanedCookies, null, 2));
       for (const c of cleanedCookies) {
         console.log(`[cookie] name=${c.name} (${typeof c.name}), domain=${c.domain} (${typeof c.domain}), path=${c.path} (${typeof c.path})`);
       }
@@ -260,7 +260,7 @@ export async function setCookie(this:any, cookies?: any[]) {
           });
         }
       }
-      await this._page.setCookie(...cleanedCookies);
+      await this._page.setCookie(...cleanedCookies); // 🔥 вызывает deleteCookies внутри
     }
   } catch (error) {
     console.log('Error setting cookies : ', error);
