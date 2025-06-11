@@ -139,8 +139,16 @@ export async function  loadCookiesFromFile(this: PuppeteerUtil, fileName: string
 export async function setCookie(this:any, cookies?: any[]) {
   try {
     if (cookies) {
-      // const context = this._page.browserContext();
-      // await context.setCookie(...cookies);
+      console.log('[setCookie] Cookies to set:', cookies);
+      for (const c of cookies) {
+        if (typeof c.name !== 'string') {
+          //console.error('[setCookie] Invalid cookie name:', c);
+          //throw new Error(`Cookie with invalid name: ${JSON.stringify(c)}`);
+          console.error('[setCookie] Invalid cookie name:', c);
+          // Вместо throw, просто логируем и выходим
+          return;
+        }
+      }
       await this._page.setCookie(...cookies);
     }
   } catch (error) {
