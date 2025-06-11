@@ -199,7 +199,7 @@ export async function performLoginWithRetries(
     });
     await setTimeout(1_000);
     await page.reload({ waitUntil: 'networkidle2' });
-    //await acceptCookie.call(page);
+    await acceptCookie.call(page);
   }
   console.error('⛔ Не удалось войти за все попытки');
   return false;
