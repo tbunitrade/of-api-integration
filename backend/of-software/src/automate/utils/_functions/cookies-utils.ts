@@ -107,6 +107,7 @@ export async function  loadCookiesFromFile(this: PuppeteerUtil, fileName: string
 
     if ( cookiesString ) {
       const cookies = JSON.parse(cookiesString);
+      console.log('[loadCookiesFromFile] Parsed cookies:', cookies);
       await this.setCookie.call(this, cookies);
       //await this.setCookie();
       console.log('Cookies loaded from file:', cookiePath);
@@ -153,7 +154,8 @@ export async function setCookie(this:any, cookies?: any[]) {
       // await this._page.setCookie(...cookies);
 
       // Отфильтровать куки, у которых есть валидное имя (строка непустая)
-      const validCookies = cookies.filter(c => typeof c.name === 'string' && c.name.length > 0);
+      //const validCookies = cookies.filter(c => typeof c.name === 'string' && c.name.length > 0);
+      const validCookies = cookies.filter(c => typeof c.name === 'string' && c.name.trim() !== '');
 
       if (validCookies.length !== cookies.length) {
         console.warn(`[setCookie] Отфильтровано ${cookies.length - validCookies.length} куки с некорректным именем.`);
