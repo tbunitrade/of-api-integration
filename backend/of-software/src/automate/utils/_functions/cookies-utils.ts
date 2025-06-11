@@ -140,16 +140,31 @@ export async function setCookie(this:any, cookies?: any[]) {
   try {
     if (cookies) {
       console.log('[setCookie] Cookies to set:', cookies);
-      for (const c of cookies) {
-        if (typeof c.name !== 'string') {
-          //console.error('[setCookie] Invalid cookie name:', c);
-          //throw new Error(`Cookie with invalid name: ${JSON.stringify(c)}`);
-          console.error('[setCookie] Invalid cookie name:', c);
-          // Вместо throw, просто логируем и выходим
-          return;
-        }
+
+      // for (const c of cookies) {
+      //   if (typeof c.name !== 'string') {
+      //     //console.error('[setCookie] Invalid cookie name:', c);
+      //     //throw new Error(`Cookie with invalid name: ${JSON.stringify(c)}`);
+      //     console.error('[setCookie] Invalid cookie name:', c);
+      //     // Вместо throw, просто логируем и выходим
+      //     return;
+      //   }
+      // }
+      // await this._page.setCookie(...cookies);
+
+      // Отфильтровать куки, у которых есть валидное имя (строка непустая)
+      const validCookies = cookies.filter(c => typeof c.name === 'string' && c.name.length > 0);
+
+      if (validCookies.length !== cookies.length) {
+        console.warn(`[setCookie] Отфильтровано ${cookies.length - validCookies.length} куки с некорректным именем.`);
       }
-      await this._page.setCookie(...cookies);
+
+      if (validCookies.length === 0) {
+        console.warn('[setCookie] Нет валидных куков для установки, выходим.');
+        return;
+      }
+
+      await this._page.setCookie(...validCookies);
     }
   } catch (error) {
     console.log('Error setting cookies : ', error);
