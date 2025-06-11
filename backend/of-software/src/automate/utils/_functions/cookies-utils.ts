@@ -216,10 +216,11 @@ export async function setCookie(this:any, cookies?: any[]) {
       //   sameSite: typeof cookie.sameSite === 'string' ? cookie.sameSite : undefined,
       // }));
 
+      const forbiddenNames = ['__cf_bm', '_cfuvid'];
       const cleanedCookies = validCookies
         .filter(c =>
           typeof c.name === 'string' &&
-          !['__cf_bm', '_cfuvid'].includes(c.name) &&
+          !forbiddenNames.includes(c.name) &&
           typeof c.domain === 'string' &&
           typeof c.path === 'string' &&
           c.name.trim() !== '' &&
