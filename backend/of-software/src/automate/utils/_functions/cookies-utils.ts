@@ -45,9 +45,8 @@ export async function  saveCookieToFile(this: PuppeteerUtil, fileName: string) {
   const fullPath = path.join(__dirname, '../cookies', fileName);
   console.log('[cookies-utils] Сохраняем куки в файл:', fullPath);
   console.log('[COOKIES] saveCookieToFile -> START, fileName =', fileName);
-
   console.log('[cookies-utils] saveCookieToFile called');
-  throw new Error('Test log from cookies-utils');
+  //throw new Error('Test log from cookies-utils');
 
 
   const page = (this as any)._page;
