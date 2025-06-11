@@ -184,7 +184,7 @@ export async function setCookie(this:any, cookies?: any[]) {
       }));
 
       // Устанавливаем только валидные куки
-      await this._page.setCookie(...validCookies);
+      await this._page.setCookie(...cleanedCookies);
     }
   } catch (error) {
     console.log('Error setting cookies : ', error);
