@@ -176,9 +176,12 @@ export async function setCookie(this:any, cookies?: any[]) {
       // Отфильтровать куки, у которых есть валидное имя (строка непустая)
       //const validCookies = cookies.filter(c => typeof c.name === 'string' && c.name.trim() !== '');
       const validCookies = cookies.filter(c =>
-        c && typeof c === 'object' &&
+        c &&
+        typeof c === 'object' &&
         typeof c.name === 'string' && c.name.trim() !== '' &&
-        typeof c.value === 'string' && c.value.length > 0
+        typeof c.value === 'string' && c.value.length > 0 &&
+        typeof c.domain === 'string' && c.domain.trim() !== '' &&
+        typeof c.path === 'string' && c.path.trim() !== ''
       );
 
       if (validCookies.length !== cookies.length) {
@@ -191,18 +194,33 @@ export async function setCookie(this:any, cookies?: any[]) {
       }
 
       // Перед установкой: удалить из каждого куки поля, которые Puppeteer не принимает (например, size, session, sourceScheme, sourcePort)
-      const cleanedCookies = validCookies.map(({name, value, domain, path, expires, httpOnly, secure, sameSite}) => ({
-        name,
-        value,
-        domain,
-        path,
-        expires: expires ? Math.floor(expires) : undefined,
-        httpOnly,
-        secure,
-        sameSite
+      // const cleanedCookies = validCookies.map(({name, value, domain, path, expires, httpOnly, secure, sameSite}) => ({
+      //   name,
+      //   value,
+      //   domain,
+      //   path,
+      //   expires: expires ? Math.floor(expires) : undefined,
+      //   httpOnly,
+      //   secure,
+      //   sameSite
+      // }));
+
+      const cleanedCookies = validCookies.map((cookie) => ({
+        name: String(cookie.name),
+        value: String(cookie.value),
+        domain: String(cookie.domain),
+        path: String(cookie.path),
+        expires: typeof cookie.expires === 'number' ? Math.floor(cookie.expires) : undefined,
+        httpOnly: !!cookie.httpOnly,
+        secure: !!cookie.secure,
+        sameSite: typeof cookie.sameSite === 'string' ? cookie.sameSite : undefined,
       }));
       console.log('[setCookie] Устанавливаем куки:', cleanedCookies.map(c => ({name: c.name, expires: c.expires})));
       // Устанавливаем только валидные куки
+      console.log('[DEBUG] Проверка куки перед установкой:');
+      for (const c of cleanedCookies) {
+        console.log(`[cookie] name=${c.name} (${typeof c.name}), domain=${c.domain} (${typeof c.domain}), path=${c.path} (${typeof c.path})`);
+      }
       await this._page.setCookie(...cleanedCookies);
     }
   } catch (error) {
