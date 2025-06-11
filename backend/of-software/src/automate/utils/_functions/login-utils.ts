@@ -172,7 +172,8 @@ export async function performLoginOnce(
   await setTimeout(10_000);
   // После успешного логина перед getCookie
   console.log('[saveCookieToFile] ⏳ Ждём появления ключевых cookies...');
-  await this._page.waitForFunction(() => {
+  //await this._page.waitForFunction(() => {
+  await page.waitForFunction(() => {
     const cookies = document.cookie;
     return cookies.includes('sess') && cookies.includes('auth_id');
   }, { timeout: 15000 }); // подожди до 10 сек (можно 15000)
