@@ -98,7 +98,7 @@ export async function performLoginOnce(
 
   // === Второй клик ===
   await page.click(submitSelector);
-  console.log('▶️ Первый клик по Login');
+  console.log('▶️ Второй клик по Login');
 
   // === Race: feed / error / кнопка разблокилась (5 с) ===
   const result = await Promise.race<'success'|'error'|'button'>([
@@ -127,7 +127,7 @@ export async function performLoginOnce(
 
   // === result === 'button' — кнопка всё ещё disabled: polling (до 60 000 ms) ===
   let elapsed = 0;
-  while (elapsed < 100_000) {
+  while (elapsed < 30_000) {
     if (await page.$(feedSel)) {
       console.log('✅ Лента появилась в polling, считаем логин успешным');
       return true;
