@@ -58,7 +58,8 @@ export async function  saveCookieToFile(this: PuppeteerUtil, fileName: string) {
     _fs.mkdirSync(cookiesDir, {recursive: true});
   }
 
-  const basePath = path.join(cookiesDir, fileName);
+  const baseName = fileName.endsWith('.json') ? fileName.slice(0, -5) : fileName;
+  const basePath = path.join(cookiesDir, baseName);
   console.log('[cookies-utils] Сохраняем куки в базу:', basePath);
   console.log('[COOKIE]', 'process.cwd() =', process.cwd());
   console.log('[COOKIE]', 'cookiesDir =', cookiesDir);
