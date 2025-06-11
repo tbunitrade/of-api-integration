@@ -120,8 +120,10 @@ export class PuppeteerUtil {
   // 4) Установка одного cookie (если нужно вручную)
   async setCookie(name: string, value: string, domain: string) {
     if (!this._page) throw new Error('Page is not initialized');
-    const context = this._page.browserContext();
-    context.setCookie({ name, value, domain });
+    // const context = this._page.browserContext();
+    // context.setCookie({ name, value, domain });
+    await this._page.setCookie({ name, value, domain });
+    console.log(`[setCookie] Set cookie: ${name}=${value} for domain ${domain}`);
   }
 
   // 5) Переход на любую страницу + сразу закрытие баннера cookie
