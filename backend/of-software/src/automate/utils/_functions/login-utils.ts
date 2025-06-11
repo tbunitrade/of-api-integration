@@ -94,25 +94,26 @@ export async function performLoginOnce(
     console.error(`🚨 Ошибка перед кликом: "${preError}"`);
     return false;
   }
-  await setTimeout(2000);
-  console.log('stupid move 1');
-  await setTimeout(3000);
+  // await setTimeout(2000);
+  // console.log('stupid move 1');
+  // await setTimeout(3000);
   // 6) перед кликом решаем капчу, если она ещё не решена
   await handleCaptchaBeforeClick(page);
   console.log('▶️ handleCaptchaBeforeClick');
-  await setTimeout(2000);
-  console.log('stupid move 2');
-  await setTimeout(3000);
+  // await setTimeout(2000);
+  // console.log('stupid move 2');
+  // await setTimeout(3000);
   // === Второй клик ===
   await page.click(submitSelector);
   console.log('▶️ Второй клик по Login');
 
-  await setTimeout(2000);
-  console.log('stupid move 3');
-  await setTimeout(3000);
+  // await setTimeout(2000);
+  // console.log('stupid move 3');
+  // await setTimeout(3000);
 
   // === Race: feed / error / кнопка разблокилась (5 с) ===
   const result = await Promise.race<'success'|'error'|'button'>([
+
     page.waitForSelector(feedSel, { timeout: 5000 }).then(() => 'success'),
     page.waitForSelector(errorSel, { timeout: 5000 }).then(() => 'error'),
     page.waitForSelector(`${submitSelector}:not([disabled])`, { timeout: 5000 }).then(() => 'button'),
@@ -136,18 +137,33 @@ export async function performLoginOnce(
     }
   }
 
+  await setTimeout(2000);
+  console.log('stupid move 4');
+  await setTimeout(3000);
   // === result === 'button' — кнопка всё ещё disabled: polling (до 60 000 ms) ===
   let elapsed = 0;
+  await setTimeout(2000);
+  console.log('stupid move 5');
+  await setTimeout(3000);
   while (elapsed < 30_000) {
     if (await page.$(feedSel)) {
       console.log('✅ Лента появилась в polling, считаем логин успешным');
+      await setTimeout(2000);
+      console.log('stupid move 6');
+      await setTimeout(3000);
       return true;
     }
     const postErr = await checkLoginError(page, errorSel);
     if (postErr) {
       console.error(`🚨 Ошибка в polling: "${postErr}" — выходим`);
+      await setTimeout(2000);
+      console.log('stupid move 7');
+      await setTimeout(3000);
       return false;
     }
+    await setTimeout(2000);
+    console.log('stupid move 8');
+    await setTimeout(3000);
     console.log('⏱ Ещё не в ленте, ждём 15 сек…');
     await setTimeout(15_000);
     elapsed += 15_000;
