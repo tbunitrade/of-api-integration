@@ -138,7 +138,7 @@ export async function  loadCookiesFromFile(this: PuppeteerUtil, fileName: string
  */
 export async function setCookie(this:any, cookies?: any[]) {
   try {
-    if (cookies) {
+    if (cookies && Array.isArray(cookies)) {
       console.log('[setCookie] Cookies to set:', cookies);
 
       // for (const c of cookies) {
@@ -164,6 +164,7 @@ export async function setCookie(this:any, cookies?: any[]) {
         return;
       }
 
+      // Устанавливаем только валидные куки
       await this._page.setCookie(...validCookies);
     }
   } catch (error) {
