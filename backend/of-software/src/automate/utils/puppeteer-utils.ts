@@ -55,8 +55,13 @@ export class PuppeteerUtil {
   // 1) Инициализируем puppeteer-extra с stealth-плагином
   initialize() {
     this._puppeteer = puppeteer;
-    this._puppeteer.use(StealthPlugin());
-  }
+    const stealth = StealthPlugin();
+    stealth.enabledEvasions.delete('sourceurl'); // ❗️отключаем sourceurl, он вызывает баг с deleteCookies
+    console.log('[STEALTH] Active evasions:', [...stealth.enabledEvasions]);
+    this._puppeteer.use(stealth);
+  }//this._puppeteer.use(StealthPlugin());
+
+
 
   // 2) Устанавливаем конфиг (если нужно свой, передайте в setConfig; иначе будет DEFAULT_CONFIG)
   setConfig(cfg?: any) {

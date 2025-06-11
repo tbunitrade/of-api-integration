@@ -212,8 +212,8 @@ export async function startCaptchaExtension(page: Page): Promise<void> {
     const btn = await popup.waitForSelector('#hcapt-solve-btn', { visible: true, timeout: 5_000 });
     await btn.click();
     console.log('🔧 HCAPT Solve clicked');
-  } catch {
-    console.warn('HCAPT Solve button не найден');
+  } catch (e){
+    console.warn('HCAPT Solve button не найден', e);
   }
   await popup.close();
 }

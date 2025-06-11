@@ -114,31 +114,36 @@ export async function performLoginOnce(
     page.waitForSelector(errorSel, { timeout: 5000 }).then(() => 'error'),
     page.waitForSelector(`${submitSelector}:not([disabled])`, { timeout: 5000 }).then(() => 'button'),
   ]).catch(() => 'button');
-
+  await setTimeout(2000);
+  console.log('stupid move 0');
+  await setTimeout(3000);
+  console.log('result',result);
+  await setTimeout(2000);
+  console.log('stupid move 1');
+  await setTimeout(3000);
   if (result === 'success') {
     console.log('✅ Залогинились сразу после первого клика');
     return true;
   }
+  await setTimeout(2000);
+  console.log('stupid move 2');
+  await setTimeout(3000);
   if (result === 'error') {
-    await setTimeout(2000);
-    console.log('stupid move 0');
-    await setTimeout(3000);
+
     const errText = await page.$eval(errorSel, el => el.textContent?.trim() || '');
-    await setTimeout(2000);
-    console.log('stupid move 1');
-    await setTimeout(3000);
+
     console.error(`🚨 Ошибка после клика: "${errText}"`);
     if (errText.includes('Wrong email') || errText.includes('is not valid')) {
       console.error('🚫 Неверный email или пароль — прекращаем попытку');
       await setTimeout(2000);
-      console.log('stupid move 2');
+      console.log('stupid move 3');
       await setTimeout(3000);
       return false;
     }
     if (errText.includes('Too many requests')) {
       console.warn('⏱ Ограничение запросов — ждём 5 сек');
       await setTimeout(2000);
-      console.log('stupid move 3');
+      console.log('stupid move 4');
       //await setTimeout(3000);
       await setTimeout(5000);
       return false;
@@ -146,32 +151,20 @@ export async function performLoginOnce(
   }
 
   await setTimeout(2000);
-  console.log('stupid move 4');
+  console.log('stupid move 5');
   await setTimeout(3000);
   // === result === 'button' — кнопка всё ещё disabled: polling (до 60 000 ms) ===
   let elapsed = 0;
-  await setTimeout(2000);
-  console.log('stupid move 5');
-  await setTimeout(3000);
   while (elapsed < 30_000) {
     if (await page.$(feedSel)) {
       console.log('✅ Лента появилась в polling, считаем логин успешным');
-      await setTimeout(2000);
-      console.log('stupid move 6');
-      await setTimeout(3000);
       return true;
     }
     const postErr = await checkLoginError(page, errorSel);
     if (postErr) {
       console.error(`🚨 Ошибка в polling: "${postErr}" — выходим`);
-      await setTimeout(2000);
-      console.log('stupid move 7');
-      await setTimeout(3000);
       return false;
     }
-    await setTimeout(2000);
-    console.log('stupid move 8');
-    await setTimeout(3000);
     console.log('⏱ Ещё не в ленте, ждём 15 сек…');
     await setTimeout(15_000);
     elapsed += 15_000;
