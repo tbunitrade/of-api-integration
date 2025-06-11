@@ -64,16 +64,6 @@ export async function  saveCookieToFile(this: PuppeteerUtil, fileName: string) {
   console.log('[COOKIES] 📄 Пишем localStorage в:', `${basePath}_localstorage.json`);
   console.log('[COOKIES] 📄 Пишем sessionStorage в:', `${basePath}_sessionstorage.json`);
 
-  // const filteredCookies = cookies.map(({name, value, domain, path, expires, httpOnly, secure, sameSite}) => ({
-  //   name,
-  //   value,
-  //   domain,
-  //   path,
-  //   expires: expires ? Math.floor(expires) : undefined,
-  //   httpOnly,
-  //   secure,
-  //   sameSite
-  // }));
   console.log('[saveCookieToFile] 🔬 Ключи в cookie:', cookies.map(c => Object.keys(c)));
   const filteredCookies = cookies.map((cookie) => {
     return {
@@ -157,24 +147,13 @@ export async function  loadCookiesFromFile(this: PuppeteerUtil, fileName: string
 /**
  * Устанавливает cookie в текущей странице
  */
-export async function setCookie(this:any, cookies?: any[]) {
+export async function setCookie(this: any, cookies?: any[]) {
   try {
     if (cookies && Array.isArray(cookies)) {
       console.log('[setCookie] Cookies to set:', cookies);
 
-      // for (const c of cookies) {
-      //   if (typeof c.name !== 'string') {
-      //     //console.error('[setCookie] Invalid cookie name:', c);
-      //     //throw new Error(`Cookie with invalid name: ${JSON.stringify(c)}`);
-      //     console.error('[setCookie] Invalid cookie name:', c);
-      //     // Вместо throw, просто логируем и выходим
-      //     return;
-      //   }
-      // }
-      // await this._page.setCookie(...cookies);
+      const forbiddenNames = ['__cf_bm', '_cfuvid'];
 
-      // Отфильтровать куки, у которых есть валидное имя (строка непустая)
-      //const validCookies = cookies.filter(c => typeof c.name === 'string' && c.name.trim() !== '');
       const validCookies = cookies.filter(c =>
         c &&
         typeof c === 'object' &&
@@ -185,45 +164,12 @@ export async function setCookie(this:any, cookies?: any[]) {
       );
 
       if (validCookies.length !== cookies.length) {
-        console.warn(`[setCookie] Отфильтровано ${cookies.length - validCookies.length} куки с некорректным именем.`);
+        console.warn(`[setCookie] ⚠️ Отфильтровано ${cookies.length - validCookies.length} куков с некорректными полями`);
       }
 
-      if (validCookies.length === 0) {
-        console.warn('[setCookie] Нет валидных куков для установки, выходим.');
-        return;
-      }
-
-      // Перед установкой: удалить из каждого куки поля, которые Puppeteer не принимает (например, size, session, sourceScheme, sourcePort)
-      // const cleanedCookies = validCookies.map(({name, value, domain, path, expires, httpOnly, secure, sameSite}) => ({
-      //   name,
-      //   value,
-      //   domain,
-      //   path,
-      //   expires: expires ? Math.floor(expires) : undefined,
-      //   httpOnly,
-      //   secure,
-      //   sameSite
-      // }));
-
-      // const cleanedCookies = validCookies.map((cookie) => ({
-      //   name: String(cookie.name),
-      //   value: String(cookie.value),
-      //   domain: String(cookie.domain),
-      //   path: String(cookie.path),
-      //   expires: typeof cookie.expires === 'number' ? Math.floor(cookie.expires) : undefined,
-      //   httpOnly: !!cookie.httpOnly,
-      //   secure: !!cookie.secure,
-      //   sameSite: typeof cookie.sameSite === 'string' ? cookie.sameSite : undefined,
-      // }));
-
-      const forbiddenNames = ['__cf_bm', '_cfuvid'];
       const cleanedCookies = validCookies
         .filter(c =>
-          typeof c.name === 'string' &&
           !forbiddenNames.includes(c.name) &&
-          typeof c.domain === 'string' &&
-          typeof c.path === 'string' &&
-          c.name.trim() !== '' &&
           !c.name.includes('\n') &&
           !c.name.includes('\r') &&
           !c.name.includes(' ') &&
@@ -239,30 +185,23 @@ export async function setCookie(this:any, cookies?: any[]) {
           secure: !!cookie.secure,
           sameSite: typeof cookie.sameSite === 'string' ? cookie.sameSite : undefined,
         }));
-      console.log('[setCookie] Устанавливаем куки:', cleanedCookies.map(c => ({name: c.name, expires: c.expires})));
-      // Устанавливаем только валидные куки
+
+      if (cleanedCookies.length !== validCookies.length) {
+        console.warn(`[setCookie] 🧼 Удалены куки с запрещёнными именами или странными символами: ${validCookies.length - cleanedCookies.length}`);
+      }
+
+      if (cleanedCookies.length === 0) {
+        console.warn('[setCookie] ⚠️ Нет валидных куков для установки. Прерываем.');
+        return;
+      }
+
+      console.log('[setCookie] Устанавливаем куки:', cleanedCookies.map(c => ({ name: c.name, expires: c.expires })));
       console.log('[SET COOKIE] JSON payload:', JSON.stringify(cleanedCookies, null, 2));
       for (const c of cleanedCookies) {
         console.log(`[cookie] name=${c.name} (${typeof c.name}), domain=${c.domain} (${typeof c.domain}), path=${c.path} (${typeof c.path})`);
       }
 
-      // for (const c of cleanedCookies) {
-      //   if (typeof c.name !== 'string') {
-      //     console.warn('[WARN] ❗️Invalid cookie name detected before setCookie:', c);
-      //   }
-      // }
-
-      for (const c of cleanedCookies) {
-        if (typeof c.name !== 'string' || typeof c.domain !== 'string' || typeof c.path !== 'string') {
-          console.warn('[WARN] ❗️Invalid cookie fields before setCookie:', {
-            name: c.name,
-            domain: c.domain,
-            path: c.path,
-            cookie: c,
-          });
-        }
-      }
-      await this._page.setCookie(...cleanedCookies); // 🔥 вызывает deleteCookies внутри
+      await this._page.setCookie(...cleanedCookies); // ⚠️ внутри вызывает deleteCookies
     }
   } catch (error) {
     console.log('Error setting cookies : ', error);
