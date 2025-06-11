@@ -118,9 +118,26 @@ export async function  loadCookiesFromFile(this: PuppeteerUtil, fileName: string
     if ( cookiesString ) {
       const cookies = JSON.parse(cookiesString);
       console.log('[loadCookiesFromFile] Parsed cookies:', cookies);
-      await this.setCookie.call(this, cookies);
-      //await this.setCookie();
+      // 👇 Добавь этот блок здесь
+      const filteredCookies = cookies.filter(
+        c =>
+          typeof c === 'object' &&
+          c !== null &&
+          typeof c.name === 'string' &&
+          c.name.trim() !== ''
+      );
+
+      if (filteredCookies.length !== cookies.length) {
+        console.warn(`[loadCookiesFromFile] ❌ Найдены невалидные куки, удалено: ${cookies.length - filteredCookies.length}`);
+      }
+
+      // 👇 И передаем фильтрованные
+      await this.setCookie.call(this, filteredCookies);
       console.log('Cookies loaded from file:', cookiePath);
+
+      // await this.setCookie.call(this, cookies);
+      // await this.setCookie();
+
     }
 
     //const localStorageData = await fs.readFile(cookiePath, { encoding: 'utf-8' });

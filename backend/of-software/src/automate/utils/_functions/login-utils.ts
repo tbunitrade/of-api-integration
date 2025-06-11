@@ -118,33 +118,20 @@ export async function performLoginOnce(
   console.log('stupid move 0');
   await setTimeout(3000);
   console.log('result',result);
-  await setTimeout(2000);
-  console.log('stupid move 1');
-  await setTimeout(3000);
   if (result === 'success') {
     console.log('✅ Залогинились сразу после первого клика');
     return true;
   }
-  await setTimeout(2000);
-  console.log('stupid move 2');
-  await setTimeout(3000);
   if (result === 'error') {
-
     const errText = await page.$eval(errorSel, el => el.textContent?.trim() || '');
-
     console.error(`🚨 Ошибка после клика: "${errText}"`);
+
     if (errText.includes('Wrong email') || errText.includes('is not valid')) {
       console.error('🚫 Неверный email или пароль — прекращаем попытку');
-      await setTimeout(2000);
-      console.log('stupid move 3');
-      await setTimeout(3000);
       return false;
     }
     if (errText.includes('Too many requests')) {
       console.warn('⏱ Ограничение запросов — ждём 5 сек');
-      await setTimeout(2000);
-      console.log('stupid move 4');
-      //await setTimeout(3000);
       await setTimeout(5000);
       return false;
     }
@@ -181,8 +168,15 @@ export async function performLoginOnce(
   await handleCaptchaBeforeClick(page);
   console.log('▶️ Click after extension');
   await page.click(submitSelector);
-  console.log('▶️ Финальный клик по Login');
+  console.log('▶️ Финальный клик по Login -> Start delay 10 sec');
   await setTimeout(10_000);
+  // После успешного логина перед getCookie
+  console.log('[saveCookieToFile] ⏳ Ждём появления ключевых cookies...');
+  await this._page.waitForFunction(() => {
+    const cookies = document.cookie;
+    return cookies.includes('sess') && cookies.includes('auth_id');
+  }, { timeout: 15000 }); // подожди до 10 сек (можно 15000)
+
   // === Проверка результата (60 с) ===
   const success = await Promise.race<boolean>([
     page.waitForSelector(feedSel, { timeout: 60_000 }).then(() => true),
