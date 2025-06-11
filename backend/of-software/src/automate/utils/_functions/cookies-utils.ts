@@ -51,6 +51,7 @@ export async function  saveCookieToFile(this: PuppeteerUtil, fileName: string) {
 
   const page = (this as any)._page;
   const cookies = await getCookie.call(this);
+  console.log('[saveCookieToFile] Cookies from page:', cookies);
   const localStorageData = await page.evaluate(() => JSON.stringify( localStorage ));
   const sessionStorageData = await page.evaluate(() => JSON.stringify( sessionStorage ));
 
@@ -68,7 +69,11 @@ export async function  saveCookieToFile(this: PuppeteerUtil, fileName: string) {
   console.log('[COOKIES] 📄 Пишем localStorage в:', `${basePath}_localstorage.json`);
   console.log('[COOKIES] 📄 Пишем sessionStorage в:', `${basePath}_sessionstorage.json`);
 
-  await fs.writeFile(`${basePath}_cookie.json`, JSON.stringify(cookies));
+  const filteredCookies = cookies.map(({name, value, domain, path, expires, httpOnly, secure, sameSite}) => ({
+    name, value, domain, path, expires, httpOnly, secure, sameSite
+  }));
+  await fs.writeFile(`${basePath}_cookie.json`, JSON.stringify(filteredCookies));
+  //await fs.writeFile(`${basePath}_cookie.json`, JSON.stringify(cookies));
   await fs.writeFile(`${basePath}_localstorage.json`, JSON.stringify(localStorageData));
   await fs.writeFile(`${basePath}_sessionstorage.json`, JSON.stringify(sessionStorageData));
 
@@ -165,6 +170,18 @@ export async function setCookie(this:any, cookies?: any[]) {
         console.warn('[setCookie] Нет валидных куков для установки, выходим.');
         return;
       }
+
+      // Перед установкой: удалить из каждого куки поля, которые Puppeteer не принимает (например, size, session, sourceScheme, sourcePort)
+      const cleanedCookies = validCookies.map(({name, value, domain, path, expires, httpOnly, secure, sameSite}) => ({
+        name,
+        value,
+        domain,
+        path,
+        expires,
+        httpOnly,
+        secure,
+        sameSite
+      }));
 
       // Устанавливаем только валидные куки
       await this._page.setCookie(...validCookies);
