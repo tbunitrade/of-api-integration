@@ -85,20 +85,31 @@ export async function performLoginOnce(
     await triggerRecaptcha(page);
   }
 
+  await setTimeout(2000);
+  console.log('stupid move 0');
+  await setTimeout(3000);
   // 5) проверяем ошибку логина перед кликом
   const preError = await checkLoginError(page, errorSel);
   if (preError) {
     console.error(`🚨 Ошибка перед кликом: "${preError}"`);
     return false;
   }
-
+  await setTimeout(2000);
+  console.log('stupid move 1');
+  await setTimeout(3000);
   // 6) перед кликом решаем капчу, если она ещё не решена
   await handleCaptchaBeforeClick(page);
   console.log('▶️ handleCaptchaBeforeClick');
-
+  await setTimeout(2000);
+  console.log('stupid move 2');
+  await setTimeout(3000);
   // === Второй клик ===
   await page.click(submitSelector);
   console.log('▶️ Второй клик по Login');
+
+  await setTimeout(2000);
+  console.log('stupid move 3');
+  await setTimeout(3000);
 
   // === Race: feed / error / кнопка разблокилась (5 с) ===
   const result = await Promise.race<'success'|'error'|'button'>([
@@ -154,7 +165,7 @@ export async function performLoginOnce(
   console.log('▶️ Click after extension');
   await page.click(submitSelector);
   console.log('▶️ Финальный клик по Login');
-
+  await setTimeout(10_000);
   // === Проверка результата (60 с) ===
   const success = await Promise.race<boolean>([
     page.waitForSelector(feedSel, { timeout: 60_000 }).then(() => true),
