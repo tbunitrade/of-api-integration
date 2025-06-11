@@ -168,15 +168,10 @@ export async function performLoginOnce(
   await handleCaptchaBeforeClick(page);
   console.log('▶️ Click after extension');
   await page.click(submitSelector);
-  console.log('▶️ Финальный клик по Login -> Start delay 10 sec');
-  await setTimeout(10_000);
+  console.log('▶️ Финальный клик по Login -> Start delay 15 sec');
+  await setTimeout(15_000);
   // После успешного логина перед getCookie
   console.log('[saveCookieToFile] ⏳ Ждём появления ключевых cookies...');
-  //await this._page.waitForFunction(() => {
-  await page.waitForFunction(() => {
-    const cookies = document.cookie;
-    return cookies.includes('sess') && cookies.includes('auth_id');
-  }, { timeout: 15000 }); // подожди до 10 сек (можно 15000)
 
   // === Проверка результата (60 с) ===
   const success = await Promise.race<boolean>([
@@ -222,7 +217,7 @@ export async function performLoginWithRetries(
     });
     await setTimeout(1_000);
     await page.reload({ waitUntil: 'networkidle2' });
-    await acceptCookie.call(page);
+    await acceptCookie.call(this); // ✅ this = PuppeteerUtil
   }
   console.error('⛔ Не удалось войти за все попытки');
   return false;
