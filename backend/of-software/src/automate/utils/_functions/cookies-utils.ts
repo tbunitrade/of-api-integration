@@ -221,6 +221,23 @@ export async function setCookie(this:any, cookies?: any[]) {
       for (const c of cleanedCookies) {
         console.log(`[cookie] name=${c.name} (${typeof c.name}), domain=${c.domain} (${typeof c.domain}), path=${c.path} (${typeof c.path})`);
       }
+
+      // for (const c of cleanedCookies) {
+      //   if (typeof c.name !== 'string') {
+      //     console.warn('[WARN] ❗️Invalid cookie name detected before setCookie:', c);
+      //   }
+      // }
+
+      for (const c of cleanedCookies) {
+        if (typeof c.name !== 'string' || typeof c.domain !== 'string' || typeof c.path !== 'string') {
+          console.warn('[WARN] ❗️Invalid cookie fields before setCookie:', {
+            name: c.name,
+            domain: c.domain,
+            path: c.path,
+            cookie: c,
+          });
+        }
+      }
       await this._page.setCookie(...cleanedCookies);
     }
   } catch (error) {
