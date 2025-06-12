@@ -54,21 +54,31 @@ export async function work(_config: any = null) {
           break;
         case 'loop':
           const messageListStr = step.value;
-          const _messageList = messageListStr
-            ? messageListStr.split(',')
-            : [];
+          const _messageList = messageListStr ? messageListStr.split(',') : [];
           if (_messageList.length === 0) compareResultValue = false;
           const messageList = _messageList.map((m) => m.trim());
+
           for (let mi = 0; mi < messageList.length; mi++) {
             const msg = messageList[mi];
-            for (let li = 0; li < step.childs.length; li++) {
-              const _step = { ...step.childs[li] };
-              if (_step.value) {
-                _step.value = _step.value.replaceAll('$value', msg);
-              }
 
-              await this.work([_step]);
+            const steps = Array.isArray(step.childs?.yes) ? step.childs.yes : [step.childs?.yes];
+
+            for (const _step of steps) {
+              const stepCopy = { ..._step };
+              if (stepCopy.value) {
+                stepCopy.value = stepCopy.value.replaceAll('$value', msg);
+              }
+              await this.work([stepCopy]);
             }
+
+            // for (let li = 0; li < step.childs.length; li++) {
+            //   const _step = { ...step.childs[li] };
+            //   if (_step.value) {
+            //     _step.value = _step.value.replaceAll('$value', msg);
+            //   }
+            //
+            //   await this.work([_step]);
+            // }
           }
 
           break;
