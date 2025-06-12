@@ -146,7 +146,8 @@ export class AutomateService {
                     }
                     return { ...c };
                   });
-
+                  console.log('[startMessage] Генерируем конфиг на основе msgData:', msgData);
+                  console.log('[startMessage] Первый шаг конфига:', config[0]);
                   await puppeteerUtil.work(config);
                 } catch (error) {
                   console.log('Error : ', error);
@@ -355,7 +356,8 @@ export class AutomateService {
                     }
                     return { ...c };
                   });
-
+                  console.log('[startPost] Генерируем конфиг на основе msgData:', msgData);
+                  console.log('[startPost] Первый шаг конфига:', config[0]);
                   await puppeteerUtil.work(config);
                 } catch (error) {
                   console.log('Error : ', error);
