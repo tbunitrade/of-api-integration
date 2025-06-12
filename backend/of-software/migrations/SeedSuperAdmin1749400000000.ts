@@ -1,6 +1,6 @@
 import { MigrationInterface, QueryRunner } from "typeorm";
 import * as bcrypt from "bcrypt";
-
+//https://github.com/VIPineapples/OF-Software/blob/main/backend/of-software/migrations/1741959395889-SeedAdminAndSupport.ts
 export class SeedSuperAdmin1749400000000 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
     const email = 'jcosta@costaindustries.com';
