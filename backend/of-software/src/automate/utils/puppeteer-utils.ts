@@ -44,7 +44,7 @@ export class PuppeteerUtil {
     this._browser = null;
     this._page = null;
     this._config = null;
-    this._isclosed = true;
+    this._isclosed = false;
     console.log('▶ PuppeteerUtil.constructor: HEADLESS_MODE=', process.env.HEADLESS_MODE || '(undefined)');
   }
 
@@ -109,7 +109,7 @@ export class PuppeteerUtil {
 
     const targets = await this._browser.targets();
     console.log('All targets:', targets.map(t => t.url()));
-
+    this._isclosed = false;
     this._browser.on('disconnected', () => {
       this._isclosed = true;
     });
