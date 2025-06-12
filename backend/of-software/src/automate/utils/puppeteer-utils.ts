@@ -224,6 +224,20 @@ export class PuppeteerUtil {
     }
   }
 
+  async typeWithShiftEnter(text) {
+    const parts = text.split('\n'); // Split the text by Enter key
+    for (let i = 0; i < parts.length; i++) {
+      if (i > 0) {
+        // Simulate Shift + Enter for newline
+        await this._page.keyboard.down('Shift');
+        await this._page.keyboard.press('Enter');
+        await this._page.keyboard.up('Shift');
+      }
+      // Type the current part of the text
+      await this._page.keyboard.type(parts[i]);
+    }
+  }
+
   // 11) Закрытие браузера
   async closeBrowser() {
     if (!this._browser) return;
