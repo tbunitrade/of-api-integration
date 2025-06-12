@@ -67,7 +67,7 @@ export async function work(_config: any = null) {
                 _step.value = _step.value.replaceAll('$value', msg);
               }
 
-              await this.work(_step);
+              await this.work([_step]);
             }
           }
 

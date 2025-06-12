@@ -317,6 +317,10 @@ export const postSteps: Step[] = [
           value: '15000',
         },
         {
+          type: 'runScript',
+          value: "console.log('[DEBUG] Строка после keyboardType выполнена')"
+        },
+        {
           type: 'click', //click search button again after typing.
           value:
             '#ReleaseFormsModal___BV_modal_content_ #ReleaseFormsModal___BV_modal_body_ .b-release-form--items .b-search-form button[type="submit"]',
