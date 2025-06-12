@@ -20,15 +20,16 @@ export async function acceptCookie(this: PuppeteerUtil) {
   const acceptCookieWork = [
     {
       type: 'waitForSelector',
-      value: '.b-cookies-informer__container .b-cookies-informer__nav button',
+      value: '.b-cookies-informer__container .b-cookies-informer__nav button:nth-child(2)',
     },
     {
       type: 'clickForValue',
       value: 'Accept All',
       selector:
-        '.b-cookies-informer__container .b-cookies-informer__nav button',
+        '.b-cookies-informer__container .b-cookies-informer__nav button:nth-child(2)',
     },
   ];
+  console.log('click on Accept COOKIES');
   await this.work( acceptCookieWork );
 }
 
