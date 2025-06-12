@@ -304,13 +304,17 @@ export const postSteps: Step[] = [
         },
         {
           type: 'waitForTime',
-          value: '500',
+          value: '5000',
         },
         {
           type: 'type', // type search string.
           value: '$value',
           selector:
             '#ReleaseFormsModal___BV_modal_content_ #ReleaseFormsModal___BV_modal_body_ .b-release-form--items .b-search-form .b-search-form__input',
+        },
+        {
+          type: 'waitForTime',
+          value: '15000',
         },
         {
           type: 'click', //click search button again after typing.
@@ -334,7 +338,7 @@ export const postSteps: Step[] = [
 
   {
     type: 'waitForTime',
-    value: '500',
+    value: '5000',
   },
 
   {
