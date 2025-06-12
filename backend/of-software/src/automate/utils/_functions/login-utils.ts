@@ -169,7 +169,7 @@ export async function performLoginOnce(
   console.log('▶️ Click after extension');
   await page.click(submitSelector);
   console.log('▶️ Финальный клик по Login -> Start delay 15 sec');
-  await setTimeout(15_000);
+  await setTimeout(55_000);
   // После успешного логина перед getCookie
   console.log('[saveCookieToFile] ⏳ Ждём появления ключевых cookies...');
 
