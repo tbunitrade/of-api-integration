@@ -161,7 +161,7 @@ export class AutomateService {
             }
 
             console.log('Work Finished');
-            await puppeteerUtil.closeBrowser();
+            //await puppeteerUtil.closeBrowser();
             return scheduledCount;
           } else {
             continue;
@@ -240,6 +240,7 @@ export class AutomateService {
 
       while (1) {
         try {
+          console.log('Start while in startPost ');
           let _config = _.cloneDeep(DEFAULT_CONFIG);
           _config['model_id'] = modelPlatform.model_id;
           _config['platform_id'] = modelPlatform.platform_id;
@@ -247,6 +248,8 @@ export class AutomateService {
           if (!modelPlatform.username) break;
 
           if (isLoginPage) {
+
+            console.log('in startPost isLoginPage -> ',isLoginPage);
             let _config = _.cloneDeep(CONFIG);
             _config['model_id'] = modelPlatform.model_id;
             _config['platform_id'] = modelPlatform.platform_id;
@@ -259,6 +262,9 @@ export class AutomateService {
             if (prokey) {
               _config.login_captcha_extension.proKey =
                 _config.login_captcha_extension.proKey.replace('$value', prokey);
+              console.log('current pro key -> ',prokey);
+            } else {
+              console.log('no pro key -> ',prokey);
             }
 
             isLoggedIn = await puppeteerUtil.login(
@@ -300,6 +306,7 @@ export class AutomateService {
               scheduledDt.setDate(scheduledDt.getDate() + i + 1);
 
               for (let j = 0; j < postWithTimesAndCaptions.post_times.length; j++) {
+                 console.log('start for postWithTimesAndCaptions');
                 try {
                   if (captionIndexes.length === 0) {
                     captionIndexes = Array.from(
@@ -367,11 +374,12 @@ export class AutomateService {
               scheduledCount++;
               if (i === numberOfDays - 1 && scheduledCount !== numberOfDays) {
                 scheduledCount = numberOfDays;
+                console.log(' scheduledCount++;',  scheduledCount);
               }
             }
 
             console.log('Work Finished');
-            await puppeteerUtil.closeBrowser();
+            //await puppeteerUtil.closeBrowser();
             return scheduledCount;
           } else {
             repeatCount--;

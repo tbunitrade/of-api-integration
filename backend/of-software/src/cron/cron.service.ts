@@ -136,6 +136,7 @@ export class CronService {
    * @returns
    */
   private createCron = (isPost = false, manualStart = false, user?: any) => {
+    //ограничили параллелизм до 1, то есть startPost() сейчас идут строго последовательно. Поэтому всё безопасно.
     const MaxOpeningBrowserCount = 1;
     return async () => {
       // ← вот сюда вставляем логи
