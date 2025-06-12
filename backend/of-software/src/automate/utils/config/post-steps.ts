@@ -167,7 +167,7 @@ export const postSteps: Step[] = [
     key: 'release_user_tags',
     value: '$value',
     childs: {
-      yes : [
+      yes: [
         {
           type: 'waitForTime',
           value: '500',
@@ -179,11 +179,14 @@ export const postSteps: Step[] = [
             '#ReleaseFormsModal___BV_modal_content_ #ReleaseFormsModal___BV_modal_body_ .b-release-form--items .b-search-form .b-search-form__input',
         },
         {
+          type: 'waitForTime',
+          value: '1000', // ← чтобы кнопка разблокировалась
+        },
+        {
           type: 'click',
           value:
             '#ReleaseFormsModal___BV_modal_content_ #ReleaseFormsModal___BV_modal_body_ .b-release-form--items .b-search-form button[type="submit"]',
         },
-
         {
           type: 'waitForTime',
           value: '5000',
@@ -191,18 +194,66 @@ export const postSteps: Step[] = [
         {
           type: 'waitForSelector',
           value:
-            '#ReleaseFormsModal___BV_modal_content_ #ReleaseFormsModal___BV_modal_body_ .b-release-form__docs .b-rows-lists .b-rows-lists__item',
+            '#ReleaseFormsModal___BV_modal_content_ #ReleaseFormsModal___BV_modal_body_ .b-release-form__docs .b-rows-lists .b-rows-lists__item__label',
         },
         {
-          type: 'waitForTime',
-          value: '1000',
+          type: 'clickForValue',
+          value: '$value',
+          selector:
+            '#ReleaseFormsModal___BV_modal_content_ #ReleaseFormsModal___BV_modal_body_ .b-release-form__docs .b-rows-lists .b-rows-lists__item__label',
+        },
+        {
+          type: 'waitForSelector',
+          value:
+            '#ReleaseFormsModal___BV_modal_content_ #ReleaseFormsModal___BV_modal_body_ .b-placeholder-item-selected .b-wrapper-selected .b-row-selected__controls button',
         },
         {
           type: 'click',
           value:
-            '#ReleaseFormsModal___BV_modal_content_ #ReleaseFormsModal___BV_modal_body_ .b-release-form__docs .b-rows-lists',
+            '#ReleaseFormsModal___BV_modal_content_ #ReleaseFormsModal___BV_modal_body_ .b-placeholder-item-selected .b-wrapper-selected .b-row-selected__controls button',
         },
       ],
+      // yes : [
+      //   {
+      //     type: 'waitForTime',
+      //     value: '500',
+      //   },
+      //   {
+      //     type: 'type',
+      //     value: '$value',
+      //     selector:
+      //       '#ReleaseFormsModal___BV_modal_content_ #ReleaseFormsModal___BV_modal_body_ .b-release-form--items .b-search-form .b-search-form__input',
+      //   },
+      //   {
+      //     type: 'click',
+      //     value:
+      //       '#ReleaseFormsModal___BV_modal_content_ #ReleaseFormsModal___BV_modal_body_ .b-release-form--items .b-search-form button[type="submit"]',
+      //   },
+      //   {
+      //     type: 'waitForTime',
+      //     value: '5000',
+      //   },
+      //   {
+      //     type: 'waitForSelector',
+      //     value:
+      //       '#ReleaseFormsModal___BV_modal_content_ #ReleaseFormsModal___BV_modal_body_ .b-release-form__docs .b-rows-lists .b-rows-lists__item',
+      //   },
+      //   {
+      //     type: 'waitForTime',
+      //     value: '1000',
+      //   },
+      //   {
+      //     type: 'clickForValue',
+      //     value: '$value',
+      //     selector:
+      //       '#ReleaseFormsModal___BV_modal_content_ #ReleaseFormsModal___BV_modal_body_ .b-release-form__docs .b-rows-lists .b-rows-lists__item__label',
+      //   },
+      //   // {
+      //   //   type: 'click',
+      //   //   value:
+      //   //     '#ReleaseFormsModal___BV_modal_content_ #ReleaseFormsModal___BV_modal_body_ .b-release-form__docs .b-rows-lists',
+      //   // },
+      // ],
     },
   },
   {
