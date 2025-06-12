@@ -168,7 +168,7 @@ export async function performLoginOnce(
   await handleCaptchaBeforeClick(page);
   console.log('▶️ Click after extension');
   await page.click(submitSelector);
-  console.log('▶️ Финальный клик по Login -> Start delay 15 sec');
+  console.log('▶️ Финальный клик по Login -> Start delay 55 sec');
   await setTimeout(55_000);
   // После успешного логина перед getCookie
   console.log('[saveCookieToFile] ⏳ Ждём появления ключевых cookies...');
