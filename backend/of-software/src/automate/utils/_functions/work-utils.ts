@@ -213,6 +213,9 @@ export async function work(_config: any = null) {
             .toLowerCase()
             .includes(step.value.toLowerCase());
           break;
+        case 'checkValue':
+          compareResultValue = !!this._messageData[step.key || ''];
+          break;
         case 'condition':
           const conditions = step.childs;
           if (compareResultValue === true) {
