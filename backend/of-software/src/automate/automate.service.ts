@@ -357,19 +357,52 @@ export class AutomateService {
                     passwordValue: modelPlatform.password,
                   };
 
+                  // const config = _config.post.map((c) => {
+                  //   if (c['key']) {
+                  //     c.value = c.value.replace('$value', msgData[c['key']]);
+                  //   }
+                  //   return { ...c };
+                  // });
+
+
+                  // const config = _config.post.map((c) => {
+                  //   if (c['key']) {
+                  //     //c.value = c.value.replace('$value', msgData[c['key']]);
+                  //     const val = msgData[c.key];
+                  //     if (typeof val === 'string') {
+                  //       console.log('[startPost] postCaptions:', postCaptions);
+                  //       c.value = c.value.replace('$value', val);
+                  //     } else {
+                  //       console.warn(`[startPost] Значение по key "${c.key}" не строка или отсутствует:`, val);
+                  //     }
+                  //   }
+                  //   return { ...c };
+                  // });
+
                   const config = _config.post.map((c) => {
-                    if (c['key']) {
-                      //c.value = c.value.replace('$value', msgData[c['key']]);
-                      const val = msgData[c.key];
+                    const stepCopy = { ...c };
+
+                    if (stepCopy.key) {
+                      const val = msgData[stepCopy.key];
+
                       if (typeof val === 'string') {
-                        console.log('[startPost] postCaptions:', postCaptions);
-                        c.value = c.value.replace('$value', val);
+                        if (typeof stepCopy.value === 'string') {
+                          stepCopy.value = stepCopy.value.replace('$value', val);
+                        } else {
+                          console.warn(`[startPost] value не строка для key "${stepCopy.key}":`, stepCopy.value);
+                        }
                       } else {
-                        console.warn(`[startPost] Значение по key "${c.key}" не строка или отсутствует:`, val);
+                        console.warn(`[startPost] msgData[${stepCopy.key}] не строка или отсутствует:`, val);
                       }
                     }
-                    return { ...c };
+
+                    return stepCopy;
                   });
+
+                  console.log('[startPost] postCaptions:', postCaptions);
+                  console.log('[startPost] msgData:', msgData);
+                  console.log('[startPost] config before patching:', _config.post);
+
                   console.log('[startPost] Генерируем конфиг на основе msgData:', msgData);
                   console.log('[startPost] Первый шаг конфига:', config[0]);
                   await puppeteerUtil.work(config);
