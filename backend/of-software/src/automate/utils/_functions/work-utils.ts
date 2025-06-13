@@ -55,11 +55,20 @@ export async function work(_config: any = null) {
         case 'loop':
           const messageListStr = step.value;
           const _messageList = messageListStr ? messageListStr.split(',') : [];
-          if (_messageList.length === 0) compareResultValue = false;
+          if (_messageList.length === 0)
+          {
+            compareResultValue = false;
+            break;
+          }
           const messageList = _messageList.map((m) => m.trim());
 
-          for (let mi = 0; mi < messageList.length; mi++) {
-            const msg = messageList[mi];
+          //for (let mi = 0; mi < messageList.length; mi++) {
+                //const msg = messageList[mi];
+          for (const msg of messageList) {
+            if (!step.childs?.yes) {
+              console.warn('[loop] Отсутствует step.childs.yes - > пропускаем итерацию');
+              continue;
+            }
 
             const steps = Array.isArray(step.childs?.yes) ? step.childs.yes : [step.childs?.yes];
 
