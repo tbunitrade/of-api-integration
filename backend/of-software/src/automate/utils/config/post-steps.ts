@@ -307,45 +307,46 @@ export const postSteps: Step[] = [
             ],
           },
         },
-        {
-          type: 'waitForTime',
-          value: '500',
-        },
-        {
-          type: 'click',
-          value:
-            '#ReleaseFormsModal___BV_modal_content_ #ReleaseFormsModal___BV_modal_body_ .b-placeholder-item-selected .b-wrapper-selected .b-row-selected__controls button',
-        },
-        {
-          type: 'click',
-          value:
-            '#ReleaseFormsModal___BV_modal_content_ #ReleaseFormsModal___BV_modal_footer_ button[type="button"]',
-        },
-
-        {
-          type: 'waitForTime',
-          value: '500',
-        },
-
-        {
-          type: 'click', // Click schedule button
-          value: '.b-feed .g-page__header button[at-attr="submit_post"]',
-        },
-        {
-          type: 'waitForTime',
-          value: '1000',
-        },
-        {
-          type: 'click', // Click calendar nav button in case message not posted automatically.
-          value: '.l-header a[href="/"]',
-        },
-        {
-          type: 'waitForTime',
-          value: '1000',
-        },
       ],
     },
   },
+  {
+    type: 'waitForTime',
+    value: '500',
+  },
+  {
+    type: 'click',
+    value:
+      '#ReleaseFormsModal___BV_modal_content_ #ReleaseFormsModal___BV_modal_body_ .b-placeholder-item-selected .b-wrapper-selected .b-row-selected__controls button',
+  },
+  {
+    type: 'click',
+    value:
+      '#ReleaseFormsModal___BV_modal_content_ #ReleaseFormsModal___BV_modal_footer_ button[type="button"]',
+  },
+
+  {
+    type: 'waitForTime',
+    value: '500',
+  },
+
+  {
+    type: 'click', // Click schedule button
+    value: '.b-feed .g-page__header button[at-attr="submit_post"]',
+  },
+  {
+    type: 'waitForTime',
+    value: '1000',
+  },
+  {
+    type: 'click', // Click calendar nav button in case message not posted automatically.
+    value: '.l-header a[href="/"]',
+  },
+  {
+    type: 'waitForTime',
+    value: '1000',
+  },
+
 // 'waitForSelector: #content .b-feed ',
 // 'waitandclickforappendmedia: .b-feed .b-make-post__actions button#attach_file_photo',
 // 'addtext: .b-feed #make_post_form .b-make-post__main-wrapper .b-make-post__textarea-wrapper textarea#new_post_text_input',
