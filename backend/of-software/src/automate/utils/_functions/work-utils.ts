@@ -55,18 +55,18 @@ export async function work(_config: any = null) {
         case 'loop':
           const messageListStr = step.value;
           const _messageList = messageListStr ? messageListStr.split(',') : [];
-          if (_messageList.length === 0)
-          {
+
+          if (_messageList.length === 0)  {
             compareResultValue = false;
+
             break;
           }
           const messageList = _messageList.map((m) => m.trim());
 
-          //for (let mi = 0; mi < messageList.length; mi++) {
-                //const msg = messageList[mi];
           for (const msg of messageList) {
             if (!step.childs?.yes) {
               console.warn('[loop] Отсутствует step.childs.yes - > пропускаем итерацию');
+
               continue;
             }
 
@@ -79,15 +79,6 @@ export async function work(_config: any = null) {
               }
               await this.work([stepCopy]);
             }
-
-            // for (let li = 0; li < step.childs.length; li++) {
-            //   const _step = { ...step.childs[li] };
-            //   if (_step.value) {
-            //     _step.value = _step.value.replaceAll('$value', msg);
-            //   }
-            //
-            //   await this.work([_step]);
-            // }
           }
 
           break;
