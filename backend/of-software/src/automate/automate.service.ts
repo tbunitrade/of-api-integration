@@ -359,7 +359,14 @@ export class AutomateService {
 
                   const config = _config.post.map((c) => {
                     if (c['key']) {
-                      c.value = c.value.replace('$value', msgData[c['key']]);
+                      //c.value = c.value.replace('$value', msgData[c['key']]);
+                      const val = msgData[c.key];
+                      if (typeof val === 'string') {
+                        console.log('[startPost] postCaptions:', postCaptions);
+                        c.value = c.value.replace('$value', val);
+                      } else {
+                        console.warn(`[startPost] Значение по key "${c.key}" не строка или отсутствует:`, val);
+                      }
                     }
                     return { ...c };
                   });
