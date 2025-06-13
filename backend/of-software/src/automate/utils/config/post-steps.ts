@@ -200,7 +200,25 @@ export const postSteps: Step[] = [
         {
           type: 'click',
           value:
-            '#ReleaseFormsModal___BV_modal_content_ #ReleaseFormsModal___BV_modal_body_ .b-release-form__docs .b-rows-lists',
+            '#ReleaseFormsModal___BV_modal_content_ #ReleaseFormsModal___BV_modal_body_ .b-release-form__docs .b-rows-lists .b-rows-lists__item',
+        },
+        {
+          type: 'waitForTime',
+          value: '1000',
+        },
+        {
+          type: 'waitForSelector',
+          value:
+            '#ReleaseFormsModal___BV_modal_content_ #ReleaseFormsModal___BV_modal_body_ .b-row-selected__controls .g-btn',
+        },
+        {
+          type: 'waitForTime',
+          value: '1000',
+        },
+        {
+          type: 'click',
+          value:
+            '#ReleaseFormsModal___BV_modal_content_ #ReleaseFormsModal___BV_modal_body_ .b-row-selected__controls .g-btn',
         },
       ],
     },
