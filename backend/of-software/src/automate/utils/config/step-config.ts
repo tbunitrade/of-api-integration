@@ -22,7 +22,8 @@ export const CONFIG = {
   selectors: {
     loginErrorMessage: '.v-text-field__details .v-messages__message',
     profileContainer: '#app.main-wrapper #content',
-    profileFeed: '#app.main-wrapper #content .b-feed'
+    //profileFeed: '#app.main-wrapper #content .b-feed',
+    profileFeed: 'main#content'
   } as SelectorsConfig,
   login: {
     pageSelector: '.login_content',
