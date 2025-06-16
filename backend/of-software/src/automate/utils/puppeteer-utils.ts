@@ -86,7 +86,6 @@ export class PuppeteerUtil {
 
     const ext = path.resolve(__dirname, '../../../extensions/hcapt/0.4.1_0');
     console.log('EXTENSION PATH for extensions/hcapt/0.4.1_0:', ext);
-    console.log('>>> Я точно собираюсь запустить Puppeteer.launch() …');
     this._browser = await this._puppeteer.launch({
       headless: this.headless,
       slowMo: 50,
