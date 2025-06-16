@@ -81,7 +81,8 @@ export const workSteps: Step[] = [
             type: 'clickForValue',
             value: '$value',
             selector:
-              '#content .b-chats__conversations-list .b-available-users__list .b-rows-lists label.b-chats__item',
+              //'#content .b-chats__conversations-list .b-available-users__list .b-rows-lists label.b-chats__item',
+              '#content .b-chats__conversations-list .b-rows-lists label.b-rows-lists__item',
           },
           {
             type: 'click',
@@ -234,7 +235,8 @@ export const workSteps: Step[] = [
     },
     {
       type: 'waitForSelector',
-      value: '.b-make-post__datepicker-input .vdatetime-popup',
+      //value: '.b-make-post__datepicker-input .vdatetime-popup',
+      value: '.vdatetime-popup',
     },
     {
       type: 'waitForTime',
@@ -244,10 +246,10 @@ export const workSteps: Step[] = [
       type: 'clickUntil',
       key: 'message_month',
       value: '$value',
-      selector:
-        '.b-make-post__datepicker-input .vdatetime-calendar__current--month',
-      btnSelector:
-        '.b-make-post__datepicker-input .vdatetime-calendar__navigation--next',
+      //selector: '.b-make-post__datepicker-input .vdatetime-calendar__current--month',
+      selector: '.vdatetime-calendar__current--month',
+      //btnSelector: '.b-make-post__datepicker-input .vdatetime-calendar__navigation--next',
+      btnSelector: '.vdatetime-calendar__navigation--next',
     },
     // {
     //   type: 'compareValue',
@@ -274,13 +276,14 @@ export const workSteps: Step[] = [
     {
       type: 'clickForValue',
       key: 'message_date',
-      selector:
-        '.b-make-post__datepicker-input .vdatetime-calendar .vdatetime-calendar__month__day',
+      //selector: '.b-make-post__datepicker-input .vdatetime-calendar .vdatetime-calendar__month__day',
+      selector: '.vdatetime-calendar .vdatetime-calendar__month__day',
       value: '$value',
     },
     {
       type: 'click',
-      value: '.b-make-post__datepicker-input .vdatetime-popup__tab.time',
+      //value: '.b-make-post__datepicker-input .vdatetime-popup__tab.time',
+      value: '.vdatetime-popup__tab.time',
     },
     {
       type: 'waitForTime',
@@ -289,24 +292,24 @@ export const workSteps: Step[] = [
     {
       type: 'clickForValue',
       key: 'message_hour',
-      selector:
-        '.b-make-post__datepicker-input .vdatetime-time-picker__list.vdatetime-time-picker__list--hours .vdatetime-time-picker__item',
+      //selector: '.b-make-post__datepicker-input .vdatetime-time-picker__list.vdatetime-time-picker__list--hours .vdatetime-time-picker__item',
+      selector: '.vdatetime-time-picker__list.vdatetime-time-picker__list--hours .vdatetime-time-picker__item',
       value: '$value',
     },
 
     {
       type: 'clickForValue',
       key: 'message_minute',
-      selector:
-        '.b-make-post__datepicker-input .vdatetime-time-picker__list.vdatetime-time-picker__list--minutes .vdatetime-time-picker__item',
+      //selector: '.b-make-post__datepicker-input .vdatetime-time-picker__list.vdatetime-time-picker__list--minutes .vdatetime-time-picker__item',
+      selector: '.vdatetime-time-picker__list.vdatetime-time-picker__list--minutes .vdatetime-time-picker__item',
       value: '$value',
     },
     {
       type: 'clickForValue',
       key: 'message_time_suffix',
       value: '$value',
-      selector:
-        '.b-make-post__datepicker-input .vdatetime-time-picker__list.vdatetime-time-picker__list--suffix .vdatetime-time-picker__item',
+      //selector: '.b-make-post__datepicker-input .vdatetime-time-picker__list.vdatetime-time-picker__list--suffix .vdatetime-time-picker__item',
+      selector: '.vdatetime-time-picker__list.vdatetime-time-picker__list--suffix .vdatetime-time-picker__item',
     },
     {
       type: 'waitForTime',
@@ -314,8 +317,8 @@ export const workSteps: Step[] = [
     },
     {
       type: 'click',
-      value:
-        '.b-make-post__datepicker-input .vdatetime-popup__actions .vdatetime-popup__actions__button--confirm button',
+      //value: '.b-make-post__datepicker-input .vdatetime-popup__actions .vdatetime-popup__actions__button--confirm button',
+      value: '.vdatetime-popup__actions .vdatetime-popup__actions__button--confirm button',
     },
     {
       type: 'waitForTime',
