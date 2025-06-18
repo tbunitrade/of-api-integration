@@ -517,7 +517,6 @@ const messageNameOptions = [
 ];
 
 const messageEcludeOptions = [
-  'Creators, Friends, Tagged',
   'Creators, Friends, Tagged'
 ];
 
