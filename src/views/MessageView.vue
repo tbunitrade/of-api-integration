@@ -505,15 +505,31 @@ const onStartCronJobManually = async () =>
 // add new feature for DropDown
 
 const messageNameOptions = [
-  'Videos','Games','Custom','Services','Captions','Exclusive', 'Video Chat', 'ReSubscribe'
-];
-
-const messageListOptions = [
-  'Fans', 'Following', 'Following 2nd Folder', 'Renew On', 'Renew Off'
+  'SFS',
+  'Videos',
+  'Games',
+  'Custom',
+  'Services',
+  'Captions',
+  'Exclusive',
+  'Video Chat',
+  'ReSubscribe'
 ];
 
 const messageEcludeOptions = [
-  'Creators', 'Friends', 'Tagged'
+  'Creators, Friends, Tagged',
+  'Creators, Friends, Tagged'
+];
+
+const messageListOptions = [
+  'Fans, Following, Following 2nd Folder',
+  'Fans, Following, Following 2nd Folder, Renew On, Renew Off'
+];
+
+
+const freePreviewOptions = [
+  { label: '0', value: 0 },
+  { label: '1', value: 1 }
 ];
 
 const messageTimeOptions = [
@@ -716,6 +732,10 @@ watch(groupsInStore, () =>
                       <Multiselect
                         v-model="selectedMessage.message_time"
                         :options="messageTimeOptions"
+                        label="label"
+                        track-by="value"
+                        :can-clear="true"
+                        :searchable="true"
                         placeholder="Select Time"
                       />
 <!--                      <FormControl v-model="selectedMessage.message_time" name="message_time" required type="time"-->
