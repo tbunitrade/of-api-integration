@@ -23,6 +23,8 @@ import { useMessageStore } from "@/stores/message.store";
 import { useFileStore } from "@/stores/files.store";
 import { colorsText } from "@/colors";
 import ImageVideoUpload from "@/components/ImageVideoUpload.vue";
+import Multiselect from '@vueform/multiselect';
+import '@vueform/multiselect/themes/default.css';
 
 const tabs = ref([
   { id: 1, title: 'Schedule' },
@@ -51,8 +53,8 @@ const selectedMessage = ref({
   price: 0,
   message: "",
   message_time: "",
-  message_list: "",
-  message_exclude_list: "",
+  message_list: [],
+  message_exclude_list: [],
   release_form_tags: "",
   content_attached: false,
   content: "",
@@ -189,12 +191,19 @@ const onSubmitMessage = async () =>
 {
   if (selectedMessage.value.isEdit)
   {
-
     const result = $mv.value.$validate();
     result.then(async (res) =>
     {
       if (res)
       {
+        if (Array.isArray(selectedMessage.value.message_list)) {
+          selectedMessage.value.message_list = selectedMessage.value.message_list.join(',');
+        }
+
+        if (Array.isArray(selectedMessage.value.message_exclude_list)) {
+          selectedMessage.value.message_exclude_list = selectedMessage.value.message_exclude_list.join(',');
+        }
+
         selectedMessage.value = {
           ...selectedMessage.value,
           ...(fileStore.files.length > 0 ? { content: fileStore.files.join(','), content_attached: true } : { content_attached: false }),
@@ -223,6 +232,13 @@ const onSubmitMessage = async () =>
     {
       if (res)
       {
+        if (Array.isArray(selectedMessage.value.message_list)) {
+          selectedMessage.value.message_list = selectedMessage.value.message_list.join(',');
+        }
+        if (Array.isArray(selectedMessage.value.message_exclude_list)) {
+          selectedMessage.value.message_exclude_list = selectedMessage.value.message_exclude_list.join(',');
+        }
+
         selectedMessage.value = {
           ...selectedMessage.value,
           ...(fileStore.files.length > 0 ? { content: fileStore.files.join(','), content_attached: true } : { content_attached: false }),
@@ -265,13 +281,26 @@ const onClickEditMessage = (id) =>
   const message = messagesInStore.value.filter((it) => it.id === id);
   if (message)
   {
-    selectedMessage.value = { group_id: selectedGroup.value.id, ...message[0], isEdit: true };
-    isMessageModalActive.value = true;
+    selectedMessage.value = {
+      group_id: selectedGroup.value.id,
+      ...message[0], isEdit: true }; //
+
+
+    if (typeof selectedMessage.value.message_list === 'string') {
+      selectedMessage.value.message_list = selectedMessage.value.message_list.split(',').map(s => s.trim()).filter(Boolean);
+    }
+
+    if (typeof selectedMessage.value.message_exclude_list === 'string') {
+      selectedMessage.value.message_exclude_list = selectedMessage.value.message_exclude_list.split(',').map(s => s.trim()).filter(Boolean);
+    }
+
     if (selectedMessage.value.content?.length > 0)
     {
       const _files = selectedMessage.value.content.split(',');
       fileStore.setFiles(_files);
     }
+
+    isMessageModalActive.value = true;
   }
 
 };
@@ -473,6 +502,29 @@ const onStartCronJobManually = async () =>
   });
 };
 
+// add new feature for DropDown
+
+const messageNameOptions = [
+  'Videos','Games','Custom','Services','Captions','Exclusive', 'Video Chat', 'ReSubscribe'
+];
+
+const messageListOptions = [
+  'Fans', 'Following', 'Following 2nd Folder', 'Renew On', 'Renew Off'
+];
+
+const messageEcludeOptions = [
+  'Creators', 'Friends', 'Tagged'
+];
+
+const messageTimeOptions = [
+  { label:'8:00 am', value:'08:00'},
+  { label:'12:00 pm', value:'12:00'},
+  { label:'4:00 pm', value:'16:00'},
+  { label:'7:00 pm', value:'19:00'},
+  { label:'10:00 pm', value:'22:00'},
+
+]
+
 onMounted(() =>
 {
   if (!selectedModel.value || !selectedPlatform.value)
@@ -631,8 +683,15 @@ watch(groupsInStore, () =>
                   </div>
                   <div class="flex-1">
                     <FormField label="Message Name" help="Required. Message name">
-                      <FormControl v-model="selectedMessage.name" name="name" required autocomplete="name"
-                        placeholder="Input Message Name" />
+                      <Multiselect
+                        v-model="selectedMessage.name"
+                        :options="messageNameOptions"
+                        :can-clear="true"
+                        :searchable="true"
+                        placeholder="Input Message Name"
+                      />
+<!--                      <FormControl v-model="selectedMessage.name" name="name" required autocomplete="name"-->
+<!--                        placeholder="Input Message Name" />-->
                     </FormField>
                     <div class="mb-3" v-for="error of $mv.name.$errors " :key="error.$uid">
                       <div :class="[colorsText['danger'], 'text-sm']">{{ error.$message }}</div>
@@ -654,8 +713,13 @@ watch(groupsInStore, () =>
                 <div class="flex gap-5 md:flex-row flex-col">
                   <div class="flex-1">
                     <FormField label="Message Time" help="Required. Message Time">
-                      <FormControl v-model="selectedMessage.message_time" name="message_time" required type="time"
-                        autocomplete="message_time" />
+                      <Multiselect
+                        v-model="selectedMessage.message_time"
+                        :options="messageTimeOptions"
+                        placeholder="Select Time"
+                      />
+<!--                      <FormControl v-model="selectedMessage.message_time" name="message_time" required type="time"-->
+<!--                        autocomplete="message_time" />-->
                     </FormField>
                     <div class="mb-3" v-for="error of $mv.message_time.$errors " :key="error.$uid">
                       <div :class="[colorsText['danger'], 'text-sm']">{{ error.$message }}</div>
@@ -663,8 +727,19 @@ watch(groupsInStore, () =>
                   </div>
                   <div class="flex-1">
                     <FormField label="Message List" help="Required. Message List">
-                      <FormControl v-model="selectedMessage.message_list" name="message_list" required
-                        autocomplete="message_list" placeholder="(separate with commas)" />
+                      <Multiselect
+                        v-model="selectedMessage.message_list"
+                        :options="messageListOptions"
+                        :can-clear="true"
+                        :searchable="true"
+                        mode="tags"
+                        placeholder="(separate with commas)"
+                      />
+<!--                      <FormControl-->
+<!--                        v-model="selectedMessage.message_list"-->
+<!--                        name="message_list" required-->
+<!--                        autocomplete="message_list"-->
+<!--                        placeholder="(separate with commas)" />-->
                     </FormField>
                     <div class="mb-3" v-for="error of $mv.message_list.$errors " :key="error.$uid">
                       <div :class="[colorsText['danger'], 'text-sm']">{{ error.$message }}</div>
@@ -676,8 +751,15 @@ watch(groupsInStore, () =>
                 <div class="flex gap-5 md:flex-row flex-col">
                   <div class="flex-1">
                     <FormField label="Message List Exclude">
-                      <FormControl v-model="selectedMessage.message_exclude_list" name="message_exclude_list"
-                        autocomplete="message_exclude_list" />
+<!--                      <FormControl v-model="selectedMessage.message_exclude_list" name="message_exclude_list"-->
+
+                        <Multiselect
+                          v-model="selectedMessage.message_exclude_list"
+                          :options="messageEcludeOptions"
+                          :can-clear="true"
+                          :searchable="true"
+                          mode="tags"
+                        placeholder="Select or type" />
                     </FormField>
 
                   </div>

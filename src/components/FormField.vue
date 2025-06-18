@@ -27,7 +27,7 @@ const wrapperClass = computed(() => {
   }
 
   if (slotsLength === 2) {
-    base.push('md:grid-cols-2')
+    base.push('md:grid-cols-1')
   }
 
   return base

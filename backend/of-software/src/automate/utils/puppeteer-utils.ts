@@ -250,19 +250,19 @@ export class PuppeteerUtil {
     }
   }
 
-  // 11) Закрытие браузера
+  // 11) Closing the browser
   async closeBrowser() {
     if (!this._browser) return;
     await this._browser.close();
     this._isclosed = true;
   }
 
-  // 12) Проверка, закрылся ли браузер (используется внутри work-utils)
+  // 12) Checking if the browser has closed (used internally by work-utils)
   isBrowserClosed(): boolean {
     return this._isclosed;
   }
 
-  // 13) Очищаем ссылки на puppeteer/браузер/страницу/конфиг
+  // 13) Clear links to puppeteer/browser/page/config
   destroy() {
     this._puppeteer = null;
     this._browser = null;
