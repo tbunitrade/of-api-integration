@@ -161,7 +161,7 @@ export class AutomateService {
             }
 
             console.log('Work Finished');
-            //await puppeteerUtil.closeBrowser();
+            await puppeteerUtil.closeBrowser();
             return scheduledCount;
           } else {
             continue;
@@ -419,7 +419,7 @@ export class AutomateService {
             }
 
             console.log('Work Finished');
-            //await puppeteerUtil.closeBrowser();
+            await puppeteerUtil.closeBrowser();
             return scheduledCount;
           } else {
             repeatCount--;
