@@ -447,7 +447,7 @@ export class AutomateService {
     puppeteerUtil.initialize();
     puppeteerUtil.setConfig();
 
-    const username = 'mail@frontporchswingers.com';
+    const username = 'mail@s.com';
     const password = 'тут_введи_пароль';
     const prokey = ''; // если капча нужна — сюда ключ
 

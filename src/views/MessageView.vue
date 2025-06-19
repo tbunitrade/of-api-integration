@@ -187,7 +187,8 @@ const onSubmitGroup = async () =>
 
 };
 
-const onSubmitMessage = async () =>
+// const onSubmitMessage = async () =>
+async function onSubmitMessage()
 {
   if (selectedMessage.value.isEdit)
   {
@@ -754,11 +755,6 @@ watch(groupsInStore, () =>
                         mode="tags"
                         placeholder="(separate with commas)"
                       />
-<!--                      <FormControl-->
-<!--                        v-model="selectedMessage.message_list"-->
-<!--                        name="message_list" required-->
-<!--                        autocomplete="message_list"-->
-<!--                        placeholder="(separate with commas)" />-->
                     </FormField>
                     <div class="mb-3" v-for="error of $mv.message_list.$errors " :key="error.$uid">
                       <div :class="[colorsText['danger'], 'text-sm']">{{ error.$message }}</div>
