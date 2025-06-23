@@ -399,12 +399,12 @@ export class AutomateService {
                     return stepCopy;
                   });
 
-                  console.log('[startPost] postCaptions:', postCaptions);
-                  console.log('[startPost] msgData:', msgData);
-                  console.log('[startPost] config before patching:', _config.post);
+                  //console.log('[startPost] postCaptions:', postCaptions);
+                  //console.log('[startPost] msgData:', msgData);
+                  //console.log('[startPost] config before patching:', _config.post);
 
-                  console.log('[startPost] Генерируем конфиг на основе msgData:', msgData);
-                  console.log('[startPost] Первый шаг конфига:', config[0]);
+                  //console.log('[startPost] Генерируем конфиг на основе msgData:', msgData);
+                  //console.log('[startPost] Первый шаг конфига:', config[0]);
                   await puppeteerUtil.work(config);
                 } catch (error) {
                   console.log('Error : ', error);
