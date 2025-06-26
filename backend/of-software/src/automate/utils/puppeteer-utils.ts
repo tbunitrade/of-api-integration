@@ -52,6 +52,17 @@ export class PuppeteerUtil {
     return await acceptCookie.call(this);
   }
 
+  async validateCookies(): Promise<boolean> {
+    const cookies = await this._page.cookies();
+    const authCookie = cookies.find(c => c.name === 'sess');
+    const csrf = cookies.find(c => c.name === 'csrf');
+
+    const isValid = !!(authCookie?.value && csrf?.value);
+
+    console.log('[validateCookies] isValid:', isValid, '→ sess:', authCookie?.value, 'csrf:', csrf?.value);
+    return isValid;
+  }
+
   async clearCookies() {
     const client = await this._page.target().createCDPSession();
     await client.send('Network.clearBrowserCookies');
