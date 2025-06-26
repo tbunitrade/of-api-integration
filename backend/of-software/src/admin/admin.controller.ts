@@ -1,9 +1,7 @@
 import { Controller, Post, Get, Param, Res }   from "@nestjs/common";
 import { spawn, exec } from 'child_process';
 import { Response } from 'express';
-import process from "node:process";
 import { ConfigService} from "@nestjs/config";
-
 
 @Controller('admin-panel' )
 export class AdminController {
@@ -30,14 +28,11 @@ export class AdminController {
 
     setTimeout(() => {
       spawn(
-        'bash',
-        [getRestartScriptPath()],
-        {
+        'bash', [scriptPath], {
           detached: true,
           stdio: 'ignore',
         },
       ).unref();
-    }, 500); // дать фронту отправить response
+    }, 500); // !important delay for front end, дать фронту отправить response
   }
-  //
 }

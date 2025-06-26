@@ -19,7 +19,7 @@
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/src/main",
-    "start:server": "npm run build && DISPLAY=:10 pm2 stop backend; DISPLAY=:10 pm2 delete backend; DISPLAY=:10 pm2 start npm --name \"backend\" -- run start:prod",
+    "backend:start": "npm run build && DISPLAY=:10 pm2 stop backend; DISPLAY=:10 pm2 delete backend; DISPLAY=:10 pm2 start npm --name \"backend\" -- run start:prod && pm2 update && pm2 save",
     "start:serverold": "pm2 stop backend; pm2 delete backend; pm2 start npm --name \"backend\" -- start",
     "start:serverold2": "pm2 stop backend && pm2 delete backend && pm2 start npm --name \"backend\" -- start",
     "migrate-generate": "ts-node ./node_modules/typeorm/cli.js migration:generate migrations/init -d ./datasource.ts",

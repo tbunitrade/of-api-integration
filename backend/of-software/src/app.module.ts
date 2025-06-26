@@ -25,6 +25,7 @@ import { PostCaptionModule } from './postCaption/post_caption.module';
 import { PostFileModule } from './postFile/post_file.module';
 
 import { DatabaseModule } from './database/database.module';
+import {AdminController} from "./admin/admin.controller";
 
 @Module({
   imports: [
@@ -61,7 +62,7 @@ import { DatabaseModule } from './database/database.module';
     PostCaptionModule,
     PostFileModule,
   ],
-  controllers: [AppController], // ✅ Добавлено
+  controllers: [AppController, AdminController], // ✅ Добавлено
   providers: [AppService], // ✅ Добавлено
 })
 export class AppModule {}

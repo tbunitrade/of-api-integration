@@ -446,6 +446,28 @@ const toggleSelectAll = () => {
   }
 }
 
+// implement  @Post('restart-server')
+
+const onRestartServer = async () => {
+  try {
+    await fetch(`${import.meta.env.VITE_APP_ROOT_API}/admin-panel/restart-server`, {
+      method : 'POST',
+    });
+    notify({
+      title: 'Success',
+      type: 'success',
+      text: 'Server restart triggered!',
+    });
+  } catch (e) {
+    console.log('err '.e);
+    notify({
+      title: 'Error',
+      type: 'error',
+      text: 'Server failed, handle error to restart himself!',
+    });
+  }
+
+}
 
 </script>
 
@@ -453,6 +475,7 @@ const toggleSelectAll = () => {
   <LayoutAuthenticated>
     <SectionMain>
       <SectionTitleLineWithButton :icon="mdiTableBorder" title="Post" main>
+        <BaseButton label="Restart server backend" color="danger" rounded-full @click="onRestartServer" />
         <BaseButton label="Trigger CronJob Manually" color="info" rounded small @click="onStartCronJobManually" />
       </SectionTitleLineWithButton>
 
