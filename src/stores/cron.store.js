@@ -12,6 +12,7 @@ const useCronStore = defineStore({
       try {
         axios.get(`${import.meta.env.VITE_APP_ROOT_API}/cron/manual-start`);
         console.log('triggerCronJobManually front end cron store started',);
+        return true;
       } catch (error) {
         console.error('Cronjob start failed:', error)
         throw error
@@ -21,6 +22,7 @@ const useCronStore = defineStore({
       try {
         axios.get(`${import.meta.env.VITE_APP_ROOT_API}/cron/manual-start?isPost=true`);
         console.log('triggerPostCronJobManually front end cron store started',);
+        return true;
       } catch (error) {
         console.error('Cronjob start failed:', error)
         throw error
