@@ -65,6 +65,17 @@ export class AutomateService {
       try {
         await loadCookiesFromFile.call(puppeteerUtil, cookieFileName);
         await puppeteerUtil.reload();
+        let isLoginPage = await puppeteerUtil.checkLogin();
+        const cookiesAreValid = await puppeteerUtil.validateCookies();
+
+        if (!cookiesAreValid || isLoginPage) {
+          await puppeteerUtil.clearCookies();
+          await puppeteerUtil.reload();
+          await puppeteerUtil.login(data.username, data.password, cookieFileName);
+          console.log('🧁 Плохие куки, вошли вручную');
+        } else {
+          console.log('✅ Cookie сработали, логин не нужен');
+        }
       } catch (err) {
         console.log(`Не удалось загрузить файл "${cookieFileName}", продолжим без него.`, err);
       }
@@ -239,19 +250,6 @@ export class AutomateService {
           console.log('✅ Cookie сработали, логин не нужен');
         }
 
-
-        // if (isLoginPage) {
-        //   await puppeteerUtil.login(modelPlatform.username, modelPlatform.password, cookieFileName);
-        //   console.log('[AUTOMATE] Login вызван, ожидаем файл:', cookieFileName);
-        //   //console.log('02 [startMessage] ⚠️ Login required → вызываем login() с:', data.username, data.password, cookieFileName);
-        //   console.log('02 [startPost] ⚠️ Login required → вызываем login() с:', modelPlatform.username, modelPlatform.password, cookieFileName);
-        // } else {
-        //   // await puppeteerUtil.clearCookies();
-        //   // await puppeteerUtil.reload();
-        //   // await puppeteerUtil.login(modelPlatform.username, modelPlatform.password, cookieFileName);
-        //   // isLoginPage = false;
-        //   console.log('✅ Cookie сработали, логин не нужен');
-        // }
       } catch (err) {
         console.log(`Не удалось загрузить файл "${cookieFileName}", продолжим без него.`, err);
       }
