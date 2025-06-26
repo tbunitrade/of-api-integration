@@ -52,6 +52,12 @@ export class PuppeteerUtil {
     return await acceptCookie.call(this);
   }
 
+  async clearCookies() {
+    const client = await this._page.target().createCDPSession();
+    await client.send('Network.clearBrowserCookies');
+    console.log('🧹 Cookies очищены через CDP');
+  }
+
   // 1) Инициализируем puppeteer-extra с stealth-плагином
   initialize() {
     this._puppeteer = puppeteer;
