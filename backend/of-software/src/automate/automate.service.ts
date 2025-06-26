@@ -135,10 +135,13 @@ export class AutomateService {
 
                   const msgData = {
                     message: msg.message,
-                    message_month: scheduledDate.toLocaleString('default', { month: 'long' }),
-                    message_date: scheduledDate.getDate(),
-                    message_hour: hour,
-                    message_minute: minutes,
+                    message_month: scheduledDate.toLocaleString('default', {
+                      month: 'long',
+                    }).toLowerCase(),
+                    message_date: scheduledDate.getDate().toString(),
+                    //message_date: new Date(scheduledDate).getDate(),
+                    message_hour: hour.toString(),
+                    message_minute: minutes.toString(),
                     message_time_suffix: suffix,
                     message_list: msg.message_list,
                     message_exclude_list: msg.message_exclude_list,
@@ -325,17 +328,28 @@ export class AutomateService {
               (_, i) => i,
             );
 
+            const baseDate = manualStart && scheduledDate
+              ? new Date(scheduledDate)
+              : new Date(); // текущая дата
+
             for (let i = 0; i < numberOfDays; i++) {
-              let scheduledDt = new Date();
-              if (scheduledDate && manualStart)
-                scheduledDt =
-                  manualStart && new Date(scheduledDate) > new Date()
-                    ? new Date(scheduledDate)
-                    : new Date();
-              else {
-                scheduledDt = new Date();
-              }
-              scheduledDt.setDate(scheduledDt.getDate() + i + 1);
+              // const scheduledDt = new Date(baseDate); // создаём копию
+              //
+              // let scheduledDt = new Date();
+              // if (scheduledDate && manualStart)
+              //   scheduledDt =
+              //     manualStart && new Date(scheduledDate) > new Date()
+              //       ? new Date(scheduledDate)
+              //       : new Date();
+              // else {
+              //   scheduledDt = new Date();
+              // }
+              // scheduledDt.setDate(scheduledDt.getDate() + i + 1);
+
+              // каждый день — отдельная копия baseDate
+              const scheduledDt = new Date(baseDate);
+              scheduledDt.setDate(baseDate.getDate() + i); // today + i дней
+
 
               for (let j = 0; j < postWithTimesAndCaptions.post_times.length; j++) {
                  console.log('start for postWithTimesAndCaptions');
@@ -378,10 +392,11 @@ export class AutomateService {
                     message: postCaption.caption,
                     message_month: scheduledDt.toLocaleString('default', {
                       month: 'long',
-                    }),
-                    message_date: scheduledDt.getDate(),
-                    message_hour: hour,
-                    message_minute: minutes,
+                    }).toLowerCase(),
+                    //message_date: scheduledDt.getDate(),
+                    message_date: scheduledDt.getDate().toString(),
+                    message_hour: hour.toString(),
+                    message_minute: minutes.toString(),
                     message_time_suffix: suffix,
                     release_user_tags: postWithTimesAndCaptions.user_tags || '',
                     release_form_tags: postWithTimesAndCaptions.form_tags || '',
