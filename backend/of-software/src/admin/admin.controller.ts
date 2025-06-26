@@ -9,24 +9,27 @@ export class AdminController {
 
   @Post('restart-server')
   restartServer(@Res() res: Response) {
+    console.log('>>> [ADMIN] restart called');
+
     const env = this.configService.get<string>('ENV');
     let scriptPath: string;
 
     switch (env) {
       case 'local':
-        scriptPath = '/home/ubuntu/of-software/backend/of-software/scripts/restart-backend.sh';
+        scriptPath = '/Users/oleksandrsonich/sites/joefans/backend/of-software/scripts/restart-backend.sh';
         break;
       case 'DEV':
       case 'development':
       case 'production':
       default:
-        scriptPath = '/Users/oleksandrsonich/sites/joefans/backend/of-software/scripts/restart-backend.sh';
+        scriptPath = '/home/ubuntu/of-software/backend/of-software/scripts/restart-backend.sh';
         break;
     }
 
     res.json({success: true, message: 'Server restart initiated'});
 
     setTimeout(() => {
+      console.log('start setTimeout, we have scriptPath ->', scriptPath);
       spawn(
         'bash', [scriptPath], {
           detached: true,
