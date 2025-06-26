@@ -37,7 +37,7 @@ export class AutomateService {
   constructor() {}
 
   async startMessage(data: any = {}, manualStart = false) {
-    console.log('start function startMessage');
+    console.log('[startMessage] started startMessage');
     let scheduledCount = 0;
     try {
       const isExpired = checkIfExpired(data.number_of_days, data.scheduled_date);
@@ -98,7 +98,7 @@ export class AutomateService {
             loginTried++;
             if (loginTried >= 3) await puppeteerUtil.waitFor(200000);
 
-            console.log('01 [startMessage] ⚠️ Login required → вызываем login() с:', data.username, data.password, cookieFileName);
+            console.log('[startMessage] ⚠️ Login required → вызываем login() с:', data.username, data.password, cookieFileName);
           } else {
             console.log('----------------- Login function startMessage Success -----------------');
             isLoggedIn = true;
@@ -151,6 +151,18 @@ export class AutomateService {
                     passwordValue: data.password,
                   };
 
+                  console.log('[startMessage] msgData:', msgData);
+
+                  if (!msgData.message_date || typeof msgData.message_date !== 'string') {
+                    console.warn('[startMessage] msgData[message_date] не строка или отсутствует:', msgData.message_date);
+                  }
+                  if (!msgData.message_hour || typeof msgData.message_hour !== 'string') {
+                    console.warn('[startMessage] msgData[message_hour] не строка или отсутствует:', msgData.message_hour);
+                  }
+                  if (!msgData.release_form_tags || typeof msgData.release_form_tags !== 'string') {
+                    console.warn('[startMessage] value не строка для key "release_form_tags":', msgData.release_form_tags);
+                  }
+
                   const config = _config.work.map((c) => {
                     if (c['key']) {
                       c.value = c.value.replace('$value', msgData[c['key']]);
@@ -171,7 +183,7 @@ export class AutomateService {
               }
             }
 
-            console.log('Work Finished');
+            console.log('[startMessage] Work Finished');
             await puppeteerUtil.closeBrowser();
             return scheduledCount;
           } else {
@@ -213,7 +225,7 @@ export class AutomateService {
       prokey,
     } = allData;
     try {
-      console.log('start function startPost');
+      console.log('[startPost] started startPost');
       const puppeteerUtil = new PuppeteerUtil();
       puppeteerUtil.initialize();
       puppeteerUtil.setConfig();
@@ -376,6 +388,18 @@ export class AutomateService {
                     idValue: modelPlatform.username,
                     passwordValue: modelPlatform.password,
                   };
+
+                  console.log('[startPost] msgData:', msgData);
+
+                  if (!msgData.message_date || typeof msgData.message_date !== 'string') {
+                    console.warn('[startPost] msgData[message_date] не строка или отсутствует:', msgData.message_date);
+                  }
+                  if (!msgData.message_hour || typeof msgData.message_hour !== 'string') {
+                    console.warn('[startPost] msgData[message_hour] не строка или отсутствует:', msgData.message_hour);
+                  }
+                  if (!msgData.release_form_tags || typeof msgData.release_form_tags !== 'string') {
+                    console.warn('[startPost] value не строка для key "release_form_tags":', msgData.release_form_tags);
+                  }
 
                   // const config = _config.post.map((c) => {
                   //   if (c['key']) {
