@@ -195,7 +195,7 @@ export class PuppeteerUtil {
   }
 
   // 8) Логика входа: сначала loadCookiesFromFile, потом performLoginWithRetries, потом saveCookieToFile
-  async login(username: string, password: string, cookieFileName: string): Promise<boolean> {
+  async login(username: string, password: string, cookieFileName: string, skipLoadCookies = false): Promise<boolean> {
 
     this._username = username;
     this._password = password;
@@ -208,7 +208,9 @@ export class PuppeteerUtil {
 
     //const cookieFileName = `user_${username}_cookie.json`;
     try {
-      await loadCookiesFromFile.call(this, cookieFileName);
+      if (!skipLoadCookies) {
+        await loadCookiesFromFile.call(this, cookieFileName);
+      }
     } catch (error) {
       console.log('Не удалось загрузить файл "${cookieFileName}", продолжим без него:', error)
     }

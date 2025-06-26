@@ -71,10 +71,10 @@ export class AutomateService {
         if (!cookiesAreValid || isLoginPage) {
           await puppeteerUtil.clearCookies();
           await puppeteerUtil.reload();
-          await puppeteerUtil.login(data.username, data.password, cookieFileName);
-          console.log('🧁 Плохие куки, вошли вручную');
+          await puppeteerUtil.login(data.username, data.password, cookieFileName,true);
+          console.log('🧁 Плохие куки, запускаем заново Логин без cookieFile');
         } else {
-          console.log('✅ Cookie сработали, логин не нужен');
+          console.log('✅ Cookie сработали');
         }
       } catch (err) {
         console.log(`Не удалось загрузить файл "${cookieFileName}", продолжим без него.`, err);
@@ -94,7 +94,7 @@ export class AutomateService {
           if (!data.username) break;
 
           if (isLoginPage) {
-            isLoggedIn = await puppeteerUtil.login(data.username, data.password, cookieFileName);
+            isLoggedIn = await puppeteerUtil.login(data.username, data.password, cookieFileName, true);
             loginTried++;
             if (loginTried >= 3) await puppeteerUtil.waitFor(200000);
 
@@ -259,7 +259,7 @@ export class AutomateService {
         if (!cookiesAreValid || isLoginPage) {
           await puppeteerUtil.clearCookies();
           await puppeteerUtil.reload();
-          await puppeteerUtil.login(modelPlatform.username, modelPlatform.password, cookieFileName);
+          await puppeteerUtil.login(modelPlatform.username, modelPlatform.password, cookieFileName, true);
           console.log('🧁 Плохие куки, вошли вручную');
         } else {
           console.log('✅ Cookie сработали, логин не нужен');
@@ -302,11 +302,7 @@ export class AutomateService {
               console.log('no pro key -> ',prokey);
             }
 
-            isLoggedIn = await puppeteerUtil.login(
-              modelPlatform.username,
-              modelPlatform.password,
-              cookieFileName
-            );
+            isLoggedIn = await puppeteerUtil.login( modelPlatform.username,  modelPlatform.password, cookieFileName, true );
             loginTried++;
             if (loginTried >= 3) await puppeteerUtil.waitFor(300000);
           } else {
@@ -524,9 +520,8 @@ export class AutomateService {
     // }
 
     console.log('[TEST LOGIN] Пытаемся войти...');
-    //const isLoggedIn = await puppeteerUtil.login(config);
     const cookieFileName = 'user_12.1_cookie.json';
-    const isLoggedIn = await puppeteerUtil.login(username,password, cookieFileName);
+    const isLoggedIn = await puppeteerUtil.login(username,password, cookieFileName, true);
 
     if (isLoggedIn) {
       console.log('[✅ LOGIN OK]');
