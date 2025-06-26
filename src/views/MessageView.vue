@@ -541,21 +541,6 @@ const messageTimeOptions = [
 
 ]
 
-onMounted(() =>
-{
-  if (!selectedModel.value || !selectedPlatform.value)
-  {
-    notify({
-      title: "Warning",
-      type: "error",
-      text: "Please select Model and Platform",
-    });
-    return;
-  }
-  fetchData();
-
-
-});
 watch(isMessageModalActive, () =>
 {
   if (!isMessageModalActive.value)
@@ -588,13 +573,53 @@ watch(groupsInStore, () =>
     }
   }
 
-})
+});
+
+// implement  @Post('restart-server')
+
+const onRestartServer = async () => {
+  try {
+    await fetch(`${import.meta.env.VITE_APP_ROOT_API}/admin-panel/restart-server`, {
+      method : 'POST',
+    });
+    notify({
+      title: 'Success',
+      type: 'success',
+      text: 'Server restart triggered!',
+    });
+  } catch (e) {
+    console.log('err '.e);
+    notify({
+      title: 'Error',
+      type: 'error',
+      text: 'Server failed, handle error to restart himself!',
+    });
+  }
+}
+
+
+onMounted(() =>
+{
+  if (!selectedModel.value || !selectedPlatform.value)
+  {
+    notify({
+      title: "Warning",
+      type: "error",
+      text: "Please select Model and Platform",
+    });
+    return;
+  }
+  fetchData();
+
+
+});
 
 </script>
 <template>
   <LayoutAuthenticated>
     <SectionMain>
       <SectionTitleLineWithButton :icon="mdiMessage" title="Message" main>
+        <BaseButton label="Restart server backend" color="danger" rounded-full @click="onRestartServer" />
         <BaseButton label="Trigger CronJob Manually" color="info" rounded small @click="onStartCronJobManually" />
       </SectionTitleLineWithButton>
       <CardBox class="mb-6">

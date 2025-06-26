@@ -385,18 +385,6 @@ const processFiles = async (selectedFiles) => {
   }
 };
 
-onMounted(() => {
-  if (!selectedModel.value || !selectedPlatform.value) {
-    notify({
-      title: "Warning",
-      type: "error",
-      text: "Please select Model and Platform",
-    });
-    return;
-  }
-  fetchData();
-
-});
 
 const convertTo12HourFormat = (timeStr) => {
   // Split the time string into hours, minutes, and seconds
@@ -468,6 +456,20 @@ const onRestartServer = async () => {
   }
 
 }
+
+
+onMounted(() => {
+  if (!selectedModel.value || !selectedPlatform.value) {
+    notify({
+      title: "Warning",
+      type: "error",
+      text: "Please select Model and Platform",
+    });
+    return;
+  }
+  fetchData();
+
+});
 
 </script>
 

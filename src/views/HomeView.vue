@@ -31,6 +31,27 @@ const fillChartData = () => {
   chartData.value = chartConfig.sampleChartData();
 };
 
+// implement  @Post('restart-server')
+
+const onRestartServer = async () => {
+  try {
+    await fetch(`${import.meta.env.VITE_APP_ROOT_API}/admin-panel/restart-server`, {
+      method : 'POST',
+    });
+    notify({
+      title: 'Success',
+      type: 'success',
+      text: 'Server restart triggered!',
+    });
+  } catch (e) {
+    console.log('err '.e);
+    notify({
+      title: 'Error',
+      type: 'error',
+      text: 'Server failed, handle error to restart himself!',
+    });
+  }
+}
 onMounted(() => {
   fillChartData();
 });
@@ -46,6 +67,7 @@ const transactionBarItems = computed(() => mainStore.history);
   <LayoutAuthenticated>
     <SectionMain>
       <SectionTitleLineWithButton :icon="mdiMonitor" title="Dashboard" main>
+        <BaseButton label="Restart server backend" color="danger" rounded-full @click="onRestartServer" />
         <!-- <BaseButton href="https://github.com/justboil/admin-one-vue-tailwind" target="_blank" :icon="mdiGithub"
           label="Star on GitHub" color="contrast" rounded-full small /> -->
       </SectionTitleLineWithButton>
