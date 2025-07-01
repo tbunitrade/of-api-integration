@@ -1,39 +1,5 @@
 // src/_functions/recaptcha-utils.ts
 import type { Page } from 'puppeteer';
-
-
-/**
- * Экспортируем класс, чтобы его можно было
- * импортировать в старом файле login(...).
- */
-// export class RecaptchaUtil {
-//   /**
-//    * Эмулирует ожидание решения reCAPTCHA v2/v3.
-//    * Поскольку вы используете бесплатный плагин, он сам «поднимает» капчу
-//    * и решает её, поэтому тут достаточно просто сделать setTimeout.
-//    *
-//    * @param siteKey – ключ капчи (из URL iframe)
-//    * @param pageUrl – текущая страница (для логов, если нужно)
-//    * @param timeoutSec – сколько секунд ждать (например, 30)
-//    * @param version – 2 или 3
-//    */
-//   public async resolveRecaptcha2(
-//     siteKey: string,
-//     pageUrl: string,
-//     timeoutSec: number,
-//     version: number
-//   ): Promise<string> {
-//     console.log(`⏳ RecaptchaUtil: ждём ${timeoutSec} сек. для решения reCAPTCHA v${version} (siteKey=${siteKey})`);
-//     await new Promise((res) => setTimeout(res, timeoutSec * 1000));
-//     console.log('✔️ RecaptchaUtil: капча, судя по всему, решена (или пропущена плагином).');
-//     return '';
-//   }
-// }
-
-
-// ---- Ниже идут старые функции «по работе с капчей».
-//     Они экспортируются, чтобы их можно было вызывать
-//     в вашей «fallback» логике, если потребуется.
 let captchaAlreadySolved = false;
 
 /**
@@ -205,8 +171,14 @@ export async function startCaptchaExtension(page: Page): Promise<void> {
 
   try {
     const btn = await popup.waitForSelector('#hcapt-solve-btn', { visible: true, timeout: 5_000 });
-    await btn.click();
-    console.log('🔧 HCAPT Solve clicked');
+    if (btn) {
+      await btn.click();
+      console.log('🔧 HCAPT Solve clicked');
+    } else {
+      console.log('Skipped HCAPT Solve click');
+    }
+
+
   } catch (e){
     console.warn('HCAPT Solve button не найден', e);
   }
