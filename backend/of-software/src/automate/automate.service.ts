@@ -442,7 +442,7 @@ export class AutomateService {
 
                       if (typeof val === 'string') {
                         if (typeof stepCopy.value === 'string') {
-                          stepCopy.value = stepCopy.value.replace('$value', val);
+                          stepCopy.value = stepCopy.value.replace('$value', val || '');
                         } else {
                           console.warn(`[startPost] value не строка для key "${stepCopy.key}":`, stepCopy.value);
                         }
