@@ -214,7 +214,8 @@ export async function work(_config: any = null) {
             .includes(step.value.toLowerCase());
           break;
         case 'checkValue':
-          compareResultValue = !!this._messageData[step.key || ''];
+          //compareResultValue = !!this._messageData[step.key || ''];
+          compareResultValue = this._messageData.hasOwnProperty(step.key);
           break;
         case 'condition':
           const conditions = step.childs;
