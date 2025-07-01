@@ -518,10 +518,12 @@ const messageNameOptions = [
 ];
 
 const messageEcludeOptions = [
-  'Creators, Friends, Tagged'
+  'Creators, Friends, Tagged',
+  'Fans, Renew On, Renew Off, Creators, Friends, Tagged'
 ];
 
 const messageListOptions = [
+  'Following, Following 2nd Folder',
   'Fans, Following, Following 2nd Folder',
   'Fans, Following, Following 2nd Folder, Renew On, Renew Off'
 ];
@@ -529,7 +531,9 @@ const messageListOptions = [
 
 const freePreviewOptions = [
   { label: '0', value: 0 },
-  { label: '1', value: 1 }
+  { label: '1', value: 1 },
+  { label: '2', value: 2 },
+  { label: '3', value: 3 },
 ];
 
 const messageTimeOptions = [
@@ -807,8 +811,18 @@ watch(groupsInStore, () =>
                 <div class="flex gap-5 md:flex-row flex-col">
                   <div class="flex-1">
                     <FormField label="Free Preview">
-                      <FormControl v-model="selectedMessage.free_preview" name="free_preview" type="number"
-                        autocomplete="free_preview" />
+<!--                      <FormControl v-model="selectedMessage.free_preview" name="free_preview" type="number"-->
+<!--                        autocomplete="free_preview" />-->
+
+                      <Multiselect
+                        v-model="selectedMessage.free_preview"
+                        :options="freePreviewOptions"
+                        label="label"
+                        track-by="value"
+                        :can-clear="true"
+                        :searchable="true"
+                        placeholder="Select Time"
+                      />
                     </FormField>
 
                   </div>
