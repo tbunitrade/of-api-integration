@@ -345,7 +345,7 @@ export class AutomateService {
               // каждый день — отдельная копия baseDate
               const scheduledDt = new Date(baseDate);
               scheduledDt.setDate(baseDate.getDate() + i); // today + i дней
-
+              console.log(`[startPost] День #${i} → scheduledDt: ${scheduledDt.toISOString()}`);
 
               for (let j = 0; j < postWithTimesAndCaptions.post_times.length; j++) {
                  console.log('start for postWithTimesAndCaptions');
