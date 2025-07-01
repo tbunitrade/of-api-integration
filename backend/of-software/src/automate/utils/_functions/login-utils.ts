@@ -137,9 +137,9 @@ export async function performLoginOnce(
     }
   }
 
-  await setTimeout(2000);
-  console.log('stupid move 5');
-  await setTimeout(3000);
+  // await setTimeout(2000);
+  // console.log('stupid move 5');
+  // await setTimeout(3000);
   // === result === 'button' — кнопка всё ещё disabled: polling (до 60 000 ms) ===
   let elapsed = 0;
   while (elapsed < 30_000) {
