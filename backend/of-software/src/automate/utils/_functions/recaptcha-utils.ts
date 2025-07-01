@@ -160,15 +160,10 @@ export async function triggerTurnstile(page: Page): Promise<void> {
 export async function startCaptchaExtension(page: Page): Promise<void> {
   console.log('>>> startCaptchaExtension called');
 
-  // const browser = page.browser();// синхронно получаем браузер
-  // const targets = await browser.targets(); // асинхронно получаем targets
-  // //const extTarget = (await browser.targets()).find(
-  // const extTarget = targets.find(
-  //   (t) => t.url().startsWith('chrome-extension://') && ['background_page','service_worker'].includes(t.type())
-  // );
-
   const browser = page.browser();
-  const extTarget = browser.targets().find(t =>
+  await new Promise((res) => setTimeout(res, 700)); // ждём 700 мс для загрузки targets
+  const targets = await browser.targets();
+  const extTarget = targets.find(t =>
     t.url().startsWith('chrome-extension://') &&
     ['background_page','service_worker'].includes(t.type())
   );
@@ -186,7 +181,7 @@ export async function startCaptchaExtension(page: Page): Promise<void> {
   );
   if (!resp || resp.status() !== 200) {
     await mf.close();
-    throw new Error('Не удалось загрузить манифест HCAPT  if (!resp || resp.status() !== 200) await mf.close();');
+    throw new Error('Не удалось загрузить манифест HCAPT: status != 200');
   }
   const manifest = JSON.parse(await mf.evaluate(() => document.body.innerText));
   await mf.close();
