@@ -17,6 +17,7 @@ import { performLoginWithRetries } from './_functions/login-utils';
 import { acceptCookie, saveCookieToFile, loadCookiesFromFile, setCookie, getCookie } from './_functions/cookies-utils';
 import { CONFIG as DEFAULT_CONFIG } from './config/step-config';
 import { work } from './_functions/work-utils';
+import {resetCaptchaFlag} from "./_functions/recaptcha-utils";
 
 /*
 initialize
@@ -217,7 +218,7 @@ export class PuppeteerUtil {
     } catch (error) {
       console.log('Не удалось загрузить файл "${cookieFileName}", продолжим без него:', error)
     }
-
+    resetCaptchaFlag();
     const success = await performLoginWithRetries(this._page, this._config, username, password);
     if (success) {
       console.log('✅ Login прошёл успешно, сохраняем куки - создаем файл?');
