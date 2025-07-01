@@ -78,6 +78,9 @@ export class PuppeteerUtil {
     this._puppeteer.use(stealth);
   }//this._puppeteer.use(StealthPlugin());
 
+  public get page() {
+    return this._page;
+  }
 
 
   // 2) Устанавливаем конфиг (если нужно свой, передайте в setConfig; иначе будет DEFAULT_CONFIG)
