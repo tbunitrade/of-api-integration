@@ -34,7 +34,8 @@ export class FileUploadController {
         destination : uploadDirectory,
         filename: ( req, file, cb) => {
           const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-          cb(null, `${uniqueSuffix}-${file.originalname}`);
+          const sanitizedName = file.originalname.replace(/\s+/g, '_');
+          cb(null, `${uniqueSuffix}-${sanitizedName}`);
         },
       }),
       limits: {
