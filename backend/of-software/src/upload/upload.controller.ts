@@ -9,11 +9,13 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiConsumes, ApiTags } from '@nestjs/swagger';
 import { FilesInterceptor } from '@nestjs/platform-express/multer';
+import { diskStorage } from 'multer';
 import { FileUploadService } from './upload.service';
 import { MessageService } from 'src/message/message.service';
 // import { diskStorage } from 'multer';
 // import { mkdirSync } from 'fs';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
+import {uploadDirectory} from "../utils/upload";
 
 @Controller('upload')
 @ApiTags('upload')
@@ -28,8 +30,15 @@ export class FileUploadController {
   @ApiBearerAuth('jwt')
   @UseInterceptors(
     FilesInterceptor('files', 10000, {
+      storage: diskStorage({
+        destination : uploadDirectory,
+        filename: ( req, file, cb) => {
+          const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+          cb(null, `${uniqueSuffix}-${file.originalname}`);
+        },
+      }),
       limits: {
-        fileSize: 10 * 1024 * 1024 * 1024,
+        fileSize: 6 * 1024 * 1024 * 1024,
       },
     }),
   )

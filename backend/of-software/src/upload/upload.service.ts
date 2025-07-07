@@ -16,15 +16,19 @@ export class FileUploadService {
       return false;
     }
   }
-  async uploadFiles(files: Express.Multer.File[]): Promise<string[]> {
-    try {
-      // Create the uploads directory if it doesn't exist
-      const uploadPromises = files.map((file) => uploadFile(file));
-      const fileUrls: string[] = await Promise.all(uploadPromises);
-      return fileUrls;
-    } catch (err) {
-      console.error('File Upload  error', err);
-    }
+  // async uploadFiles(files: Express.Multer.File[]): Promise<string[]> {
+  //   try {
+  //     // Create the uploads directory if it doesn't exist
+  //     const uploadPromises = files.map((file) => uploadFile(file));
+  //     const fileUrls: string[] = await Promise.all(uploadPromises);
+  //     return fileUrls;
+  //   } catch (err) {
+  //     console.error('File Upload  error', err);
+  //   }
+  // }
+
+  async uploadFiles (files: Express.Multer.File[]): Promise<string[]> {
+    return files.map( (file) => `${uploadDirectory}/${file.filename}`);
   }
   async getAllFiles(): Promise<string[]> {
     try {
