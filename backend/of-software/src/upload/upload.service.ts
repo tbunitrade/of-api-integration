@@ -8,7 +8,7 @@ export class FileUploadService {
   async deleteFile(file: string): Promise<boolean> {
     try {
       const filename = file.replace(/^.*[\\/]/, '');
-
+      console.log('FileUploadService filename ', filename );
       await fs.unlink(`${uploadDirectory}/${filename}`);
       return true;
     } catch (err) {
@@ -28,7 +28,11 @@ export class FileUploadService {
   // }
 
   async uploadFiles (files: Express.Multer.File[]): Promise<string[]> {
-    return files.map( (file) => `${uploadDirectory}/${file.filename}`);
+    //return files.map( (file) => `${uploadDirectory}/${file.filename}`);
+    return files.map( (file) => {
+      console.log(`📂 Saved file: ${file.filename} (${(file.size / (1024 * 1024)).toFixed(2)} MB)`);
+      return `${uploadDirectory}/${file.filename}`;
+    });
   }
   async getAllFiles(): Promise<string[]> {
     try {

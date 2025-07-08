@@ -39,7 +39,7 @@ export class FileUploadController {
         },
       }),
       limits: {
-        fileSize: 6 * 1024 * 1024 * 1024,
+        fileSize: 6 * 1024 * 1024 * 1024, // 6GB
       },
     }),
   )
@@ -47,7 +47,20 @@ export class FileUploadController {
     @UploadedFiles() uploaded_files: Express.Multer.File[],
   ): Promise<string[]> {
     try {
-      return await this.fileUploadService.uploadFiles(uploaded_files);
+      console.log(`📥 Start uploading ${uploaded_files.length} file(s)...`);
+      const startTime = Date.now();
+
+      uploaded_files.forEach( file => {
+        console.log(`⏳ Uploading: ${file.originalname} (${(file.size / (1024 * 1024)).toFixed(2)} MB)`);
+      });
+
+      const result = await this.fileUploadService.uploadFiles(uploaded_files);
+
+      //return await this.fileUploadService.uploadFiles(uploaded_files);
+
+      const endTime = Date.now();
+      console.log(`✅ All files uploaded successfully in ${(endTime - startTime) / 1000}s`);
+      return result;
     } catch (error) {
       throw error;
     }
