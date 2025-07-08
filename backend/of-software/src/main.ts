@@ -2,7 +2,6 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { CorsOptions } from '@nestjs/common/interfaces/external/cors-options.interface';
 import { NestExpressApplication } from '@nestjs/platform-express';
-
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import * as bodyParser from 'body-parser';
 
@@ -23,10 +22,8 @@ async function bootstrap() {
       'jwt',
     )
     .build();
-
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document);
-
   // Enable CORS
   const corsOptions: CorsOptions = {
     origin: true, // Allow all origins
@@ -43,7 +40,7 @@ async function bootstrap() {
   server.setTimeout(1 * 60 * 60 * 1000); // Timeout 1 hours
 
   // The number of milliseconds of inactivity a server needs to wait for additional incoming data
-  // server.keepAliveTimeout = 1 * 60 * 60 * 1000;
+  server.keepAliveTimeout = 1 * 60 * 60 * 1000;
   // Limit the amount of time the parser will wait to receive the complete HTTP headers
   server.headersTimeout = 1 * 60 * 61 * 1000;
   // server.requestTimeout =
