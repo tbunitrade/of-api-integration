@@ -39,7 +39,7 @@ export class ModelPlatformDto {
   site_url: string;
 
   @ApiProperty({
-    type: 'string',
+    type: 'number',
     default: 1,
   })
   number_of_days: number;
