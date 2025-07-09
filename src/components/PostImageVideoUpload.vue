@@ -54,7 +54,17 @@ const processFiles = async (selectedFiles) => {
 
   }
 
-  const result = await fileStore.uploadFiles(formData, props.id);
+  const result = await fileStore.uploadFiles(
+    formData,
+    props.id,
+    (percent) => {
+      uploadProgress.value = percent;
+      console.log(`Upload progress: ${percent}%`);
+    }
+  );
+
+  uploadProgress.value = 0; // сбросить прогресс после загрузки
+
   if (result) {
     notify({
       title: "Success",
@@ -100,6 +110,21 @@ const toggleSelectAllFiles = () => {
 };
 
 
+const uploadProgress = ref(0)
+
+const handleUpload = async (selectedFiles) => {
+  const formData = new FormData()
+  for (let i = 0; i < selectedFiles.length; i++) {
+    formData.append('files', selectedFiles[i])
+  }
+
+  await postFileStore.uploadFiles(formData, postStore.post.id, (percent) => {
+    uploadProgress.value = percent
+    console.log(`Upload progress: ${percent}%`)
+  })
+
+  uploadProgress.value = 0 // Reset after done
+}
 </script>
 
 <template>
@@ -160,6 +185,9 @@ const toggleSelectAllFiles = () => {
         :color="info"
         v-if="fileStore.isLoading"
       />
+
+      <progress v-if="uploadProgress > 0" :value="uploadProgress" max="100" class="w-full"></progress>
+      <p v-if="uploadProgress > 0">{{ uploadProgress }}% uploaded</p>
     </div>
   </div>
 </template>
