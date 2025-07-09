@@ -7,6 +7,7 @@ import { notify } from '@kyvg/vue3-notification';
 import { ClipLoader } from 'vue3-spinner';
 import { mdiClose } from '@mdi/js';
 
+
 const props = defineProps({
   id: {
     type: Number,
@@ -157,6 +158,8 @@ const handleUpload = async (selectedFiles) => {
     <div class="w-full border border-gray-300 p-3 rounded mt-2 flex min-h-32 flex-wrap gap-3 max-h-64 overflow-scroll">
       <div v-for="(file, index) in filesInStore" :key="index">
         <div class="relative">
+<!--          <pre class="text-xs">{{ file }}</pre>-->
+
           <input
             v-model="selectedFileIds"
             :value="file.id"
@@ -182,7 +185,7 @@ const handleUpload = async (selectedFiles) => {
 
       <ClipLoader
         class="absolute top-0 left-0 w-full h-full flex justify-center items-center"
-        :color="info"
+        :color="'#3b82f6'"
         v-if="fileStore.isLoading"
       />
 
