@@ -154,12 +154,12 @@ const handleUpload = async (selectedFiles) => {
         small
       />
     </div>
+    <progress v-if="uploadProgress > 0" :value="uploadProgress" max="100" class="w-full"></progress>
+    <p v-if="uploadProgress > 0">{{ uploadProgress }}% uploaded</p>
 
     <div class="w-full border border-gray-300 p-3 rounded mt-2 flex min-h-32 flex-wrap gap-3 max-h-64 overflow-scroll">
       <div v-for="(file, index) in filesInStore" :key="index">
         <div class="relative">
-<!--          <pre class="text-xs">{{ file }}</pre>-->
-
           <input
             v-model="selectedFileIds"
             :value="file.id"
@@ -171,6 +171,22 @@ const handleUpload = async (selectedFiles) => {
             <source :src="file.url" type="video/mp4">
             Your browser does not support the video tag.
           </video>
+          <!-- NEW fallback -->
+          <div v-else class="w-32 h-32 flex flex-col items-center justify-center bg-gray-200 text-gray-800 rounded p-1 overflow-hidden">
+            <span class="font-bold">
+              {{ file.url.split('.').pop().toUpperCase() }}
+            </span>
+            <span
+              class="text-xs text-gray-600 w-full p-1 mt-1 bg-gray-100 rounded border border-gray-400 overflow-x-auto"
+              style="max-height: 3rem;"
+            >
+<!--              <span-->
+<!--                class="text-xs text-gray-600 w-full p-1 mt-1 bg-gray-100 rounded border border-gray-400 overflow-hidden text-ellipsis whitespace-nowrap"-->
+<!--                :title="file.url"-->
+<!--              >-->
+              {{ file.url }}
+            </span>
+          </div>
           <BaseButton
             :icon="mdiClose"
             color="danger"
@@ -188,9 +204,6 @@ const handleUpload = async (selectedFiles) => {
         :color="'#3b82f6'"
         v-if="fileStore.isLoading"
       />
-
-      <progress v-if="uploadProgress > 0" :value="uploadProgress" max="100" class="w-full"></progress>
-      <p v-if="uploadProgress > 0">{{ uploadProgress }}% uploaded</p>
     </div>
   </div>
 </template>
