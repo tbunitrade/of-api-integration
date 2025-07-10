@@ -124,6 +124,12 @@ const processFiles = async (selectedFiles) => {
     } else {
       console.error('❌ Upload failed:', err);
     }
+    uploadProgress.value = 0;
+    lastPercent = 0;
+    console.log('lastPercent set to 0');
+  } finally {
+    fileStore.isLoading = false; // ✅ Снимаем спиннер
+    console.log('finally ok');
   }
 };
 watch(filesInStore, () => {
