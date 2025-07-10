@@ -61,7 +61,26 @@ const throttledProgress = throttle((percent) => {
 
 const processFiles = async (selectedFiles) => {
   const controller = new AbortController();
-  const timeout = setTimeout( () => {
+  let totalSize = 0;
+
+  // Вычисляем общий размер файлов
+  for (let i = 0; i < selectedFiles.length; i++) {
+    totalSize += selectedFiles[i].size;
+  }
+
+  // Выбираем таймаут по размеру
+
+  let timeoutDuration = 60000; //default 60 sec
+
+  if (totalSize > 1 * 1024 * 1024 * 1024) { // > 1GB
+    timeoutDuration = 20 * 60 * 1000; // 20 min
+  } else if (totalSize > 100 * 1024 * 1024) { // >100mb
+    timeoutDuration = 5 * 60 * 1000; // 5 min
+  }
+
+  console.log(`⏳ Timeout set to ${timeoutDuration / 1000} seconds for total size ${totalSize} bytes`);
+  //  Set timeout
+  const timeout = setTimeout(() => {
     controller.abort();
     notify({
       title: "Error",
@@ -71,28 +90,40 @@ const processFiles = async (selectedFiles) => {
 
     uploadProgress.value = 0;
     lastPercent = 0;
-  }, 60*1000);
+  }, timeoutDuration);
+
+  // Готовим FormData
   const formData = new FormData();
   for (let i = 0; i < selectedFiles.length; i++) {
     formData.append(`files`, selectedFiles[i]);
   }
 
-  const result = await fileStore.uploadFiles(
-    formData,
-    props.id,
-    throttledProgress,
-    controller.signal
-  );
-  clearTimeout(timeout); // Очистка таймаута если всё ок
+  // Загружаем с передачей signal
+  try {
+    const result = await fileStore.uploadFiles(
+      formData,
+      props.id,
+      throttledProgress,
+      controller.signal
+    );
+    clearTimeout(timeout); // Очистка таймаута если всё ок
 
-  uploadProgress.value = 0; // сбросить прогресс после загрузки
-  lastPercent = 0;
-  if (result) {
-    notify({
-      title: "Success",
-      type: "success",
-      text: "PostImageVideo file uploaded successfully",
-    });
+    uploadProgress.value = 0; // сбросить прогресс после загрузки
+    lastPercent = 0;
+
+    if (result) {
+      notify({
+        title: "Success",
+        type: "success",
+        text: "PostImageVideo file uploaded successfully",
+      });
+    }
+  } catch (err) {
+    if (err.name === 'AbortError') {
+      console.warn('⛔ Upload aborted by timeout.');
+    } else {
+      console.error('❌ Upload failed:', err);
+    }
   }
 };
 watch(filesInStore, () => {
