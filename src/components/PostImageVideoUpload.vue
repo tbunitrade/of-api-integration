@@ -59,12 +59,12 @@ const throttledProgress = throttle((percent) => {
     lastPercent = percent;
 
     if ( percent === 100) {
-
-      setTimeout( ()=> {
-        uploadProgress.value = 0;
-        lastPercent = 0;
-        console.log('✅ Progress reset after 100%');
-      }, 1000);
+      console.log('🎯 100% upload reached. Waiting for add requests to finish...');
+      // setTimeout( ()=> {
+      //   uploadProgress.value = 0;
+      //   lastPercent = 0;
+      //   console.log('✅ Progress reset after 100%');
+      // }, 1000);
     }
   }
 }, 300);
@@ -95,6 +95,7 @@ const processFiles = async (selectedFiles) => {
   }
 
   console.log(`⏳ Timeout set to ${timeoutDuration / 1000} seconds for total size ${totalSize} bytes`);
+
   //  Set timeout
   const timeout = setTimeout(() => {
     controller.abort();
@@ -103,7 +104,6 @@ const processFiles = async (selectedFiles) => {
       type: "error",
       text: "Server took too long to respond. Upload may have failed."
     });
-
     uploadProgress.value = 0;
     lastPercent = 0;
   }, timeoutDuration);
@@ -129,9 +129,9 @@ const processFiles = async (selectedFiles) => {
     );
     clearTimeout(timeout); // Очистка таймаута если всё ок
 
-    uploadProgress.value = 0; // сбросить прогресс после загрузки
-    lastPercent = 0;
-    console.log('✅ All refresh add requests complete, progress reset.');
+    // uploadProgress.value = 0; // сбросить прогресс после загрузки
+    // lastPercent = 0;
+    // console.log('✅ All refresh add requests complete, progress reset.');
 
     if (result) {
       notify({
