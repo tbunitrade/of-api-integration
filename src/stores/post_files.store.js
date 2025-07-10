@@ -34,67 +34,55 @@ const usePostFileStore = defineStore({
     },
     async uploadFiles(data, post_id, onProgress, signal = null, onComplete = null ) {
       try {
-        this.isLoading = true
+        this.isLoading = true;
+
+        // Сначала загружаем файлы
         const response = await axios.post(`${import.meta.env.VITE_APP_ROOT_API}/upload`, data, {
-          headers: {
-            'Content-Type': 'multipart/form-data'
-          },
+          headers: { 'Content-Type': 'multipart/form-data' },
           onUploadProgress: (progressEvent) => {
-            if (onProgress && progressEvent.lengthComputable ) {
-              const percentComplteted = Math.round(
+            if (onProgress && progressEvent.lengthComputable) {
+              const percentCompleted = Math.round(
                 (progressEvent.loaded * 100) / progressEvent.total
               );
-              onProgress(percentComplteted)
+              onProgress(percentCompleted);
             }
-          }, signal
-        })
+          },
+          signal
+        });
+
         if (response.data) {
-          const files = response.data
-          // 🆕 Отправляем все add-запросы и ждём их завершения
-          const newFiles = await Promise.all(
+          const files = response.data;
+
+          // 🔥 Отправляем add-запросы НЕ ЖДЁМ
+          Promise.allSettled(
             files.map(async (f) => {
               const postData = { post_id, url: f };
-              const resp = await axios.post(
-                `${import.meta.env.VITE_APP_ROOT_API}/post_file/add`,
-                postData
-              );
-              return resp.data;
+              try {
+                const resp = await axios.post(
+                  `${import.meta.env.VITE_APP_ROOT_API}/post_file/add`,
+                  postData
+                );
+                if (resp.data) {
+                  this.post_files.push(resp.data);
+                }
+              } catch (err) {
+                console.error('❌ add failed for', f, err);
+              }
             })
-          );
-
-          // 🆕 Добавляем все новые файлы за один раз
-          //this.post_files = [...this.post_files, ...newFiles];
-          this.post_files.push(...newFiles);
-
-          // ✅ Сбросить прогресс после всех запросов
-          if (onComplete && typeof onComplete === 'function') {
-            onComplete();
-          }
-
-
-          // files.map(async (f) => {
-          //   const postData = {
-          //     post_id,
-          //     url: f
-          //   }
-          //   const resp = await axios.post(
-          //     `${import.meta.env.VITE_APP_ROOT_API}/post_file/add`,
-          //     postData
-          //   );
-          //   if (resp.data) {
-          //     this.post_files = [...this.post_files, resp.data];
-          //   }
-          // })
+          ).then(() => {
+            console.log('✅ All add requests completed');
+          });
         }
-        this.isLoading = false;
+
         return response.data;
       } catch (error) {
-        console.error('File upload failed:', error)
-        this.isLoading = false;
+        console.error('File upload failed:', error);
         throw error;
-      }
-      finally {
+      } finally {
         this.isLoading = false;
+        if (onComplete && typeof onComplete === 'function') {
+          onComplete();
+        }
       }
     },
     async deleteFile(file, id) {
