@@ -120,12 +120,13 @@ const processFiles = async (selectedFiles) => {
       formData,
       props.id,
       throttledProgress,
-      controller.signal,
-      () => {
-        uploadProgress.value = 0;
-        lastPercent = 0;
-        console.log('✅ All uploadFiles add requests complete, progress reset.');
-      }
+      controller.signal
+      // ,
+      // () => {
+      //   uploadProgress.value = 0;
+      //   lastPercent = 0;
+      //   console.log('✅ All uploadFiles add requests complete, progress reset.');
+      // }
     );
     clearTimeout(timeout); // Очистка таймаута если всё ок
 
@@ -140,11 +141,11 @@ const processFiles = async (selectedFiles) => {
         text: "PostImageVideo file uploaded successfully",
       });
 
-      setTimeout(() => {
-        uploadProgress.value = 0;
-        lastPercent = 0;
-        console.log('✅ Upload finished, progress reset.');
-      }, 3500); // 0.5 сек — хватит для Vue DOM update
+      // setTimeout(() => {
+      //   uploadProgress.value = 0;
+      //   lastPercent = 0;
+      //   console.log('✅ Upload finished, progress reset.');
+      // }, 3500); // 0.5 сек — хватит для Vue DOM update
     }
   } catch (err) {
     if (err.name === 'AbortError') {
@@ -152,10 +153,10 @@ const processFiles = async (selectedFiles) => {
     } else {
       console.error('❌ Upload failed:', err);
     }
+
+  } finally {
     uploadProgress.value = 0;
     lastPercent = 0;
-    console.log('lastPercent set to 0');
-  } finally {
     clearTimeout(timeout);
     fileStore.isLoading = false; // <== Скажем Vue, что всё завершено
     isUploading = false;
