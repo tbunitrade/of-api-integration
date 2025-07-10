@@ -32,7 +32,7 @@ const usePostFileStore = defineStore({
     setEmpty() {
       this.post_files = []
     },
-    async uploadFiles(data, post_id, onProgress, signal = null ) {
+    async uploadFiles(data, post_id, onProgress, signal = null, onComplete = null ) {
       try {
         this.isLoading = true
         const response = await axios.post(`${import.meta.env.VITE_APP_ROOT_API}/upload`, data, {
@@ -63,7 +63,13 @@ const usePostFileStore = defineStore({
           );
 
           // 🆕 Добавляем все новые файлы за один раз
-          this.post_files = [...this.post_files, ...newFiles];
+          //this.post_files = [...this.post_files, ...newFiles];
+          this.post_files.push(...newFiles);
+
+          // ✅ Сбросить прогресс после всех запросов
+          if (onComplete && typeof onComplete === 'function') {
+            onComplete();
+          }
 
 
           // files.map(async (f) => {

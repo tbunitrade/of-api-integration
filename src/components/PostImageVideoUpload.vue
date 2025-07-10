@@ -113,12 +113,18 @@ const processFiles = async (selectedFiles) => {
       formData,
       props.id,
       throttledProgress,
-      controller.signal
+      controller.signal,
+      () => {
+        uploadProgress.value = 0;
+        lastPercent = 0;
+        console.log('✅ All uploadFiles add requests complete, progress reset.');
+      }
     );
     clearTimeout(timeout); // Очистка таймаута если всё ок
 
     uploadProgress.value = 0; // сбросить прогресс после загрузки
     lastPercent = 0;
+    console.log('✅ All refresh add requests complete, progress reset.');
 
     if (result) {
       notify({
@@ -138,10 +144,10 @@ const processFiles = async (selectedFiles) => {
     console.log('lastPercent set to 0');
   } finally {
     clearTimeout(timeout);
-    uploadProgress.value = 0; // Сброс прогресса
-    lastPercent = 0;
+    // uploadProgress.value = 0; // Сброс прогресса
+    // lastPercent = 0;
     fileStore.isLoading = false; // <== Скажем Vue, что всё завершено
-    console.log("✅ Upload complete, spinner stopped.");
+    console.log("✅ Upload + add complete, spinner stopped.");
 
     //fileStore.isLoading = false; // ✅ Снимаем спиннер
     //console.log('finally ok');
