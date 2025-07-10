@@ -151,12 +151,9 @@ const processFiles = async (selectedFiles) => {
     console.log('lastPercent set to 0');
   } finally {
     clearTimeout(timeout);
-    // uploadProgress.value = 0; // Сброс прогресса
-    // lastPercent = 0;
     fileStore.isLoading = false; // <== Скажем Vue, что всё завершено
-    console.log("✅ Upload + add complete, spinner stopped.");
     isUploading = false;
-    //fileStore.isLoading = false; // ✅ Снимаем спиннер
+    console.log("✅ Upload + add complete, spinner stopped.");
     //console.log('finally ok');
   }
 };
