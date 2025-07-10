@@ -139,6 +139,12 @@ const processFiles = async (selectedFiles) => {
         type: "success",
         text: "PostImageVideo file uploaded successfully",
       });
+
+      setTimeout(() => {
+        uploadProgress.value = 0;
+        lastPercent = 0;
+        console.log('✅ Upload finished, progress reset.');
+      }, 3500); // 0.5 сек — хватит для Vue DOM update
     }
   } catch (err) {
     if (err.name === 'AbortError') {

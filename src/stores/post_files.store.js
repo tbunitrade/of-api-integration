@@ -93,6 +93,9 @@ const usePostFileStore = defineStore({
         this.isLoading = false;
         throw error;
       }
+      finally {
+        this.isLoading = false;
+      }
     },
     async deleteFile(file, id) {
       try {
