@@ -32,51 +32,43 @@ const usePostFileStore = defineStore({
     setEmpty() {
       this.post_files = []
     },
-    async uploadFiles(data, post_id, onProgress, signal = null, onComplete = null ) {
+    async uploadFiles(data, post_id, onProgress, signal = null, onComplete = null) {
+      this.isLoading = true;
       try {
-        this.isLoading = true;
-
-        // Сначала загружаем файлы
+        // 1️⃣ Загружаем файлы
         const response = await axios.post(`${import.meta.env.VITE_APP_ROOT_API}/upload`, data, {
           headers: { 'Content-Type': 'multipart/form-data' },
           onUploadProgress: (progressEvent) => {
             if (onProgress && progressEvent.lengthComputable) {
-              const percentCompleted = Math.round(
-                (progressEvent.loaded * 100) / progressEvent.total
-              );
+              const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
               onProgress(percentCompleted);
             }
           },
-          signal
+          signal,
+          timeout: 0, // ❗ Убираем axios timeout — ждем сколько надо
         });
 
-        if (response.data) {
-          const files = response.data;
-
-          // 🔥 Отправляем add-запросы НЕ ЖДЁМ
-          Promise.allSettled(
-            files.map(async (f) => {
-              const postData = { post_id, url: f };
-              try {
-                const resp = await axios.post(
-                  `${import.meta.env.VITE_APP_ROOT_API}/post_file/add`,
-                  postData
-                );
-                if (resp.data) {
-                  this.post_files.push(resp.data);
-                }
-              } catch (err) {
-                console.error('❌ add failed for', f, err);
-              }
-            })
-          ).then(() => {
-            console.log('✅ All add requests completed');
-          });
+        if (!response.data || response.data.length === 0) {
+          throw new Error('❌ Upload API вернул пустой ответ');
         }
 
+        console.log('✅ Upload complete. Starting add requests...');
+
+        // 2️⃣ Добавляем файлы в post_file
+        const newFiles = [];
+        for (const f of response.data) {
+          const postData = { post_id, url: f };
+          const resp = await axios.post(`${import.meta.env.VITE_APP_ROOT_API}/post_file/add`, postData, { timeout: 0 });
+          if (resp.data) {
+            newFiles.push(resp.data);
+          }
+        }
+        this.post_files.push(...newFiles);
+
+        console.log('✅ Все add-запросы выполнены');
         return response.data;
       } catch (error) {
-        console.error('File upload failed:', error);
+        console.error('❌ uploadFiles failed:', error);
         throw error;
       } finally {
         this.isLoading = false;
