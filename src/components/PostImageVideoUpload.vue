@@ -20,7 +20,8 @@ const isImage = (file) => {
   return /\.(jpe?g|png|gif|bmp)$/i.test(file);
 };
 const isVideo = (file) => {
-  return /\.(mp4|m4v|flv|vob|avi|mov|mpeg|mpg|m4p|amv|mts|ts|webm|ogg)$/i.test(file);
+  const ext = file.url.split('.').pop().toLowerCase();
+  return /\.(mp4|m4v|flv|vob|avi|mov|mpeg|mpg|m4p|amv|mts|ts|webm|ogg)$/i.includes(ext);
 };
 
 const handleFileChange = (event) => {
@@ -56,6 +57,15 @@ const throttledProgress = throttle((percent) => {
     uploadProgress.value = percent;
     console.log(`Upload progress: ${percent}%`);
     lastPercent = percent;
+
+    if ( percent === 100) {
+
+      setTimeout( ()=> {
+        uploadProgress.value = 0;
+        lastPercent = 0;
+        console.log('✅ Progress reset after 100%');
+      }, 1000);
+    }
   }
 }, 300);
 
