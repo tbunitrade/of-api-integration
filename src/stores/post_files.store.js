@@ -35,7 +35,6 @@ const usePostFileStore = defineStore({
     async uploadFiles(data, post_id, onProgress, signal = null, onComplete = null) {
       this.isLoading = true;
       try {
-        // 1️⃣ Загружаем файлы
         const response = await axios.post(`${import.meta.env.VITE_APP_ROOT_API}/upload`, data, {
           headers: { 'Content-Type': 'multipart/form-data' },
           onUploadProgress: (progressEvent) => {
@@ -45,36 +44,40 @@ const usePostFileStore = defineStore({
             }
           },
           signal,
-          timeout: 0, // ❗ Убираем axios timeout — ждем сколько надо
+          timeout: 0,
         });
 
-        if (!response.data || response.data.length === 0) {
-          throw new Error('❌ Upload API вернул пустой ответ');
+        if (!response.data || !Array.isArray(response.data)) {
+          throw new Error('❌ upload API вернул пустой или некорректный ответ');
         }
 
-        console.log('✅ Upload complete. Starting add requests...');
+        console.log('📦 Upload complete. Starting add requests...');
 
-        // 2️⃣ Добавляем файлы в post_file
         const newFiles = [];
+
         for (const f of response.data) {
           const postData = { post_id, url: f };
           const resp = await axios.post(`${import.meta.env.VITE_APP_ROOT_API}/post_file/add`, postData, { timeout: 0 });
-          if (resp.data) {
-            newFiles.push(resp.data);
-          }
-        }
-        this.post_files.push(...newFiles);
 
-        console.log('✅ Все add-запросы выполнены');
-        return response.data;
-      } catch (error) {
-        console.error('❌ uploadFiles failed:', error);
-        throw error;
-      } finally {
-        this.isLoading = false;
+          if (!resp || !resp.data) {
+            throw new Error(`❌ Add request no data for file: ${f}`);
+          }
+
+          newFiles.push(resp.data);
+        }
+
+        this.post_files.push(...newFiles);
+        console.log('✅ Все add-запросы успешно выполнены');
+
         if (onComplete && typeof onComplete === 'function') {
           onComplete();
         }
+
+      } catch (err) {
+        console.error('❌ uploadFiles error:', err);
+        throw err;
+      } finally {
+        this.isLoading = false;
       }
     },
     async deleteFile(file, id) {
