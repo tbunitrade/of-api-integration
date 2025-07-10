@@ -122,9 +122,11 @@ const processFiles = async (selectedFiles) => {
       throttledProgress,
       controller.signal,
       () => {
-        uploadProgress.value = 0;
-        lastPercent = 0;
-        console.log('✅ Upload + add complete, progress reset.');
+        setTimeout(() => {
+          uploadProgress.value = 0;
+          lastPercent = 0;
+          console.log('✅ Upload finished, progress reset.');
+        }, 5000);
       }
     );
     notify({
@@ -139,8 +141,12 @@ const processFiles = async (selectedFiles) => {
       console.error('❌ Upload failed:', err);
     }
   } finally {
-    isUploading = false;
+    uploadProgress.value = 0;
+    lastPercent = 0;
     fileStore.isLoading = false;
+    isUploading = false;
+    clearTimeout(timeout);
+    console.log("✅ Upload + add complete, spinner stopped.");
   }
 };
 watch(filesInStore, () => {
