@@ -43,12 +43,21 @@ const deleteFile = async (file, id) => {
 };
 // Throttle progress updates
 const throttledProgress = throttle((percent) => {
-  if (percent !== lastPercent) {
-    console.log(`Upload progress: ${percent}%`);
+  // Прокидываем 1% сразу
+  if (percent === 1 && lastPercent === 0) {
     uploadProgress.value = percent;
+    console.log(`Upload progress: ${percent}%`);
+    lastPercent = percent;
+    return;
+  }
+
+  // Потом обновляем только если +10% или дошли до 100%
+  if (percent === 100 || percent - lastPercent >= 10) {
+    uploadProgress.value = percent;
+    console.log(`Upload progress: ${percent}%`);
     lastPercent = percent;
   }
-}, 500);
+}, 300);
 
 const processFiles = async (selectedFiles) => {
   const formData = new FormData();
@@ -59,11 +68,7 @@ const processFiles = async (selectedFiles) => {
   const result = await fileStore.uploadFiles(
     formData,
     props.id,
-    throttledProgress // Pass throttled progress
-    // (percent) => {
-    //   uploadProgress.value = percent;
-    //   console.log(`Upload progress: ${percent}%`);
-    // }
+    throttledProgress
   );
 
   uploadProgress.value = 0; // сбросить прогресс после загрузки
@@ -142,8 +147,11 @@ const toggleSelectAllFiles = () => {
         small
       />
     </div>
-    <progress v-if="uploadProgress > 0" :value="uploadProgress" max="100" class="w-full"></progress>
-    <p v-if="uploadProgress > 0">{{ uploadProgress }}% uploaded</p>
+    <progress v-if="uploadProgress > 0 " :value="uploadProgress" max="100" class="w-full"></progress>
+    <p v-if="uploadProgress > 0 && uploadProgress < 100">{{ uploadProgress }}% uploaded</p>
+    <p v-else-if="uploadProgress === 100">
+      Finalizing upload...
+    </p>
 
     <div class="w-full border border-gray-300 p-3 rounded mt-2 flex min-h-32 flex-wrap gap-3 max-h-64 overflow-scroll">
       <div v-for="(file, index) in filesInStore" :key="index">
