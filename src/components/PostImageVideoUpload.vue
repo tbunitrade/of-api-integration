@@ -79,12 +79,12 @@ const processFiles = async (selectedFiles) => {
 
   // Выбираем таймаут по размеру
 
-  let timeoutDuration = 60000; //default 60 sec
+  let timeoutDuration = 90000; //default 90 sec
 
   if (totalSize > 1 * 1024 * 1024 * 1024) { // > 1GB
-    timeoutDuration = 20 * 60 * 1000; // 20 min
+    timeoutDuration = 25 * 60 * 1000; // 25 min
   } else if (totalSize > 100 * 1024 * 1024) { // >100mb
-    timeoutDuration = 5 * 60 * 1000; // 5 min
+    timeoutDuration = 10 * 60 * 1000; // 10 min
   }
 
   console.log(`⏳ Timeout set to ${timeoutDuration / 1000} seconds for total size ${totalSize} bytes`);
@@ -137,8 +137,14 @@ const processFiles = async (selectedFiles) => {
     lastPercent = 0;
     console.log('lastPercent set to 0');
   } finally {
-    fileStore.isLoading = false; // ✅ Снимаем спиннер
-    console.log('finally ok');
+    clearTimeout(timeout);
+    uploadProgress.value = 0; // Сброс прогресса
+    lastPercent = 0;
+    fileStore.isLoading = false; // <== Скажем Vue, что всё завершено
+    console.log("✅ Upload complete, spinner stopped.");
+
+    //fileStore.isLoading = false; // ✅ Снимаем спиннер
+    //console.log('finally ok');
   }
 };
 watch(filesInStore, () => {

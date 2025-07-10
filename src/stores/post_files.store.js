@@ -50,19 +50,35 @@ const usePostFileStore = defineStore({
         })
         if (response.data) {
           const files = response.data
-          files.map(async (f) => {
-            const postData = {
-              post_id,
-              url: f
-            }
-            const resp = await axios.post(
-              `${import.meta.env.VITE_APP_ROOT_API}/post_file/add`,
-              postData
-            );
-            if (resp.data) {
-              this.post_files = [...this.post_files, resp.data];
-            }
-          })
+          // 🆕 Отправляем все add-запросы и ждём их завершения
+          const newFiles = await Promise.all(
+            files.map(async (f) => {
+              const postData = { post_id, url: f };
+              const resp = await axios.post(
+                `${import.meta.env.VITE_APP_ROOT_API}/post_file/add`,
+                postData
+              );
+              return resp.data;
+            })
+          );
+
+          // 🆕 Добавляем все новые файлы за один раз
+          this.post_files = [...this.post_files, ...newFiles];
+
+
+          // files.map(async (f) => {
+          //   const postData = {
+          //     post_id,
+          //     url: f
+          //   }
+          //   const resp = await axios.post(
+          //     `${import.meta.env.VITE_APP_ROOT_API}/post_file/add`,
+          //     postData
+          //   );
+          //   if (resp.data) {
+          //     this.post_files = [...this.post_files, resp.data];
+          //   }
+          // })
         }
         this.isLoading = false;
         return response.data;
