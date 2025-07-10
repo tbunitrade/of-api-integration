@@ -15,6 +15,7 @@ const fileStore = usePostFileStore();
 const filesInStore = computed(() => fileStore.post_files);
 const uploadProgress = ref(0);
 let lastPercent = 0;
+let isUploading = false;
 
 const isImage = (file) => {
   return /\.(jpe?g|png|gif|bmp)$/i.test(file);
@@ -69,6 +70,12 @@ const throttledProgress = throttle((percent) => {
 }, 300);
 
 const processFiles = async (selectedFiles) => {
+  if (isUploading) {
+    console.warn('⛔ Upload already in progress. Ignoring duplicate call.');
+    return;
+  }
+  isUploading = true;
+
   const controller = new AbortController();
   let totalSize = 0;
 
@@ -148,7 +155,7 @@ const processFiles = async (selectedFiles) => {
     // lastPercent = 0;
     fileStore.isLoading = false; // <== Скажем Vue, что всё завершено
     console.log("✅ Upload + add complete, spinner stopped.");
-
+    isUploading = false;
     //fileStore.isLoading = false; // ✅ Снимаем спиннер
     //console.log('finally ok');
   }
