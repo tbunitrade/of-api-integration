@@ -20,8 +20,7 @@ const isImage = (file) => {
   return /\.(jpe?g|png|gif|bmp)$/i.test(file);
 };
 const isVideo = (file) => {
-  const ext = file.url.split('.').pop().toLowerCase();
-  return /\.(mp4|m4v|flv|vob|avi|mov|mpeg|mpg|m4p|amv|mts|ts|webm|ogg)$/i.includes(ext);
+  return /\.(mp4|m4v|flv|vob|avi|mov|mpeg|mpg|m4p|amv|mts|ts|webm|ogg)$/i.test(file);
 };
 
 const handleFileChange = (event) => {
