@@ -129,10 +129,6 @@ const processFiles = async (selectedFiles) => {
     );
     clearTimeout(timeout); // Очистка таймаута если всё ок
 
-    // uploadProgress.value = 0; // сбросить прогресс после загрузки
-    // lastPercent = 0;
-    // console.log('✅ All refresh add requests complete, progress reset.');
-
     if (result) {
       notify({
         title: "Success",
@@ -156,6 +152,8 @@ const processFiles = async (selectedFiles) => {
     lastPercent = 0;
     console.log('lastPercent set to 0');
   } finally {
+    uploadProgress.value = 0;
+    lastPercent = 0;
     clearTimeout(timeout);
     fileStore.isLoading = false; // <== Скажем Vue, что всё завершено
     isUploading = false;
@@ -198,9 +196,6 @@ const toggleSelectAllFiles = () => {
     selectedFileIds.value = filesInStore.value.map(file => file.id);
   }
 };
-
-
-
 </script>
 
 <template>
