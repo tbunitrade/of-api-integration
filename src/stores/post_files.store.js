@@ -32,7 +32,7 @@ const usePostFileStore = defineStore({
     setEmpty() {
       this.post_files = []
     },
-    async uploadFiles(data, post_id, onProgress) {
+    async uploadFiles(data, post_id, onProgress, signal = null ) {
       try {
         this.isLoading = true
         const response = await axios.post(`${import.meta.env.VITE_APP_ROOT_API}/upload`, data, {
@@ -43,11 +43,10 @@ const usePostFileStore = defineStore({
             if (onProgress && progressEvent.lengthComputable ) {
               const percentComplteted = Math.round(
                 (progressEvent.loaded * 100) / progressEvent.total
-              )
-
+              );
               onProgress(percentComplteted)
             }
-          }
+          }, signal
         })
         if (response.data) {
           const files = response.data
@@ -59,18 +58,18 @@ const usePostFileStore = defineStore({
             const resp = await axios.post(
               `${import.meta.env.VITE_APP_ROOT_API}/post_file/add`,
               postData
-            )
+            );
             if (resp.data) {
-              this.post_files = [...this.post_files, resp.data]
+              this.post_files = [...this.post_files, resp.data];
             }
           })
         }
-        this.isLoading = false
-        return response.data
+        this.isLoading = false;
+        return response.data;
       } catch (error) {
         console.error('File upload failed:', error)
-        this.isLoading = false
-        throw error
+        this.isLoading = false;
+        throw error;
       }
     },
     async deleteFile(file, id) {

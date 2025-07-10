@@ -60,6 +60,18 @@ const throttledProgress = throttle((percent) => {
 }, 300);
 
 const processFiles = async (selectedFiles) => {
+  const controller = new AbortController();
+  const timeout = setTimeout( () => {
+    controller.abort();
+    notify({
+      title: "Error",
+      type: "error",
+      text: "Server took too long to respond. Upload may have failed."
+    });
+
+    uploadProgress.value = 0;
+    lastPercent = 0;
+  }, 60*1000);
   const formData = new FormData();
   for (let i = 0; i < selectedFiles.length; i++) {
     formData.append(`files`, selectedFiles[i]);
@@ -68,8 +80,10 @@ const processFiles = async (selectedFiles) => {
   const result = await fileStore.uploadFiles(
     formData,
     props.id,
-    throttledProgress
+    throttledProgress,
+    controller.signal
   );
+  clearTimeout(timeout); // Очистка таймаута если всё ок
 
   uploadProgress.value = 0; // сбросить прогресс после загрузки
   lastPercent = 0;
