@@ -6,20 +6,15 @@ import { usePostFileStore } from '@/stores';
 import { notify } from '@kyvg/vue3-notification';
 import { ClipLoader } from 'vue3-spinner';
 import { mdiClose } from '@mdi/js';
+import throttle from 'lodash/throttle';
 
 
-const props = defineProps({
-  id: {
-    type: Number,
-    default: 0
-  }
-});
-
+const props = defineProps({ id: { type: Number, default: 0 } });
 const fileInputRef = ref(null);
-
 const fileStore = usePostFileStore();
-
 const filesInStore = computed(() => fileStore.post_files);
+const uploadProgress = ref(0);
+let lastPercent = 0;
 
 const isImage = (file) => {
   return /\.(jpe?g|png|gif|bmp)$/i.test(file);
@@ -30,7 +25,6 @@ const isVideo = (file) => {
 
 const handleFileChange = (event) => {
   const selectedFiles = event.target.files;
-
   processFiles(selectedFiles);
 };
 const openFileInput = () => {
@@ -47,25 +41,33 @@ const deleteFile = async (file, id) => {
     });
   }
 };
+// Throttle progress updates
+const throttledProgress = throttle((percent) => {
+  if (percent !== lastPercent) {
+    console.log(`Upload progress: ${percent}%`);
+    uploadProgress.value = percent;
+    lastPercent = percent;
+  }
+}, 500);
+
 const processFiles = async (selectedFiles) => {
   const formData = new FormData();
   for (let i = 0; i < selectedFiles.length; i++) {
-
     formData.append(`files`, selectedFiles[i]);
-
   }
 
   const result = await fileStore.uploadFiles(
     formData,
     props.id,
-    (percent) => {
-      uploadProgress.value = percent;
-      console.log(`Upload progress: ${percent}%`);
-    }
+    throttledProgress // Pass throttled progress
+    // (percent) => {
+    //   uploadProgress.value = percent;
+    //   console.log(`Upload progress: ${percent}%`);
+    // }
   );
 
   uploadProgress.value = 0; // сбросить прогресс после загрузки
-
+  lastPercent = 0;
   if (result) {
     notify({
       title: "Success",
@@ -111,21 +113,7 @@ const toggleSelectAllFiles = () => {
 };
 
 
-const uploadProgress = ref(0)
 
-const handleUpload = async (selectedFiles) => {
-  const formData = new FormData()
-  for (let i = 0; i < selectedFiles.length; i++) {
-    formData.append('files', selectedFiles[i])
-  }
-
-  await postFileStore.uploadFiles(formData, postStore.post.id, (percent) => {
-    uploadProgress.value = percent
-    console.log(`Upload progress: ${percent}%`)
-  })
-
-  uploadProgress.value = 0 // Reset after done
-}
 </script>
 
 <template>
