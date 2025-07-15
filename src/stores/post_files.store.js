@@ -51,7 +51,7 @@ const usePostFileStore = defineStore({
           throw new Error('❌ upload API вернул пустой или некорректный ответ');
         }
 
-        console.log('📦 Upload complete. Starting add requests...');
+        console.log('📦 Upload complete. Starting add requests...',response.data);
 
         const newFiles = [];
 
