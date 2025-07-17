@@ -111,7 +111,7 @@ export class InitSchema1749140000000 implements MigrationInterface {
     await queryRunner.query(`
       CREATE TABLE public.post (
         id SERIAL PRIMARY KEY,
-        model_platform_id INTEGER NOT NULL REFERENCES public.model_platform(id),
+        model_platform_id INTEGER NOT NULL REFERENCES public.model_platform(id) ON DELETE CASCADE,
         number_of_days INTEGER DEFAULT 0 NOT NULL,
         status INTEGER DEFAULT 1 NOT NULL,
         created_at TIMESTAMP DEFAULT now() NOT NULL,
