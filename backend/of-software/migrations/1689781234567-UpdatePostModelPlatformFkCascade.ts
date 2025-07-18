@@ -1,4 +1,5 @@
-import { MigrationInterface, QueryRunner } from 'typeorm';
+import { MigrationInterface  } from 'typeorm';
+import { QueryRunner } from 'typeorm';
 
 export class UpdatePostModelPlatformFkCascade1689781234567  implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
