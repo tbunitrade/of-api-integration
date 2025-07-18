@@ -1,6 +1,6 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class UpdatePostModelPlatformFkCascade implements MigrationInterface {
+export class UpdatePostModelPlatformFkCascade1689781234567  implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`ALTER TABLE post DROP CONSTRAINT post_model_platform_id_fkey`);
     await queryRunner.query(`
