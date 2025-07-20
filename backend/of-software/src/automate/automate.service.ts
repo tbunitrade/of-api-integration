@@ -2,10 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { PuppeteerUtil } from './utils/puppeteer-utils';
 import {CONFIG, CONFIG as DEFAULT_CONFIG} from './utils/config/step-config';
 import * as _ from 'lodash';
-import testRecaptchaSolver from './utils/test-recaptcha-solver';
 import { getRandomNumber } from 'src/cron/utils';
 import { ModelPlatform } from 'src/modelPlatform/model_platform.entity';
-import { PostTime } from 'src/postTime/post_time.entity';
 import { PostFile } from 'src/postFile/post_file.entity';
 import { Post } from 'src/post/post.entity';
 import {acceptCookie, loadCookiesFromFile} from "./utils/_functions/cookies-utils";
@@ -178,7 +176,7 @@ export class AutomateService {
                   await puppeteerUtil.work(config);
                 } catch (error) {
                   console.log('Error : ', error);
-                  continue;
+                  //continue;
                 }
               }
               scheduledCount++;
@@ -191,13 +189,13 @@ export class AutomateService {
             await puppeteerUtil.closeBrowser();
             return scheduledCount;
           } else {
-            continue;
+            //continue;
           }
         } catch (error) {
           console.log('Error: ', error);
           repeatCount--;
           if (repeatCount < 0) break;
-          continue;
+          //continue;
         }
       }
       await puppeteerUtil.closeBrowser();
@@ -464,7 +462,7 @@ export class AutomateService {
                   await puppeteerUtil.work(config);
                 } catch (error) {
                   console.log('Error : ', error);
-                  continue;
+                  //continue;
                 }
               }
               scheduledCount++;
@@ -480,13 +478,13 @@ export class AutomateService {
           } else {
             repeatCount--;
             if (repeatCount < 0) break;
-            continue;
+            //continue;
           }
         } catch (error) {
           console.log('Error: ', error);
           repeatCount--;
           if (repeatCount < 0) break;
-          continue;
+          //continue;
         }
       }
       await puppeteerUtil.closeBrowser();
@@ -505,7 +503,7 @@ export class AutomateService {
 
     const username = 'mail@s.com';
     const password = 'тут_введи_пароль';
-    const prokey = ''; // если капча нужна — сюда ключ
+    //const prokey = ''; // если капча нужна — сюда ключ
 
     console.log('[TEST LOGIN] Стартуем Puppeteer...');
     await puppeteerUtil.openBrowser(); // показываем браузер (не headless)

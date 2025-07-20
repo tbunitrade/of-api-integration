@@ -10,11 +10,11 @@ dotenv.config();
 import * as process from 'node:process';
 import { setTimeout } from 'node:timers/promises';
 
-const fs = _fs.promises;
+//const fs = _fs.promises;
 
 // ==== Ваши «модули» ====
 import { performLoginWithRetries } from './_functions/login-utils';
-import { acceptCookie, saveCookieToFile, loadCookiesFromFile, setCookie, getCookie } from './_functions/cookies-utils';
+import { acceptCookie, saveCookieToFile, loadCookiesFromFile,} from './_functions/cookies-utils';
 import { CONFIG as DEFAULT_CONFIG } from './config/step-config';
 import { work } from './_functions/work-utils';
 import {resetCaptchaFlag} from "./_functions/recaptcha-utils";
@@ -98,6 +98,7 @@ export class PuppeteerUtil {
     console.log('Chrome bin  =', process.env.PUPPETEER_EXECUTABLE_PATH);
 
     const raw = (process.env.HEADLESS_MODE || 'true').toLowerCase().trim();
+    //const headlessMode = !(raw === 'false' || raw === '0');
     const headlessMode = raw === 'false' || raw === '0' ? false : true;
     this.headless = headlessMode;
     console.log('>>> [DEBUG] HEADLESS_MODE =', process.env.HEADLESS_MODE, '→ headless =', headlessMode);
