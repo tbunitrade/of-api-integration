@@ -48,9 +48,13 @@ export async function work(_config: any = null) {
 
           break;
         case 'waitForSelector':
+          try {
           await this._page.waitForSelector(step.value, {
             timeout: 10000,
           });
+          } catch (err) {
+            console.warn(`⚠️ Selector "${step.value}" not found or timed out`, err);
+          }
           break;
         case 'loop':
           const messageListStr = step.value;
@@ -230,7 +234,8 @@ export async function work(_config: any = null) {
           break;
         case 'checkValue':
           //compareResultValue = !!this._messageData[step.key || ''];
-          compareResultValue = this._messageData.hasOwnProperty(step.key);
+          //compareResultValue = this._messageData.hasOwnProperty(step.key);
+          compareResultValue = !!(this._messageData && Object.prototype.hasOwnProperty.call(this._messageData, step.key));
           break;
         case 'condition':
           const conditions = step.childs;

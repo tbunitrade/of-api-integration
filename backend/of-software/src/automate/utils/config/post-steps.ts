@@ -215,8 +215,16 @@ export const postSteps: Step[] = [
     },
   },
   {
+    type: 'waitForTime',
+    value: '500',
+  },
+  {
     type: 'checkValue',
     key: 'release_form_tags',
+  },
+  {
+    type: 'waitForTime',
+    value: '500',
   },
   {
     type: 'condition',

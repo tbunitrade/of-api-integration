@@ -123,7 +123,8 @@ export class AutomateService {
                 try {
                   const msg = group.messages[j];
                   const [_hour, minutes] = msg.message_time?.split(':');
-                  const hour = ((parseInt(_hour) % 13) + parseInt(_hour) / 13) | 0;
+                  //const hour = ((parseInt(_hour) % 13) + parseInt(_hour) / 13) | 0;
+                  const hour = parseInt(_hour) % 12 || 12;
                   const suffix = parseInt(_hour) >= 12 ? 'pm' : 'am';
 
                   let free_previews =
@@ -366,8 +367,8 @@ export class AutomateService {
                   const postTime = postWithTimesAndCaptions.post_times[j];
                   if (!postTime) continue;
                   const [_hour, minutes, secs] = postTime.time?.split(':');
-                  const hour =
-                    ((parseInt(_hour) % 13) + parseInt(_hour) / 13) | 0;
+                  //const hour =((parseInt(_hour) % 13) + parseInt(_hour) / 13) | 0;
+                  const hour = parseInt(_hour) % 12 || 12;
                   const suffix = parseInt(_hour) >= 12 ? 'pm' : 'am';
                   const randNumber = getRandomNumber(fileIndexes.length ?? 0);
                   const postFile = postFiles[fileIndexes[randNumber]]?.url;
