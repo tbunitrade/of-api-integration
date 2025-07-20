@@ -110,7 +110,7 @@ export class PuppeteerUtil {
     console.log('EXTENSION PATH for extensions/hcapt/0.4.1_0:', ext);
     this._browser = await this._puppeteer.launch({
       headless: this.headless,
-      slowMo: 100,
+      slowMo: 80,
       args: [
         `--no-sandbox`,
         //`--disable-gpu`,
