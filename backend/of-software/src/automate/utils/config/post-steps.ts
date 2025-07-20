@@ -29,7 +29,7 @@ export const postSteps: Step[] = [
     value: '1000',
   },
   {
-    type: 'click', // Schedule Btn
+    type: 'click', // Enter caption text
     value:
       '.b-feed #make_post_form .b-make-post__main-wrapper .b-make-post__textarea-wrapper .b-text-editor.js-text-editor p',
   },
@@ -61,27 +61,14 @@ export const postSteps: Step[] = [
   },
   {
     type: 'waitForSelector',
-    //value: '.b-make-post__datepicker-input .vdatetime-popup',
     value: '.m-vdatetime-tabs',
   },
   {
-    type: 'compareValue',
+    type: 'clickUntil',
     key: 'message_month',
     value: '$value',
-    selector:
-      // '.b-make-post__datepicker-input .vdatetime-calendar__current--month',
-      '.vdatetime-calendar__navigation .vdatetime-calendar__current--month',
-  },
-  {
-    type: 'condition',
-    childs: {
-      yes: null,
-      no: {
-        type: 'click',
-        value:
-          '.vdatetime-calendar__navigation .vdatetime-calendar__navigation--next',
-      },
-    },
+    selector: '.vdatetime-popup__tab.date.active',
+    btnSelector: '.vdatetime-calendar__navigation--next',
   },
   {
     type: 'waitForTime',
@@ -90,8 +77,7 @@ export const postSteps: Step[] = [
   {
     type: 'clickForValue',
     key: 'message_date',
-    selector:
-      '.vdatetime-calendar .vdatetime-calendar__month__day',
+    selector: '.vdatetime-calendar__month__day',
     value: '$value',
   },
   {
@@ -106,7 +92,7 @@ export const postSteps: Step[] = [
     type: 'clickForValue',
     key: 'message_hour',
     selector:
-      '.vdatetime-time-picker__list.vdatetime-time-picker__list--hours .vdatetime-time-picker__item',
+      '.vdatetime-time-picker__list--hours .vdatetime-time-picker__item',
     value: '$value',
   },
 
@@ -114,7 +100,7 @@ export const postSteps: Step[] = [
     type: 'clickForValue',
     key: 'message_minute',
     selector:
-      '.vdatetime-time-picker__list.vdatetime-time-picker__list--minutes .vdatetime-time-picker__item',
+      '.vdatetime-time-picker__list--minutes .vdatetime-time-picker__item',
     value: '$value',
   },
   {
@@ -122,7 +108,7 @@ export const postSteps: Step[] = [
     key: 'message_time_suffix',
     value: '$value',
     selector:
-      '.vdatetime-time-picker__list.vdatetime-time-picker__list--suffix .vdatetime-time-picker__item',
+      '.vdatetime-time-picker__list--suffix .vdatetime-time-picker__item',
   },
   {
     type: 'waitForTime',
@@ -131,7 +117,8 @@ export const postSteps: Step[] = [
   {
     type: 'click',
     value:
-      ' .vdatetime-popup__actions .vdatetime-popup__actions__button--confirm button',
+      //' .vdatetime-popup__actions .vdatetime-popup__actions__button--confirm button',
+      '.vdatetime-popup__actions__button.vdatetime-popup__actions__button--confirm',
   },
   {
     type: 'waitForTime',

@@ -109,14 +109,14 @@ export class PuppeteerUtil {
     console.log('EXTENSION PATH for extensions/hcapt/0.4.1_0:', ext);
     this._browser = await this._puppeteer.launch({
       headless: this.headless,
-      slowMo: 50,
+      slowMo: 100,
       args: [
         `--no-sandbox`,
         //`--disable-gpu`,
         `--disable-setuid-sandbox`,
         `--disable-extensions-except=${ext}`,
         `--load-extension=${ext}`,
-        `--window-size=1920,1080`,
+        `--window-size=1728,1080`,
       ],
       executablePath: exePath,
 
