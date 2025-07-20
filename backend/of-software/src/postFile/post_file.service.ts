@@ -80,6 +80,7 @@ export class PostFileService {
       const post = await this.postFileRepository.findOne({ where: { id } });
 
       if (!post) {
+        console.warn(`⚠️ [deletePostFile] PostFile ID:${id} not found in DB`);
         throw new NotFoundException(`PostFile with ID ${id} not found`);
       }
 
@@ -87,6 +88,9 @@ export class PostFileService {
       const deletedId = post.id;
       const deletedUrl = post.url;
       const targetUrl = fileUrl || post.url;
+      const timestamp = new Date().toISOString();
+
+      console.log(`📋 [${timestamp}] Deleting PostFile ID:${deletedId}, URL:${deletedUrl}`);
 
       if (targetUrl) {
         const filePath = path.resolve('uploads', path.basename(targetUrl));
@@ -94,16 +98,20 @@ export class PostFileService {
           await fs.access(filePath); // check if file exists
           await fs.unlink(filePath);
           console.log(`🧹 Deleted file: ${filePath}`);
+          console.log(`🧹 [${timestamp}] File deleted from disk: ${filePath}`);
         } catch (err) {
           if (err.code === 'ENOENT') {
             console.warn(`⚠️ File not found (already deleted?): ${filePath}`);
+            console.warn(`⚠️ [${timestamp}] File not found (already deleted?): ${filePath}`);
           } else {
             console.warn(`⚠️ Could not delete file: ${filePath}`, err.message);
+            console.error(`❌ [${timestamp}] Error deleting file: ${filePath}`, err.message);
           }
         }
       }
       //return
       await this.postFileRepository.remove(post);
+      console.log(`✅ [${timestamp}] PostFile ID:${deletedId} removed from DB`);
       return {
         id: deletedId,
         url: deletedUrl,
@@ -118,13 +126,18 @@ export class PostFileService {
   }
 
   async deleteMany(ids: number[]): Promise<number[]> {
+    const timestamp = new Date().toISOString();
+
     try {
+      console.log(`📋 [${timestamp}] Deleting multiple PostFiles: ${ids.join(', ')}`);
+
       const filesToDelete = await this.postFileRepository.findBy({
         id: In(ids),
       });
 
       if (!filesToDelete.length) {
         console.warn('[⚠️ deleteMany] No files found for deletion.');
+        console.warn(`⚠️ [${timestamp}] No PostFiles found for provided IDs.`);
         return [];
       }
 
@@ -132,6 +145,8 @@ export class PostFileService {
 
       for (const file of filesToDelete) {
         if (file.url) {
+          console.log('File file.url- ', file.url);
+
           const filePath = path.resolve('uploads', path.basename(file.url)); // ⬅️ скорректируй если другой путь
           try {
             await fs.access(filePath); // check if file exists
@@ -149,6 +164,7 @@ export class PostFileService {
 
       await this.postFileRepository.remove(filesToDelete);
 //      return filesToDelete.map((f) => f.id);
+      console.log('We delete this ', filesToDelete , ' ID ' ,deletedIds);;
       return deletedIds; // ✅ теперь возвращаем корректный список ID
 
 

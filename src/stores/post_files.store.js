@@ -32,36 +32,52 @@ const usePostFileStore = defineStore({
     setEmpty() {
       this.post_files = []
     },
-    async uploadFiles(data, post_id) {
+    async uploadFiles(data, post_id, onProgress, signal = null, onComplete = null) {
+      this.isLoading = true;
       try {
-        this.isLoading = true
         const response = await axios.post(`${import.meta.env.VITE_APP_ROOT_API}/upload`, data, {
-          headers: {
-            'Content-Type': 'multipart/form-data'
-          }
-        })
-        if (response.data) {
-          const files = response.data
-          files.map(async (f) => {
-            const postData = {
-              post_id,
-              url: f
+          headers: { 'Content-Type': 'multipart/form-data' },
+          onUploadProgress: (progressEvent) => {
+            if (onProgress && progressEvent.lengthComputable) {
+              const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+              onProgress(percentCompleted);
             }
-            const resp = await axios.post(
-              `${import.meta.env.VITE_APP_ROOT_API}/post_file/add`,
-              postData
-            )
-            if (resp.data) {
-              this.post_files = [...this.post_files, resp.data]
-            }
-          })
+          },
+          signal,
+          timeout: 0,
+        });
+
+        if (!response.data || !Array.isArray(response.data)) {
+          throw new Error('❌ upload API вернул пустой или некорректный ответ');
         }
-        this.isLoading = false
-        return response.data
-      } catch (error) {
-        console.error('File upload failed:', error)
-        this.isLoading = false
-        throw error
+
+        console.log('📦 Upload complete. Starting add requests...',response.data);
+
+        const newFiles = [];
+
+        for (const f of response.data) {
+          const postData = { post_id, url: f };
+          const resp = await axios.post(`${import.meta.env.VITE_APP_ROOT_API}/post_file/add`, postData, { timeout: 0 });
+
+          if (!resp || !resp.data) {
+            throw new Error(`❌ Add request no data for file: ${f}`);
+          }
+
+          newFiles.push(resp.data);
+        }
+
+        this.post_files.push(...newFiles);
+        console.log('✅ Все add-запросы успешно выполнены');
+
+        if (onComplete && typeof onComplete === 'function') {
+          onComplete();
+        }
+
+      } catch (err) {
+        console.error('❌ uploadFiles error:', err);
+        throw err;
+      } finally {
+        this.isLoading = false;
       }
     },
     async deleteFile(file, id) {

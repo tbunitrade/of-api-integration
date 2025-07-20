@@ -8,7 +8,7 @@
   "scripts": {
     "build": "nest build && npm run postbuild",
     "postbuild": "npm run copy:extensions && npm run ensure:crondir && npm run ensure:cookies",
-    "ensure:cookies" : "mkdir -p \"$PWD/cookies\"",
+    "ensure:cookies": "mkdir -p \"$PWD/cookies\"",
     "ensure:dist-cookies": "mkdir -p \"$PWD/dist/cookies\"",
     "copy:extensions": "mkdir -p \"$PWD/dist/extensions/hcapt/0.4.1_0\" && cp -r \"$PWD/extensions/hcapt/0.4.1_0/\"* \"$PWD/dist/extensions/hcapt/0.4.1_0\"",
     "copy:cookies": "cp -r \"$PWD/cookies/\"* \"$PWD/dist/cookies/\" || true",

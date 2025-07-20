@@ -9,7 +9,7 @@ import {
   Get,
   Param,
   Patch,
-  Delete,
+  Delete, ConflictException,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ModelPlatform } from './model_platform.entity';
@@ -75,6 +75,8 @@ export class ModelPlatformController {
     try {
       const result = await this.modelPlatformService.create(modelPlatform);
 
+      console.log('✅ Result from create:', result);
+
       // 🔥 запускаем логин + генерацию cookies
       const cookieFileName = `user_${result.model_id}.${result.platform_id}.json`;
       console.log('[MODEL_PLATFORM_CONTROLLER] Calling testLogin for', cookieFileName);
@@ -82,6 +84,16 @@ export class ModelPlatformController {
       const grouped = this.makeGroupByModelId(result);
       return grouped[0];
     } catch (error) {
+      if (error instanceof ConflictException) {
+        console.warn('⚠️ Conflict detected:', error.message);
+
+        return {
+          statusCode : 409,
+          message: error.message,
+          data: modelPlatform
+        };
+      }
+      console.error('❌ Unexpected error in addModelPlatform:', error);
       throw error;
     }
   }

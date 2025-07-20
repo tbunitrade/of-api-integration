@@ -9,11 +9,13 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiConsumes, ApiTags } from '@nestjs/swagger';
 import { FilesInterceptor } from '@nestjs/platform-express/multer';
+import { diskStorage } from 'multer';
 import { FileUploadService } from './upload.service';
 import { MessageService } from 'src/message/message.service';
 // import { diskStorage } from 'multer';
 // import { mkdirSync } from 'fs';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
+import {uploadDirectory} from "../utils/upload";
 
 @Controller('upload')
 @ApiTags('upload')
@@ -28,8 +30,16 @@ export class FileUploadController {
   @ApiBearerAuth('jwt')
   @UseInterceptors(
     FilesInterceptor('files', 10000, {
+      storage: diskStorage({
+        destination : uploadDirectory,
+        filename: ( req, file, cb) => {
+          const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+          const sanitizedName = file.originalname.replace(/\s+/g, '_');
+          cb(null, `${uniqueSuffix}-${sanitizedName}`);
+        },
+      }),
       limits: {
-        fileSize: 10 * 1024 * 1024 * 1024,
+        fileSize: 6 * 1024 * 1024 * 1024, // 6GB
       },
     }),
   )
@@ -37,7 +47,20 @@ export class FileUploadController {
     @UploadedFiles() uploaded_files: Express.Multer.File[],
   ): Promise<string[]> {
     try {
-      return await this.fileUploadService.uploadFiles(uploaded_files);
+      console.log(`📥 Start uploading ${uploaded_files.length} file(s)...`);
+      const startTime = Date.now();
+
+      uploaded_files.forEach( file => {
+        console.log(`⏳ Uploading: ${file.originalname} (${(file.size / (1024 * 1024)).toFixed(2)} MB)`);
+      });
+
+      const result = await this.fileUploadService.uploadFiles(uploaded_files);
+
+      //return await this.fileUploadService.uploadFiles(uploaded_files);
+
+      const endTime = Date.now();
+      console.log(`✅ All files uploaded successfully in ${(endTime - startTime) / 1000}s`);
+      return result;
     } catch (error) {
       throw error;
     }
