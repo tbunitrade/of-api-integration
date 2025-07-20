@@ -64,10 +64,14 @@ export const postSteps: Step[] = [
     value: '.m-vdatetime-tabs',
   },
   {
+    type: 'click',
+    value: '.vdatetime-popup__tab.date',
+  },
+  {
     type: 'clickUntil',
     key: 'message_month',
     value: '$value',
-    selector: '.vdatetime-popup__tab.date.active',
+    selector: '.vdatetime-calendar__current--month',
     btnSelector: '.vdatetime-calendar__navigation--next',
   },
   {

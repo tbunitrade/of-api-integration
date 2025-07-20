@@ -186,22 +186,37 @@ export async function work(_config: any = null) {
 
           break;
         case 'clickUntil':
-          while (1) {
+          let tries = 12; // максимум 12 итераций (12 месяцев)
+          while (tries--) {
             const domValue = await this._page.evaluate((selector) => {
               const div = document.querySelector(selector);
               return div ? div.textContent.trim() : null;
             }, step.selector);
-            const isIncluding = domValue
-              .toLowerCase()
-              .includes(step.value.toLowerCase());
-            if (!isIncluding) {
-              const ele = await this._page.$(step.btnSelector);
-              if (ele) {
-                await ele.click();
-              }
-            } else {
+
+            console.log(`🗓️ clickUntil: current="${domValue}", target="${step.value}"`);
+
+            if (!domValue) {
+              console.warn(`⚠️ Selector "${step.selector}" not found or returned null`);
               break;
             }
+
+            if (domValue.toLowerCase().includes(step.value.toLowerCase())) {
+              console.log('✅ clickUntil: target month found');
+              break;
+            }
+
+            const ele = await this._page.$(step.btnSelector);
+            if (ele) {
+              await ele.click();
+              await this._page.waitForTimeout(500); // небольшая пауза для отрисовки UI
+            } else {
+              console.warn(`⚠️ Button selector "${step.btnSelector}" not found`);
+              break;
+            }
+          }
+
+          if (tries <= 0) {
+            console.error(`❌ clickUntil: exceeded max attempts for value "${step.value}"`);
           }
           break;
         case 'compareValue':
