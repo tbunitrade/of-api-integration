@@ -343,6 +343,8 @@ export class AutomateService {
 
               // каждый день — отдельная копия baseDate
               const scheduledDt = new Date(baseDate);
+              const postTimesCount = postWithTimesAndCaptions.post_times.length;
+
               scheduledDt.setDate(baseDate.getDate() + i); // today + i дней
               console.log(`[startPost] День #${i} → scheduledDt: ${scheduledDt.toISOString()}`);
 
@@ -362,7 +364,8 @@ export class AutomateService {
                     );
                   }
                   _config = _.cloneDeep(DEFAULT_CONFIG);
-                  const postTime = postWithTimesAndCaptions.post_times[j];
+                  const timeIndex = j % postTimesCount; // всегда от 0..postTimesCount-1
+                  const postTime = postWithTimesAndCaptions.post_times[timeIndex];
                   if (!postTime) continue;
                   const [_hour, minutes, secs] = postTime.time?.split(':');
                   //const hour =((parseInt(_hour) % 13) + parseInt(_hour) / 13) | 0;

@@ -107,24 +107,32 @@ export async function work(_config: any = null) {
           // await this._page.type(step.selector, step.value);
           break;
         case 'clickForValue':
-          await this._page.evaluate(
-            ({ selector, value }) => {
-              const elements = Array.from(document.querySelectorAll(selector));
+          for (let attempt = 0; attempt < 3; attempt++) {
+            const found = await this._page.evaluate(
+              ({ selector, value }) => {
+                const elements = Array.from(document.querySelectorAll(selector));
 
-              const eles = elements.filter((ele) => {
-                const textMatch = ele.textContent.toLowerCase().includes(value.toLowerCase());
-                const isDisabled = ele.classList.contains('vdatetime-time-picker__item--disabled');
-                return textMatch && !isDisabled;
-              });
+                const eles = elements.filter((ele) => {
+                  const textMatch = ele.textContent.toLowerCase().includes(value.toLowerCase());
+                  const isDisabled = ele.classList.contains('vdatetime-time-picker__item--disabled');
+                  return textMatch && !isDisabled;
+                });
 
-              if (eles.length > 0) {
-                eles[0].click();
-              } else {
-                console.warn(`[clickForValue] No enabled element found for value "${value}" in selector "${selector}"`);
-              }
-            },
-            { selector: step.selector, value: step.value },
-          );
+                if (eles.length > 0) {
+                  eles[0].click();
+                  return true;
+                } else {
+                  console.warn(`[clickForValue] No enabled element found for "${value}" in "${selector}"`);
+                  return false;
+                }
+              },
+              { selector: step.selector, value: step.value },
+            );
+
+            if (found) break; // клик успешно
+            console.log(`[clickForValue] Retry ${attempt + 1}…`);
+            await this._page.waitForTimeout(500); // ждём 500мс и пробуем ещё раз
+          }
           break;
 
         case 'appendMedias':
