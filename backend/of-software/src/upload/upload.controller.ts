@@ -59,6 +59,7 @@ export class FileUploadController {
       //return await this.fileUploadService.uploadFiles(uploaded_files);
 
       const endTime = Date.now();
+      console.log (startTime, ' progress time ',endTime)
       console.log(`✅ All files uploaded successfully in ${(endTime - startTime) / 1000}s`);
       return result;
     } catch (error) {

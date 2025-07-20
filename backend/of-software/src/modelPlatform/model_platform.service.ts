@@ -199,6 +199,14 @@ export class ModelPlatformService {
         throw new NotFoundException(`Platform with ID ${id} not found`);
       }
 
+      // delete all posts Удаляем все посты, связанные с model_platform
+      try {
+        await this.postRepository.delete({model_platform_id: id});
+      }
+      catch (error){
+        console.log('nor found posts', error)
+      }
+
       return await this.modelPlatformRepository.remove(modelPlatform);
     } catch (err) {
       console.error('ModelPlatform deletePlatform error', err);
