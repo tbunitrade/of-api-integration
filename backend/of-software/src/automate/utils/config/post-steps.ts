@@ -9,6 +9,7 @@ export const postSteps: Step[] = [
   {
     type: 'click', // New message => Send To => View All
     value: '#ModalAlert button',
+    safeguard: true,
   },
   {
     type: 'waitForSelector',
@@ -23,6 +24,7 @@ export const postSteps: Step[] = [
     key: 'content',
     value: '$value', // url list separted by ','. Ex: http://example.com/upload/aaa.png,http://example.com/upload/bbb.svg,http://example.com/upload/ccc.jpg
     selector: '.b-feed .b-make-post__actions button#attach_file_photo',
+    fallback: true, // ✅ fallback если upload падает
   },
   {
     type: 'waitForTime',
@@ -30,17 +32,9 @@ export const postSteps: Step[] = [
   },
   {
     type: 'click', // Enter caption text
-    value:
-      '.b-feed #make_post_form .b-make-post__main-wrapper .b-make-post__textarea-wrapper .b-text-editor.js-text-editor p',
+    value: '.b-feed #make_post_form .b-make-post__main-wrapper .b-make-post__textarea-wrapper .b-text-editor.js-text-editor p',
+    safeguard: true, // ✅ safeguard
   },
-  // {
-  //   type: 'type',
-  //   key: 'message',
-  //   selector:
-  //     // '.b-feed #make_post_form .b-make-post__main-wrapper .b-make-post__textarea-wrapper textarea#new_post_text_input',
-  //     '.b-feed #make_post_form .b-make-post__main-wrapper .b-make-post__textarea-wrapper .b-text-editor.js-text-editor p',
-  //   value: '$value',
-  // },
   {
     type: 'keyboardType',
     key: 'message',
@@ -54,6 +48,7 @@ export const postSteps: Step[] = [
   {
     type: 'click', // Schedule Btn
     value: '.b-feed .b-make-post__actions button.b-make-post__datepicker-btn',
+    safeguard: true,
   },
   {
     type: 'waitForTime',
@@ -73,6 +68,7 @@ export const postSteps: Step[] = [
     value: '$value',
     selector: '.vdatetime-calendar__current--month',
     btnSelector: '.vdatetime-calendar__navigation--next',
+    retry: 3, // ✅ retry если месяц не найден
   },
   {
     type: 'waitForTime',
@@ -83,10 +79,12 @@ export const postSteps: Step[] = [
     key: 'message_date',
     selector: '.vdatetime-calendar__month__day',
     value: '$value',
+    safeguard: true,
   },
   {
     type: 'click',
     value: '.vdatetime-popup__tab.time',
+    safeguard: true,
   },
   {
     type: 'waitForTime',
@@ -95,24 +93,24 @@ export const postSteps: Step[] = [
   {
     type: 'clickForValue',
     key: 'message_hour',
-    selector:
-      '.vdatetime-time-picker__list--hours .vdatetime-time-picker__item',
+    selector: '.vdatetime-time-picker__list--hours .vdatetime-time-picker__item',
     value: '$value',
+    safeguard: true,
   },
 
   {
     type: 'clickForValue',
     key: 'message_minute',
-    selector:
-      '.vdatetime-time-picker__list--minutes .vdatetime-time-picker__item',
+    selector: '.vdatetime-time-picker__list--minutes .vdatetime-time-picker__item',
     value: '$value',
+    safeguard: true,
   },
   {
     type: 'clickForValue',
     key: 'message_time_suffix',
     value: '$value',
-    selector:
-      '.vdatetime-time-picker__list--suffix .vdatetime-time-picker__item',
+    selector: '.vdatetime-time-picker__list--suffix .vdatetime-time-picker__item',
+    safeguard: true,
   },
   {
     type: 'waitForTime',
@@ -120,9 +118,8 @@ export const postSteps: Step[] = [
   },
   {
     type: 'click',
-    value:
-      //' .vdatetime-popup__actions .vdatetime-popup__actions__button--confirm button',
-      '.vdatetime-popup__actions__button.vdatetime-popup__actions__button--confirm',
+    value: '.vdatetime-popup__actions__button.vdatetime-popup__actions__button--confirm',
+    safeguard: true,
   },
   {
     type: 'waitForTime',
@@ -131,8 +128,8 @@ export const postSteps: Step[] = [
 
   {
     type: 'click', // Release tags
-    value:
-      '.b-page-content form#make_post_form .b-make-post__actions button[at-attr="release_forms_btn"]',
+    value: '.b-page-content form#make_post_form .b-make-post__actions button[at-attr="release_forms_btn"]',
+    safeguard: true,
   },
   {
     type: 'waitForTime',
@@ -140,18 +137,16 @@ export const postSteps: Step[] = [
   },
   {
     type: 'waitForSelector',
-    value:
-      '#ReleaseFormsModal___BV_modal_content_ #ReleaseFormsModal___BV_modal_body_ .b-release-form--items',
+    value: '#ReleaseFormsModal___BV_modal_content_ #ReleaseFormsModal___BV_modal_body_ .b-release-form--items',
   },
   {
     type: 'waitForSelector',
-    value:
-      '#ReleaseFormsModal___BV_modal_content_ #ReleaseFormsModal___BV_modal_header_ .b-content-filter__group-btns>button',
+    value: '#ReleaseFormsModal___BV_modal_content_ #ReleaseFormsModal___BV_modal_header_ .b-content-filter__group-btns>button',
   },
   {
     type: 'click',
-    value:
-      '#ReleaseFormsModal___BV_modal_content_ #ReleaseFormsModal___BV_modal_header_ .b-content-filter__group-btns>button',
+    value: '#ReleaseFormsModal___BV_modal_content_ #ReleaseFormsModal___BV_modal_header_ .b-content-filter__group-btns>button',
+    safeguard: true,
   },
   {
     type: 'loop',
@@ -199,8 +194,7 @@ export const postSteps: Step[] = [
         },
         {
           type: 'waitForSelector',
-          value:
-            '#ReleaseFormsModal___BV_modal_content_ #ReleaseFormsModal___BV_modal_body_ .b-row-selected__controls .g-btn',
+          value: '#ReleaseFormsModal___BV_modal_content_ #ReleaseFormsModal___BV_modal_body_ .b-row-selected__controls .g-btn',
         },
         {
           type: 'waitForTime',
@@ -208,8 +202,7 @@ export const postSteps: Step[] = [
         },
         {
           type: 'click',
-          value:
-            '#ReleaseFormsModal___BV_modal_content_ #ReleaseFormsModal___BV_modal_body_ .b-row-selected__controls .g-btn',
+          value: '#ReleaseFormsModal___BV_modal_content_ #ReleaseFormsModal___BV_modal_body_ .b-row-selected__controls .g-btn',
         },
       ],
     },
@@ -317,11 +310,13 @@ export const postSteps: Step[] = [
     type: 'click',
     value:
       '#ReleaseFormsModal___BV_modal_content_ #ReleaseFormsModal___BV_modal_body_ .b-placeholder-item-selected .b-wrapper-selected .b-row-selected__controls button',
+    safeguard: true,
   },
   {
     type: 'click',
     value:
       '#ReleaseFormsModal___BV_modal_content_ #ReleaseFormsModal___BV_modal_footer_ button[type="button"]',
+    safeguard: true,
   },
 
   {
@@ -332,6 +327,7 @@ export const postSteps: Step[] = [
   {
     type: 'click', // Click schedule button
     value: '.b-feed .g-page__header button[at-attr="submit_post"]',
+    safeguard: true,
   },
   {
     type: 'waitForTime',
@@ -340,6 +336,7 @@ export const postSteps: Step[] = [
   {
     type: 'click', // Click calendar nav button in case message not posted automatically.
     value: '.l-header a[href="/"]',
+    safeguard: true,
   },
   {
     type: 'waitForTime',
