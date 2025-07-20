@@ -92,6 +92,16 @@ export const postSteps: Step[] = [
   },
   {
     type: 'clickForValue',
+    key: 'message_time_suffix',
+    value: '$value',
+    selector: '.vdatetime-time-picker__list--suffix .vdatetime-time-picker__item',
+  },
+  {
+    type: 'waitForTime',
+    value: '500',
+  },
+  {
+    type: 'clickForValue',
     key: 'message_hour',
     selector: '.vdatetime-time-picker__list--hours .vdatetime-time-picker__item',
     value: '$value',
@@ -105,13 +115,13 @@ export const postSteps: Step[] = [
     value: '$value',
     safeguard: true,
   },
-  {
-    type: 'clickForValue',
-    key: 'message_time_suffix',
-    value: '$value',
-    selector: '.vdatetime-time-picker__list--suffix .vdatetime-time-picker__item',
-    safeguard: true,
-  },
+  // {
+  //   type: 'clickForValue',
+  //   key: 'message_time_suffix',
+  //   value: '$value',
+  //   selector: '.vdatetime-time-picker__list--suffix .vdatetime-time-picker__item',
+  //   safeguard: true,
+  // },
   {
     type: 'waitForTime',
     value: '1000',

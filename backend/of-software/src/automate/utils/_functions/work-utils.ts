@@ -109,20 +109,22 @@ export async function work(_config: any = null) {
         case 'clickForValue':
           await this._page.evaluate(
             ({ selector, value }) => {
-              const elements = Array.from(
-                document.querySelectorAll(selector),
-              );
-              const eles = elements.filter((ele) =>
-                ele.textContent.toLowerCase().includes(value.toLowerCase()),
-              );
+              const elements = Array.from(document.querySelectorAll(selector));
+
+              const eles = elements.filter((ele) => {
+                const textMatch = ele.textContent.toLowerCase().includes(value.toLowerCase());
+                const isDisabled = ele.classList.contains('vdatetime-time-picker__item--disabled');
+                return textMatch && !isDisabled;
+              });
+
               if (eles.length > 0) {
                 eles[0].click();
+              } else {
+                console.warn(`[clickForValue] No enabled element found for value "${value}" in selector "${selector}"`);
               }
             },
             { selector: step.selector, value: step.value },
           );
-
-          // await this._page.click(`${step.selector}:contains("${step.value})`);
           break;
 
         case 'appendMedias':
