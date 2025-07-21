@@ -17,7 +17,7 @@ import { performLoginWithRetries } from './_functions/login-utils';
 import { acceptCookie, saveCookieToFile, loadCookiesFromFile,} from './_functions/cookies-utils';
 import { CONFIG as DEFAULT_CONFIG } from './config/step-config';
 import { work } from './_functions/work-utils';
-import {resetCaptchaFlag} from "./_functions/recaptcha-utils";
+import {handleCaptchaBeforeClick, resetCaptchaFlag} from "./_functions/recaptcha-utils";
 
 /*
 initialize
@@ -254,7 +254,14 @@ export class PuppeteerUtil {
     try {
       await this._page.reload({ waitUntil: 'networkidle2' });
       //await this._page.setTimeout(10000);
-      await setTimeout(10000);
+
+      // Ждём немного для появления капчи
+      await setTimeout(1500);
+
+      // Проверяем и решаем капчу, если она есть
+      await handleCaptchaBeforeClick(this._page);
+
+      await setTimeout(1500);
     } catch (err) {
       console.log('Error in reload : ', err);
     }
