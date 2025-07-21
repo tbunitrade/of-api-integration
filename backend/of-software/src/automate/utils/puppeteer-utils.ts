@@ -248,7 +248,7 @@ export class PuppeteerUtil {
     }
   }
 
-  // 10) Перезагрузка текущей страницы
+  // 10) reload current page  Перезагрузка текущей страницы
   async reload() {
     if (!this._page) return;
     try {
@@ -261,7 +261,9 @@ export class PuppeteerUtil {
       // Проверяем и решаем капчу, если она есть
       await handleCaptchaBeforeClick(this._page);
 
+      // Add a additional delay
       await setTimeout(1500);
+
     } catch (err) {
       console.log('Error in reload : ', err);
     }
