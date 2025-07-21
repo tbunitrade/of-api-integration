@@ -48,9 +48,9 @@ export async function performLoginOnce(
 
   // === Первый клик ===
   await setTimeout(5000);
-  // await page.click(submitSelector);
-  // console.log('▶️ Первый клик по Login');
-  // await setTimeout(5000);
+  await page.click(submitSelector);
+  console.log('▶️ Первый клик по Login');
+  await setTimeout(5000);
 
   // 2) ждём кнопку или ошибку (10 с)
   const phase1 = await Promise.race<'failure' | 'enabled'>([
@@ -152,8 +152,10 @@ export async function performLoginOnce(
 
   markCaptchaSolved();
 
+  console.log('▶️ Click after extension resolve ? ',   markCaptchaSolved);
+
   // === После extension: финальный клик ===
-  await page.waitForSelector(`${submitSelector}:not([disabled])`, { timeout: 200_000 }).catch(() => {});
+  await page.waitForSelector(`${submitSelector}:not([disabled])`, { timeout: 300_000 }).catch(() => {});
   await setTimeout(1_000);
   await handleCaptchaBeforeClick(page);
   console.log('▶️ Click after extension');
