@@ -169,18 +169,18 @@ export async function startCaptchaExtension(page: Page): Promise<void> {
   }
   if (!popup) throw new Error(`HCAPT popup не найден: ${lastErr?.message}`);
 
-  try {
-    const btn = await popup.waitForSelector('#hcapt-solve-btn', { visible: true, timeout: 5_000 });
-    if (btn) {
-      await btn.click();
-      console.log('🔧 HCAPT Solve clicked');
-    } else {
-      console.log('Skipped HCAPT Solve click');
-    }
-
-
-  } catch (e){
-    console.warn('HCAPT Solve button не найден', e);
-  }
+  // try {
+  //   const btn = await popup.waitForSelector('#hcapt-solve-btn', { visible: true, timeout: 5_000 });
+  //   if (btn) {
+  //     await btn.click();
+  //     console.log('🔧 HCAPT Solve clicked');
+  //   } else {
+  //     console.log('Skipped HCAPT Solve click');
+  //   }
+  //
+  //
+  // } catch (e){
+  //   console.warn('HCAPT Solve button не найден', e);
+  // }
   await popup.close();
 }

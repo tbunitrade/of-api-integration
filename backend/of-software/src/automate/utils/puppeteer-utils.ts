@@ -17,7 +17,7 @@ import { performLoginWithRetries } from './_functions/login-utils';
 import { acceptCookie, saveCookieToFile, loadCookiesFromFile,} from './_functions/cookies-utils';
 import { CONFIG as DEFAULT_CONFIG } from './config/step-config';
 import { work } from './_functions/work-utils';
-import {handleCaptchaBeforeClick, resetCaptchaFlag} from "./_functions/recaptcha-utils";
+import { handleCaptchaBeforeClick, resetCaptchaFlag } from "./_functions/recaptcha-utils";
 
 /*
 initialize
@@ -149,7 +149,7 @@ export class PuppeteerUtil {
 
     await this._page.setUserAgent(selectedUA);
 
-    await this._page.setViewport({ width: 1920, height: 1080 });
+    await this._page.setViewport({ width: 1728, height: 1080 });
     // Небольшая пауза (для отладки)
     console.log('>>> Жду 5 секунд перед дальнейшими действиями');
     //await this._page.setTimeout(5000);
@@ -257,6 +257,12 @@ export class PuppeteerUtil {
 
       // Ждём немного для появления капчи
       await setTimeout(1500);
+
+      resetCaptchaFlag();
+
+      console.log('nothing with captcha');
+
+
 
       // Проверяем и решаем капчу, если она есть
       await handleCaptchaBeforeClick(this._page);
