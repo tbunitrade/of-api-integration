@@ -1,12 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { PuppeteerUtil } from './utils/puppeteer-utils';
-import {CONFIG, CONFIG as DEFAULT_CONFIG} from './utils/config/step-config';
+import { CONFIG, CONFIG as DEFAULT_CONFIG } from './utils/config/step-config';
 import * as _ from 'lodash';
 import { getRandomNumber } from 'src/cron/utils';
 import { ModelPlatform } from 'src/modelPlatform/model_platform.entity';
 import { PostFile } from 'src/postFile/post_file.entity';
 import { Post } from 'src/post/post.entity';
-import {acceptCookie, loadCookiesFromFile} from "./utils/_functions/cookies-utils";
+import { acceptCookie, loadCookiesFromFile } from "./utils/_functions/cookies-utils";
 
 /* Logic of login_captcha
 The OnlyFans website has 2 captcha google recaptcha v2 and v3. (v2 enterprise, v3 enterprise)

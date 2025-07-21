@@ -98,7 +98,6 @@ export class PuppeteerUtil {
     console.log('Chrome bin  =', process.env.PUPPETEER_EXECUTABLE_PATH);
 
     const raw = (process.env.HEADLESS_MODE || 'true').toLowerCase().trim();
-    //const headlessMode = !(raw === 'false' || raw === '0');
     const headlessMode = raw === 'false' || raw === '0' ? false : true;
     this.headless = headlessMode;
     console.log('>>> [DEBUG] HEADLESS_MODE =', process.env.HEADLESS_MODE, '→ headless =', headlessMode);
@@ -108,31 +107,53 @@ export class PuppeteerUtil {
 
     const ext = path.resolve(__dirname, '../../../extensions/hcapt/0.4.1_0');
     console.log('EXTENSION PATH for extensions/hcapt/0.4.1_0:', ext);
+
     this._browser = await this._puppeteer.launch({
       headless: this.headless,
       slowMo: 40,
       args: [
         `--no-sandbox`,
-        //`--disable-gpu`,
         `--disable-setuid-sandbox`,
         `--disable-extensions-except=${ext}`,
         `--load-extension=${ext}`,
         `--window-size=1728,1080`,
       ],
       executablePath: exePath,
-
     });
-    // defaultViewport: null,
-    // dumpio: true,
-
 
     console.log('>>> Puppeteer запустил браузер, PID=', this._browser.process().pid);
 
     const targets = await this._browser.targets();
     console.log('All targets:', targets.map(t => t.url()));
     this._isclosed = false;
+
     this._browser.on('disconnected', () => {
+      console.log('⚠️ Puppeteer браузер закрылся (disconnected)');
       this._isclosed = true;
+    });
+
+    this._browser.on('targetcreated', async (target) => {
+      const url = target.url();
+      console.log('New target created:', url);
+      if (url.includes('chrome-extension://') && url.includes('hcapt')) {
+        console.log('🚨 Открыт HCAPT popup (капча)');
+        const popupPage = await target.page();
+        if (!popupPage) return;
+
+        popupPage.on('console', msg => {
+          console.log(`HCAPT popup console: ${msg.text()}`);
+        });
+
+        try {
+          const btn = await popupPage.waitForSelector('#hcapt-solve-btn', { visible: true, timeout: 5000 });
+          if (btn) {
+            await btn.click();
+            console.log('🔧 HCAPT Solve clicked in event listener');
+          }
+        } catch {
+          console.warn('HCAPT Solve button не найден в event listener');
+        }
+      }
     });
 
     this._page = await this._browser.newPage();
@@ -150,9 +171,8 @@ export class PuppeteerUtil {
     await this._page.setUserAgent(selectedUA);
 
     await this._page.setViewport({ width: 1728, height: 1080 });
-    // Небольшая пауза (для отладки)
+
     console.log('>>> Жду 5 секунд перед дальнейшими действиями');
-    //await this._page.setTimeout(5000);
     await setTimeout(5000);
   }
 
