@@ -58,6 +58,7 @@ const selectedMessage = ref({
   release_form_tags: "",
   content_attached: false,
   content: "",
+  free_preview: 0,
 });
 
 
@@ -286,6 +287,14 @@ const onClickEditMessage = (id) =>
       group_id: selectedGroup.value.id,
       ...message[0], isEdit: true }; //
 
+    // Конвертация free_preview, если он пришел как объект { label, value }
+    if (
+      typeof selectedMessage.value.free_preview === "object" &&
+      selectedMessage.value.free_preview !== null
+    ) {
+      selectedMessage.value.free_preview =
+        selectedMessage.value.free_preview.value ?? 0;
+    }
 
     if (typeof selectedMessage.value.message_list === 'string') {
       selectedMessage.value.message_list = selectedMessage.value.message_list.split(',').map(s => s.trim()).filter(Boolean);
@@ -839,15 +848,26 @@ onMounted(() =>
 <!--                      <FormControl v-model="selectedMessage.free_preview" name="free_preview" type="number"-->
 <!--                        autocomplete="free_preview" />-->
 
-                      <Multiselect
-                        v-model="selectedMessage.free_preview"
-                        :options="freePreviewOptions"
-                        label="label"
-                        track-by="value"
-                        :can-clear="true"
-                        :searchable="true"
-                        placeholder="Select Time"
-                      />
+<!--                      <Multiselect-->
+<!--                        v-model="selectedMessage.free_preview"-->
+<!--                        :options="freePreviewOptions"-->
+<!--                        label="label"-->
+<!--                        track-by="value"-->
+<!--                        :can-clear="true"-->
+<!--                        :searchable="true"-->
+<!--                        placeholder="Select Time"-->
+<!--                      />-->
+
+
+                        <select
+                          v-model="selectedMessage.free_preview"
+                          class="w-full rounded border px-2 py-1"
+                        >
+                          <option v-for="option in freePreviewOptions" :key="option.value" :value="option.value">
+                            {{ option.label }}
+                          </option>
+                        </select>
+
                     </FormField>
 
                   </div>
