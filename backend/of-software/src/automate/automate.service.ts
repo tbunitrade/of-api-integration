@@ -1,14 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { PuppeteerUtil } from './utils/puppeteer-utils';
-import {CONFIG, CONFIG as DEFAULT_CONFIG} from './utils/config/step-config';
+import { CONFIG, CONFIG as DEFAULT_CONFIG } from './utils/config/step-config';
 import * as _ from 'lodash';
-import testRecaptchaSolver from './utils/test-recaptcha-solver';
 import { getRandomNumber } from 'src/cron/utils';
 import { ModelPlatform } from 'src/modelPlatform/model_platform.entity';
-import { PostTime } from 'src/postTime/post_time.entity';
 import { PostFile } from 'src/postFile/post_file.entity';
 import { Post } from 'src/post/post.entity';
-import {acceptCookie, loadCookiesFromFile} from "./utils/_functions/cookies-utils";
+import { acceptCookie, loadCookiesFromFile } from "./utils/_functions/cookies-utils";
 
 /* Logic of login_captcha
 The OnlyFans website has 2 captcha google recaptcha v2 and v3. (v2 enterprise, v3 enterprise)
@@ -37,7 +35,7 @@ export class AutomateService {
   constructor() {}
 
   async startMessage(data: any = {}, manualStart = false) {
-    console.log('start function startMessage');
+    console.log('[startMessage] started startMessage');
     let scheduledCount = 0;
     try {
       const isExpired = checkIfExpired(data.number_of_days, data.scheduled_date);
@@ -71,10 +69,10 @@ export class AutomateService {
         if (!cookiesAreValid || isLoginPage) {
           await puppeteerUtil.clearCookies();
           await puppeteerUtil.reload();
-          await puppeteerUtil.login(data.username, data.password, cookieFileName);
-          console.log('🧁 Плохие куки, вошли вручную');
+          await puppeteerUtil.login(data.username, data.password, cookieFileName,true);
+          console.log('🧁 Плохие куки, запускаем заново Логин без cookieFile');
         } else {
-          console.log('✅ Cookie сработали, логин не нужен');
+          console.log('✅ Cookie сработали');
         }
       } catch (err) {
         console.log(`Не удалось загрузить файл "${cookieFileName}", продолжим без него.`, err);
@@ -94,11 +92,11 @@ export class AutomateService {
           if (!data.username) break;
 
           if (isLoginPage) {
-            isLoggedIn = await puppeteerUtil.login(data.username, data.password, cookieFileName);
+            isLoggedIn = await puppeteerUtil.login(data.username, data.password, cookieFileName, true);
             loginTried++;
             if (loginTried >= 3) await puppeteerUtil.waitFor(200000);
 
-            console.log('01 [startMessage] ⚠️ Login required → вызываем login() с:', data.username, data.password, cookieFileName);
+            console.log('[startMessage] ⚠️ Login required → вызываем login() с:', data.username, data.password, cookieFileName);
           } else {
             console.log('----------------- Login function startMessage Success -----------------');
             isLoggedIn = true;
@@ -123,7 +121,8 @@ export class AutomateService {
                 try {
                   const msg = group.messages[j];
                   const [_hour, minutes] = msg.message_time?.split(':');
-                  const hour = ((parseInt(_hour) % 13) + parseInt(_hour) / 13) | 0;
+                  //const hour = ((parseInt(_hour) % 13) + parseInt(_hour) / 13) | 0;
+                  const hour = parseInt(_hour) % 12 || 12;
                   const suffix = parseInt(_hour) >= 12 ? 'pm' : 'am';
 
                   let free_previews =
@@ -135,10 +134,13 @@ export class AutomateService {
 
                   const msgData = {
                     message: msg.message,
-                    message_month: scheduledDate.toLocaleString('default', { month: 'long' }),
-                    message_date: scheduledDate.getDate(),
-                    message_hour: hour,
-                    message_minute: minutes,
+                    message_month: scheduledDate.toLocaleString('default', {
+                      month: 'long',
+                    }).toLowerCase(),
+                    message_date: scheduledDate.getDate().toString(),
+                    //message_date: new Date(scheduledDate).getDate(),
+                    message_hour: hour.toString(),
+                    message_minute: minutes.toString(),
                     message_time_suffix: suffix,
                     message_list: msg.message_list,
                     message_exclude_list: msg.message_exclude_list,
@@ -151,6 +153,18 @@ export class AutomateService {
                     passwordValue: data.password,
                   };
 
+                  console.log('[startMessage] msgData:', msgData);
+
+                  if (!msgData.message_date || typeof msgData.message_date !== 'string') {
+                    console.warn('[startMessage] msgData[message_date] не строка или отсутствует:', msgData.message_date);
+                  }
+                  if (!msgData.message_hour || typeof msgData.message_hour !== 'string') {
+                    console.warn('[startMessage] msgData[message_hour] не строка или отсутствует:', msgData.message_hour);
+                  }
+                  if (!msgData.release_form_tags || typeof msgData.release_form_tags !== 'string') {
+                    console.warn('[startMessage] value не строка для key "release_form_tags":', msgData.release_form_tags);
+                  }
+
                   const config = _config.work.map((c) => {
                     if (c['key']) {
                       c.value = c.value.replace('$value', msgData[c['key']]);
@@ -162,7 +176,7 @@ export class AutomateService {
                   await puppeteerUtil.work(config);
                 } catch (error) {
                   console.log('Error : ', error);
-                  continue;
+                  //continue;
                 }
               }
               scheduledCount++;
@@ -171,17 +185,17 @@ export class AutomateService {
               }
             }
 
-            console.log('Work Finished');
+            console.log('[startMessage] Work Finished');
             await puppeteerUtil.closeBrowser();
             return scheduledCount;
           } else {
-            continue;
+            //continue;
           }
         } catch (error) {
           console.log('Error: ', error);
           repeatCount--;
           if (repeatCount < 0) break;
-          continue;
+          //continue;
         }
       }
       await puppeteerUtil.closeBrowser();
@@ -213,7 +227,7 @@ export class AutomateService {
       prokey,
     } = allData;
     try {
-      console.log('start function startPost');
+      console.log('[startPost] started startPost');
       const puppeteerUtil = new PuppeteerUtil();
       puppeteerUtil.initialize();
       puppeteerUtil.setConfig();
@@ -244,7 +258,7 @@ export class AutomateService {
         if (!cookiesAreValid || isLoginPage) {
           await puppeteerUtil.clearCookies();
           await puppeteerUtil.reload();
-          await puppeteerUtil.login(modelPlatform.username, modelPlatform.password, cookieFileName);
+          await puppeteerUtil.login(modelPlatform.username, modelPlatform.password, cookieFileName, true);
           console.log('🧁 Плохие куки, вошли вручную');
         } else {
           console.log('✅ Cookie сработали, логин не нужен');
@@ -287,11 +301,7 @@ export class AutomateService {
               console.log('no pro key -> ',prokey);
             }
 
-            isLoggedIn = await puppeteerUtil.login(
-              modelPlatform.username,
-              modelPlatform.password,
-              cookieFileName
-            );
+            isLoggedIn = await puppeteerUtil.login( modelPlatform.username,  modelPlatform.password, cookieFileName, true );
             loginTried++;
             if (loginTried >= 3) await puppeteerUtil.waitFor(300000);
           } else {
@@ -313,17 +323,30 @@ export class AutomateService {
               (_, i) => i,
             );
 
+            const baseDate = manualStart && scheduledDate
+              ? new Date(scheduledDate)
+              : new Date(); // текущая дата
+
             for (let i = 0; i < numberOfDays; i++) {
-              let scheduledDt = new Date();
-              if (scheduledDate && manualStart)
-                scheduledDt =
-                  manualStart && new Date(scheduledDate) > new Date()
-                    ? new Date(scheduledDate)
-                    : new Date();
-              else {
-                scheduledDt = new Date();
-              }
-              scheduledDt.setDate(scheduledDt.getDate() + i + 1);
+              // const scheduledDt = new Date(baseDate); // создаём копию
+              //
+              // let scheduledDt = new Date();
+              // if (scheduledDate && manualStart)
+              //   scheduledDt =
+              //     manualStart && new Date(scheduledDate) > new Date()
+              //       ? new Date(scheduledDate)
+              //       : new Date();
+              // else {
+              //   scheduledDt = new Date();
+              // }
+              // scheduledDt.setDate(scheduledDt.getDate() + i + 1);
+
+              // каждый день — отдельная копия baseDate
+              const scheduledDt = new Date(baseDate);
+              const postTimesCount = postWithTimesAndCaptions.post_times.length;
+
+              scheduledDt.setDate(baseDate.getDate() + i); // today + i дней
+              console.log(`[startPost] День #${i} → scheduledDt: ${scheduledDt.toISOString()}`);
 
               for (let j = 0; j < postWithTimesAndCaptions.post_times.length; j++) {
                  console.log('start for postWithTimesAndCaptions');
@@ -341,11 +364,12 @@ export class AutomateService {
                     );
                   }
                   _config = _.cloneDeep(DEFAULT_CONFIG);
-                  const postTime = postWithTimesAndCaptions.post_times[j];
+                  const timeIndex = j % postTimesCount; // всегда от 0..postTimesCount-1
+                  const postTime = postWithTimesAndCaptions.post_times[timeIndex];
                   if (!postTime) continue;
                   const [_hour, minutes, secs] = postTime.time?.split(':');
-                  const hour =
-                    ((parseInt(_hour) % 13) + parseInt(_hour) / 13) | 0;
+                  //const hour =((parseInt(_hour) % 13) + parseInt(_hour) / 13) | 0;
+                  const hour = parseInt(_hour) % 12 || 12;
                   const suffix = parseInt(_hour) >= 12 ? 'pm' : 'am';
                   const randNumber = getRandomNumber(fileIndexes.length ?? 0);
                   const postFile = postFiles[fileIndexes[randNumber]]?.url;
@@ -366,16 +390,29 @@ export class AutomateService {
                     message: postCaption.caption,
                     message_month: scheduledDt.toLocaleString('default', {
                       month: 'long',
-                    }),
-                    message_date: scheduledDt.getDate(),
-                    message_hour: hour,
-                    message_minute: minutes,
+                    }).toLowerCase(),
+                    //message_date: scheduledDt.getDate(),
+                    message_date: scheduledDt.getDate().toString(),
+                    message_hour: hour.toString(),
+                    message_minute: minutes.toString(),
                     message_time_suffix: suffix,
                     release_user_tags: postWithTimesAndCaptions.user_tags || '',
                     release_form_tags: postWithTimesAndCaptions.form_tags || '',
                     idValue: modelPlatform.username,
                     passwordValue: modelPlatform.password,
                   };
+
+                  console.log('[startPost] msgData:', msgData);
+
+                  if (!msgData.message_date || typeof msgData.message_date !== 'string') {
+                    console.warn('[startPost] msgData[message_date] не строка или отсутствует:', msgData.message_date);
+                  }
+                  if (!msgData.message_hour || typeof msgData.message_hour !== 'string') {
+                    console.warn('[startPost] msgData[message_hour] не строка или отсутствует:', msgData.message_hour);
+                  }
+                  if (!msgData.release_form_tags || typeof msgData.release_form_tags !== 'string') {
+                    console.warn('[startPost] value не строка для key "release_form_tags":', msgData.release_form_tags);
+                  }
 
                   // const config = _config.post.map((c) => {
                   //   if (c['key']) {
@@ -407,7 +444,7 @@ export class AutomateService {
 
                       if (typeof val === 'string') {
                         if (typeof stepCopy.value === 'string') {
-                          stepCopy.value = stepCopy.value.replace('$value', val);
+                          stepCopy.value = stepCopy.value.replace('$value', val || '');
                         } else {
                           console.warn(`[startPost] value не строка для key "${stepCopy.key}":`, stepCopy.value);
                         }
@@ -428,7 +465,7 @@ export class AutomateService {
                   await puppeteerUtil.work(config);
                 } catch (error) {
                   console.log('Error : ', error);
-                  continue;
+                  //continue;
                 }
               }
               scheduledCount++;
@@ -444,13 +481,13 @@ export class AutomateService {
           } else {
             repeatCount--;
             if (repeatCount < 0) break;
-            continue;
+            //continue;
           }
         } catch (error) {
           console.log('Error: ', error);
           repeatCount--;
           if (repeatCount < 0) break;
-          continue;
+          //continue;
         }
       }
       await puppeteerUtil.closeBrowser();
@@ -469,7 +506,7 @@ export class AutomateService {
 
     const username = 'mail@s.com';
     const password = 'тут_введи_пароль';
-    const prokey = ''; // если капча нужна — сюда ключ
+    //const prokey = ''; // если капча нужна — сюда ключ
 
     console.log('[TEST LOGIN] Стартуем Puppeteer...');
     await puppeteerUtil.openBrowser(); // показываем браузер (не headless)
@@ -485,9 +522,8 @@ export class AutomateService {
     // }
 
     console.log('[TEST LOGIN] Пытаемся войти...');
-    //const isLoggedIn = await puppeteerUtil.login(config);
     const cookieFileName = 'user_12.1_cookie.json';
-    const isLoggedIn = await puppeteerUtil.login(username,password, cookieFileName);
+    const isLoggedIn = await puppeteerUtil.login(username,password, cookieFileName, true);
 
     if (isLoggedIn) {
       console.log('[✅ LOGIN OK]');

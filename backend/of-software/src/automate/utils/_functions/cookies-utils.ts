@@ -17,20 +17,30 @@ console.log('[cookies-utils] cookiesDir =', cookiesDir);
  * (будет вызвано с контекстом PuppeteerUtil, где this._page и this.work уже определены).
  */
 export async function acceptCookie(this: PuppeteerUtil) {
-  const acceptCookieWork = [
-    {
-      type: 'waitForSelector',
-      value: '.b-cookies-informer__container .b-cookies-informer__nav button:nth-child(2)',
-    },
-    {
-      type: 'clickForValue',
-      value: 'Accept All',
-      selector:
-        '.b-cookies-informer__container .b-cookies-informer__nav button:nth-child(2)',
-    },
-  ];
-  console.log('click on Accept COOKIES');
-  await this.work( acceptCookieWork );
+ const selector = '.b-cookies-informer__container .b-cookies-informer__nav button:nth-child(2)';
+ const cookieBtn = await this.page.$(selector);
+ if (cookieBtn) {
+   console.log('🍪 Cookie баннер найден, кликаем Accept All');
+   await cookieBtn.click();
+   await this.waitFor(3000);
+ } else {
+   console.log('✅ Cookie баннер НЕ найден — пропускаем acceptCookie');
+
+ }
+  // const acceptCookieWork = [
+  //   {
+  //     type: 'waitForSelector',
+  //     value: '.b-cookies-informer__container .b-cookies-informer__nav button:nth-child(2)',
+  //   },
+  //   {
+  //     type: 'clickForValue',
+  //     value: 'Accept All',
+  //     selector:
+  //       '.b-cookies-informer__container .b-cookies-informer__nav button:nth-child(2)',
+  //   },
+  // ];
+  // console.log('click on Accept COOKIES');
+  // await this.work( acceptCookieWork );
 }
 
 /**

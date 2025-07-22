@@ -48,8 +48,19 @@ export class CronController {
     try {
       const id = req.user.id;
       const user = this.userService.findById(id);
-      const result = await this.cronService.manualStart(!!isPost, true, user);
-      return result;
+
+      // 🔥 ЗАПУСКАЕМ ФОНОМ, НЕ ЖДЁМ
+      setTimeout(() => {
+        this.cronService.manualStart(!!isPost, true, user);
+      }, 0);
+
+      // ⚡ Ответим сразу, чтобы не было 504
+      return {
+        success: true,
+        message: `Задача ${isPost ? 'Post' : 'Message'} запущена`,
+      };
+      // const result = await this.cronService.manualStart(!!isPost, true, user);
+      // return result;
     } catch (error) {
       console.log(error);
     }

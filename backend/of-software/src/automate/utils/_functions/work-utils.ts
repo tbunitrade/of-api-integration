@@ -1,6 +1,5 @@
 // src/_functions/work-utils.ts
 
-import type { Page } from 'puppeteer';
 import { setTimeout } from 'node:timers/promises';
 import process from "node:process";
 
@@ -48,9 +47,13 @@ export async function work(_config: any = null) {
 
           break;
         case 'waitForSelector':
+          try {
           await this._page.waitForSelector(step.value, {
             timeout: 10000,
           });
+          } catch (err) {
+            console.warn(`⚠️ Selector "${step.value}" not found or timed out`, err);
+          }
           break;
         case 'loop':
           const messageListStr = step.value;
@@ -104,22 +107,32 @@ export async function work(_config: any = null) {
           // await this._page.type(step.selector, step.value);
           break;
         case 'clickForValue':
-          await this._page.evaluate(
-            ({ selector, value }) => {
-              const elements = Array.from(
-                document.querySelectorAll(selector),
-              );
-              const eles = elements.filter((ele) =>
-                ele.textContent.toLowerCase().includes(value.toLowerCase()),
-              );
-              if (eles.length > 0) {
-                eles[0].click();
-              }
-            },
-            { selector: step.selector, value: step.value },
-          );
+          for (let attempt = 0; attempt < 3; attempt++) {
+            const found = await this._page.evaluate(
+              ({ selector, value }) => {
+                const elements = Array.from(document.querySelectorAll(selector));
 
-          // await this._page.click(`${step.selector}:contains("${step.value})`);
+                const eles = elements.filter((ele) => {
+                  const textMatch = ele.textContent.toLowerCase().includes(value.toLowerCase());
+                  const isDisabled = ele.classList.contains('vdatetime-time-picker__item--disabled');
+                  return textMatch && !isDisabled;
+                });
+
+                if (eles.length > 0) {
+                  eles[0].click();
+                  return true;
+                } else {
+                  console.warn(`[clickForValue] No enabled element found for "${value}" in "${selector}"`);
+                  return false;
+                }
+              },
+              { selector: step.selector, value: step.value },
+            );
+
+            if (found) break; // клик успешно
+            console.log(`[clickForValue] Retry ${attempt + 1}…`);
+            await this._page.waitForTimeout(500); // ждём 500мс и пробуем ещё раз
+          }
           break;
 
         case 'appendMedias':
@@ -186,22 +199,37 @@ export async function work(_config: any = null) {
 
           break;
         case 'clickUntil':
-          while (1) {
+          let tries = 12; // максимум 12 итераций (12 месяцев)
+          while (tries--) {
             const domValue = await this._page.evaluate((selector) => {
               const div = document.querySelector(selector);
               return div ? div.textContent.trim() : null;
             }, step.selector);
-            const isIncluding = domValue
-              .toLowerCase()
-              .includes(step.value.toLowerCase());
-            if (!isIncluding) {
-              const ele = await this._page.$(step.btnSelector);
-              if (ele) {
-                await ele.click();
-              }
-            } else {
+
+            console.log(`🗓️ clickUntil: current="${domValue}", target="${step.value}"`);
+
+            if (!domValue) {
+              console.warn(`⚠️ Selector "${step.selector}" not found or returned null`);
               break;
             }
+
+            if (domValue.toLowerCase().includes(step.value.toLowerCase())) {
+              console.log('✅ clickUntil: target month found');
+              break;
+            }
+
+            const ele = await this._page.$(step.btnSelector);
+            if (ele) {
+              await ele.click();
+              await this._page.waitForTimeout(500); // небольшая пауза для отрисовки UI
+            } else {
+              console.warn(`⚠️ Button selector "${step.btnSelector}" not found`);
+              break;
+            }
+          }
+
+          if (tries <= 0) {
+            console.error(`❌ clickUntil: exceeded max attempts for value "${step.value}"`);
           }
           break;
         case 'compareValue':
@@ -214,7 +242,9 @@ export async function work(_config: any = null) {
             .includes(step.value.toLowerCase());
           break;
         case 'checkValue':
-          compareResultValue = !!this._messageData[step.key || ''];
+          //compareResultValue = !!this._messageData[step.key || ''];
+          //compareResultValue = this._messageData.hasOwnProperty(step.key);
+          compareResultValue = !!(this._messageData && Object.prototype.hasOwnProperty.call(this._messageData, step.key));
           break;
         case 'condition':
           const conditions = step.childs;

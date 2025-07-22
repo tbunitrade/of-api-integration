@@ -10,13 +10,14 @@ dotenv.config();
 import * as process from 'node:process';
 import { setTimeout } from 'node:timers/promises';
 
-const fs = _fs.promises;
+//const fs = _fs.promises;
 
 // ==== Ваши «модули» ====
 import { performLoginWithRetries } from './_functions/login-utils';
-import { acceptCookie, saveCookieToFile, loadCookiesFromFile, setCookie, getCookie } from './_functions/cookies-utils';
+import { acceptCookie, saveCookieToFile, loadCookiesFromFile,} from './_functions/cookies-utils';
 import { CONFIG as DEFAULT_CONFIG } from './config/step-config';
 import { work } from './_functions/work-utils';
+import { handleCaptchaBeforeClick, resetCaptchaFlag } from "./_functions/recaptcha-utils";
 
 /*
 initialize
@@ -78,6 +79,9 @@ export class PuppeteerUtil {
     this._puppeteer.use(stealth);
   }//this._puppeteer.use(StealthPlugin());
 
+  public get page() {
+    return this._page;
+  }
 
 
   // 2) Устанавливаем конфиг (если нужно свой, передайте в setConfig; иначе будет DEFAULT_CONFIG)
@@ -103,31 +107,53 @@ export class PuppeteerUtil {
 
     const ext = path.resolve(__dirname, '../../../extensions/hcapt/0.4.1_0');
     console.log('EXTENSION PATH for extensions/hcapt/0.4.1_0:', ext);
+
     this._browser = await this._puppeteer.launch({
       headless: this.headless,
-      slowMo: 50,
+      slowMo: 40,
       args: [
         `--no-sandbox`,
-        //`--disable-gpu`,
         `--disable-setuid-sandbox`,
         `--disable-extensions-except=${ext}`,
         `--load-extension=${ext}`,
-        `--window-size=1920,1080`,
+        `--window-size=1728,1080`,
       ],
       executablePath: exePath,
-
     });
-    // defaultViewport: null,
-    // dumpio: true,
-
 
     console.log('>>> Puppeteer запустил браузер, PID=', this._browser.process().pid);
 
     const targets = await this._browser.targets();
     console.log('All targets:', targets.map(t => t.url()));
     this._isclosed = false;
+
     this._browser.on('disconnected', () => {
+      console.log('⚠️ Puppeteer браузер закрылся (disconnected)');
       this._isclosed = true;
+    });
+
+    this._browser.on('targetcreated', async (target) => {
+      const url = target.url();
+      console.log('New target created:', url);
+      if (url.includes('chrome-extension://') && url.includes('hcapt')) {
+        console.log('🚨 Открыт HCAPT popup (капча)');
+        const popupPage = await target.page();
+        if (!popupPage) return;
+
+        popupPage.on('console', msg => {
+          console.log(`HCAPT popup console: ${msg.text()}`);
+        });
+
+        try {
+          const btn = await popupPage.waitForSelector('#hcapt-solve-btn', { visible: true, timeout: 5000 });
+          if (btn) {
+            await btn.click();
+            console.log('🔧 HCAPT Solve clicked in event listener');
+          }
+        } catch {
+          console.warn('HCAPT Solve button не найден в event listener');
+        }
+      }
     });
 
     this._page = await this._browser.newPage();
@@ -144,10 +170,9 @@ export class PuppeteerUtil {
 
     await this._page.setUserAgent(selectedUA);
 
-    await this._page.setViewport({ width: 1920, height: 1080 });
-    // Небольшая пауза (для отладки)
+    await this._page.setViewport({ width: 1728, height: 1080 });
+
     console.log('>>> Жду 5 секунд перед дальнейшими действиями');
-    //await this._page.setTimeout(5000);
     await setTimeout(5000);
   }
 
@@ -195,7 +220,7 @@ export class PuppeteerUtil {
   }
 
   // 8) Логика входа: сначала loadCookiesFromFile, потом performLoginWithRetries, потом saveCookieToFile
-  async login(username: string, password: string, cookieFileName: string): Promise<boolean> {
+  async login(username: string, password: string, cookieFileName: string, skipLoadCookies = false): Promise<boolean> {
 
     this._username = username;
     this._password = password;
@@ -208,11 +233,13 @@ export class PuppeteerUtil {
 
     //const cookieFileName = `user_${username}_cookie.json`;
     try {
-      await loadCookiesFromFile.call(this, cookieFileName);
+      if (!skipLoadCookies) {
+        await loadCookiesFromFile.call(this, cookieFileName);
+      }
     } catch (error) {
       console.log('Не удалось загрузить файл "${cookieFileName}", продолжим без него:', error)
     }
-
+    resetCaptchaFlag();
     const success = await performLoginWithRetries(this._page, this._config, username, password);
     if (success) {
       console.log('✅ Login прошёл успешно, сохраняем куки - создаем файл?');
@@ -241,13 +268,28 @@ export class PuppeteerUtil {
     }
   }
 
-  // 10) Перезагрузка текущей страницы
+  // 10) reload current page  Перезагрузка текущей страницы
   async reload() {
     if (!this._page) return;
     try {
       await this._page.reload({ waitUntil: 'networkidle2' });
       //await this._page.setTimeout(10000);
-      await setTimeout(10000);
+
+      // Ждём немного для появления капчи
+      await setTimeout(1500);
+
+      resetCaptchaFlag();
+
+      console.log('nothing with captcha');
+
+
+
+      // Проверяем и решаем капчу, если она есть
+      await handleCaptchaBeforeClick(this._page);
+
+      // Add a additional delay
+      await setTimeout(1500);
+
     } catch (err) {
       console.log('Error in reload : ', err);
     }
