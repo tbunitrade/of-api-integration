@@ -69,7 +69,7 @@ export class CronService {
   /*
    * Manual Start Cron Job
    */
-  async manualStart(isPost = false, manualStart = false, user?: any) {
+  async manualStart(isPost = false, manualStart = false, user?: any, waitForManualLogin = false) {
     //this is test line and need to be deleted
     const startJob = this.createCron(isPost, manualStart, user);
     await startJob();
