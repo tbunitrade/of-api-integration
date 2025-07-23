@@ -1,14 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { PuppeteerUtil } from './utils/puppeteer-utils';
-import {CONFIG, CONFIG as DEFAULT_CONFIG} from './utils/config/step-config';
+import { CONFIG, CONFIG as DEFAULT_CONFIG } from './utils/config/step-config';
 import * as _ from 'lodash';
-import testRecaptchaSolver from './utils/test-recaptcha-solver';
 import { getRandomNumber } from 'src/cron/utils';
 import { ModelPlatform } from 'src/modelPlatform/model_platform.entity';
-import { PostTime } from 'src/postTime/post_time.entity';
 import { PostFile } from 'src/postFile/post_file.entity';
 import { Post } from 'src/post/post.entity';
-import {acceptCookie, loadCookiesFromFile} from "./utils/_functions/cookies-utils";
+import { acceptCookie, loadCookiesFromFile } from "./utils/_functions/cookies-utils";
 
 /* Logic of login_captcha
 The OnlyFans website has 2 captcha google recaptcha v2 and v3. (v2 enterprise, v3 enterprise)
@@ -123,7 +121,8 @@ export class AutomateService {
                 try {
                   const msg = group.messages[j];
                   const [_hour, minutes] = msg.message_time?.split(':');
-                  const hour = ((parseInt(_hour) % 13) + parseInt(_hour) / 13) | 0;
+                  //const hour = ((parseInt(_hour) % 13) + parseInt(_hour) / 13) | 0;
+                  const hour = parseInt(_hour) % 12 || 12;
                   const suffix = parseInt(_hour) >= 12 ? 'pm' : 'am';
 
                   let free_previews =
@@ -177,7 +176,7 @@ export class AutomateService {
                   await puppeteerUtil.work(config);
                 } catch (error) {
                   console.log('Error : ', error);
-                  continue;
+                  //continue;
                 }
               }
               scheduledCount++;
@@ -190,13 +189,13 @@ export class AutomateService {
             await puppeteerUtil.closeBrowser();
             return scheduledCount;
           } else {
-            continue;
+            //continue;
           }
         } catch (error) {
           console.log('Error: ', error);
           repeatCount--;
           if (repeatCount < 0) break;
-          continue;
+          //continue;
         }
       }
       await puppeteerUtil.closeBrowser();
@@ -344,6 +343,8 @@ export class AutomateService {
 
               // каждый день — отдельная копия baseDate
               const scheduledDt = new Date(baseDate);
+              const postTimesCount = postWithTimesAndCaptions.post_times.length;
+
               scheduledDt.setDate(baseDate.getDate() + i); // today + i дней
               console.log(`[startPost] День #${i} → scheduledDt: ${scheduledDt.toISOString()}`);
 
@@ -363,11 +364,12 @@ export class AutomateService {
                     );
                   }
                   _config = _.cloneDeep(DEFAULT_CONFIG);
-                  const postTime = postWithTimesAndCaptions.post_times[j];
+                  const timeIndex = j % postTimesCount; // всегда от 0..postTimesCount-1
+                  const postTime = postWithTimesAndCaptions.post_times[timeIndex];
                   if (!postTime) continue;
                   const [_hour, minutes, secs] = postTime.time?.split(':');
-                  const hour =
-                    ((parseInt(_hour) % 13) + parseInt(_hour) / 13) | 0;
+                  //const hour =((parseInt(_hour) % 13) + parseInt(_hour) / 13) | 0;
+                  const hour = parseInt(_hour) % 12 || 12;
                   const suffix = parseInt(_hour) >= 12 ? 'pm' : 'am';
                   const randNumber = getRandomNumber(fileIndexes.length ?? 0);
                   const postFile = postFiles[fileIndexes[randNumber]]?.url;
@@ -463,7 +465,7 @@ export class AutomateService {
                   await puppeteerUtil.work(config);
                 } catch (error) {
                   console.log('Error : ', error);
-                  continue;
+                  //continue;
                 }
               }
               scheduledCount++;
@@ -479,13 +481,13 @@ export class AutomateService {
           } else {
             repeatCount--;
             if (repeatCount < 0) break;
-            continue;
+            //continue;
           }
         } catch (error) {
           console.log('Error: ', error);
           repeatCount--;
           if (repeatCount < 0) break;
-          continue;
+          //continue;
         }
       }
       await puppeteerUtil.closeBrowser();
@@ -504,7 +506,7 @@ export class AutomateService {
 
     const username = 'mail@s.com';
     const password = 'тут_введи_пароль';
-    const prokey = ''; // если капча нужна — сюда ключ
+    //const prokey = ''; // если капча нужна — сюда ключ
 
     console.log('[TEST LOGIN] Стартуем Puppeteer...');
     await puppeteerUtil.openBrowser(); // показываем браузер (не headless)
