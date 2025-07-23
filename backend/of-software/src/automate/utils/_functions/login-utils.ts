@@ -185,26 +185,22 @@ export async function performLoginWithRetries(
   config: typeof CONFIG,
   username: string,
   password: string,
-  maxAttempts = 3
+  maxAttempts = 3,
+  waitForManualLogin = false
 ): Promise<boolean> {
   const { loginErrorMessage: errorSel } = config.selectors;
   for (let i = 1; i <= maxAttempts; i++) {
-    if(i==2) {
-      console.log(i, ' i == 2 , timeout 22 ..', setTimeout );
-      await setTimeout(22000);
-      console.log(' .. ')
-    } else { console.log('next time delay.')}
-
-    console.log(`🔑 Попытка входа #${i}…`);
+    console.log(`🔑 Entry login try #${i}…`);
+    if( i === 2 ) await setTimeout(122000); //   // 2 минут
+    if( i === 3 ) await setTimeout(300000); //   // 5 минут
     const ok = await performLoginOnce(page, config, username, password);
-    if (ok) {
-      console.log('✅ Успешно вошли');
-      return true;
-    }
+    if (ok) return true;
+
     // если «Wrong email or password» — сразу прекратить
     const err = await page.$eval(errorSel, el => el.textContent?.trim()).catch(() => '');
     if (err.includes('Wrong email or password')) {
       console.error('🚨 Неверный email или пароль — прекращаем попытки');
+      console.error('🚨 Invalid email or password — stopping attempts');
       return false;
     }
 
@@ -218,6 +214,18 @@ export async function performLoginWithRetries(
     await page.reload({ waitUntil: 'networkidle2' });
     await acceptCookie.call(this); // ✅ this = PuppeteerUtil
   }
-  console.error('⛔ Не удалось войти за все попытки');
+
+  // Все 3 попытки неуспешны — даём 5 минут для ручного входа
+  console.warn('⛔ All login attempts failed. Waiting 5 minutes for manual login...');
+
+  if (waitForManualLogin) {
+    console.warn('⛔ Все попытки неуспешны. Ждём 5 минут для ручного входа...');
+    await setTimeout(300000);
+    // Можно проверить вручную, вошёл ли пользователь
+    // или вернуть специальный статус
+  } else {
+    console.warn('⛔ Все попытки неуспешны. Ручной вход не предусмотрен.');
+  }
+
   return false;
 }
