@@ -43,7 +43,7 @@ export class CronController {
   @UseGuards(JwtAuthGuard)
   async manualStart(
     @Request() req,
-    @Query() { isPost = false }: ManualStartDto,
+    @Query() { isPost = false , waitForManualLogin = false }: ManualStartDto,
   ) {
     try {
       const id = req.user.id;
@@ -51,7 +51,7 @@ export class CronController {
 
       // 🔥 ЗАПУСКАЕМ ФОНОМ, НЕ ЖДЁМ
       setTimeout(() => {
-        this.cronService.manualStart(!!isPost, true, user);
+        this.cronService.manualStart(!!isPost, true, user, waitForManualLogin);
       }, 0);
 
       // ⚡ Ответим сразу, чтобы не было 504
