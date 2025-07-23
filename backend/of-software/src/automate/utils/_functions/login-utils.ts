@@ -65,9 +65,9 @@ export async function performLoginOnce(
 
   // 3) краткая проверка капчи (7 с)
   const [capRecap, capTurn] = await Promise.all([
-    page.waitForSelector('.captcha_wrapper iframe[title="reCAPTCHA"]', { timeout: 3_500 })
+    page.waitForSelector('.captcha_wrapper iframe[title="reCAPTCHA"]', { hidden: true, timeout: 3_500 })
       .then(() => true).catch(() => false),
-    page.waitForSelector('iframe[title*="challenge"]', { timeout: 3_500 })
+    page.waitForSelector('iframe[title*="challenge"]', { hidden: true, timeout: 3_500 })
       .then(() => true).catch(() => false),
   ]);
 
