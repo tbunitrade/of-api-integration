@@ -28,6 +28,16 @@ const useCronStore = defineStore({
         throw error
       }
     },
+    async triggerSuperManually() {
+      try {
+        axios.get(`${import.meta.env.VITE_APP_ROOT_API}/cron/manual-start/?waitForManualLogin=true`);
+        console.log('triggerCronJobManually front end cron store started',);
+        return true;
+      } catch (error) {
+        console.error('Cronjob start failed:', error)
+        throw error
+      }
+    },
   }
 })
 export { useCronStore }

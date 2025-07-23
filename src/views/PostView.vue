@@ -347,7 +347,16 @@ const fetchData = async () => {
 };
 
 const onStartCronJobManually = async () => {
-  cronStore.triggerPostCronJobManually();
+  await cronStore.triggerPostCronJobManually();
+  notify({
+    title: "Success",
+    type: "success",
+    text: "Cron job started!",
+  });
+};
+
+const onStartCronSuper = async () => {
+  await cronStore.triggerSuperManually();
   notify({
     title: "Success",
     type: "success",
@@ -479,6 +488,7 @@ onMounted(() => {
       <SectionTitleLineWithButton :icon="mdiTableBorder" title="Post" main>
         <BaseButton label="Restart server backend" color="danger" rounded-full @click="onRestartServer" />
         <BaseButton label="Trigger CronJob Manually" color="info" rounded small @click="onStartCronJobManually" />
+        <BaseButton label="Super Mode" color="info" rounded small @click="onStartCronSuper" />
       </SectionTitleLineWithButton>
 
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">

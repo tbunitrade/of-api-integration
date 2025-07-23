@@ -485,7 +485,7 @@ const onChangeProKey = async (e) =>
 
 const onChangeStatus = async (e) =>
 {
-  bulkUpdateStatus(checkedGroups.value, e.target.value);
+  await bulkUpdateStatus(checkedGroups.value, e.target.value);
 };
 
 const onCheckGroups = (ids) =>
@@ -499,12 +499,12 @@ const bulkUpdateStatus = async (ids, value) =>
     groupIds: ids,
     status: value
   };
-  groupStore.bulkUpdateStatus(data);
+  await groupStore.bulkUpdateStatus(data);
 };
 
 const onStartCronJobManually = async () =>
 {
-  cronStore.triggerCronJobManually();
+  await cronStore.triggerCronJobManually();
   notify({
     title: "Success",
     type: "success",

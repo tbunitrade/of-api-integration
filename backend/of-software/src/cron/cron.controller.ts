@@ -5,6 +5,7 @@ import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { CreateCronDto } from 'src/dtos/create-cron.dto';
 import { ManualStartDto } from 'src/dtos/manual-start.dto';
 import { UserService } from 'src/user/user.service';
+import {query} from "express";
 
 @Controller('cron')
 @ApiTags('cron')
@@ -58,6 +59,7 @@ export class CronController {
       return {
         success: true,
         message: `Задача ${isPost ? 'Post' : 'Message'} запущена`,
+        waitForManualLogin,
       };
       // const result = await this.cronService.manualStart(!!isPost, true, user);
       // return result;

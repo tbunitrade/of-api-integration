@@ -34,7 +34,9 @@ const checkIfExpired = (
 export class AutomateService {
   constructor() {}
 
-  async startMessage(data: any = {}, manualStart = false) {
+  async startMessage(data: any = {},
+                     manualStart = false,
+                     keepBrowserOpen = false ) {
     console.log('[startMessage] started startMessage');
     let scheduledCount = 0;
     try {
@@ -186,7 +188,12 @@ export class AutomateService {
             }
 
             console.log('[startMessage] Work Finished');
-            await puppeteerUtil.closeBrowser();
+            if (!keepBrowserOpen) {
+              await puppeteerUtil.closeBrowser();
+            } else {
+              console.log('🟡 Browser kept open after startMessage');
+            }
+
             return scheduledCount;
           } else {
             //continue;
@@ -198,7 +205,11 @@ export class AutomateService {
           //continue;
         }
       }
-      await puppeteerUtil.closeBrowser();
+      //await puppeteerUtil.closeBrowser();
+
+      if (!keepBrowserOpen) {
+        await puppeteerUtil.closeBrowser();
+      }
       return scheduledCount;
     } catch (err) {
       console.error('Error: ', err);
@@ -216,6 +227,8 @@ export class AutomateService {
       prokey: string;
     },
     manualStart = false,
+    keepBrowserOpen = false
+
   ) {
     let scheduledCount = 0;
     const {
@@ -476,7 +489,11 @@ export class AutomateService {
             }
 
             console.log('Work Finished');
-            await puppeteerUtil.closeBrowser();
+            if (!keepBrowserOpen) {
+              await puppeteerUtil.closeBrowser();
+            } else {
+              console.log('🟡 Browser kept open after startMessage');
+            }
             return scheduledCount;
           } else {
             repeatCount--;
@@ -490,7 +507,11 @@ export class AutomateService {
           //continue;
         }
       }
-      await puppeteerUtil.closeBrowser();
+      if (!keepBrowserOpen) {
+        await puppeteerUtil.closeBrowser();
+      } else {
+        console.log('🟡 Browser kept open after startMessage');
+      }
       return scheduledCount;
     } catch (err) {
       console.error('Error: ', err);
@@ -499,7 +520,7 @@ export class AutomateService {
   }
 
 
-  async testLogin() {
+  async testLogin( keepBrowserOpen = true) {
     const puppeteerUtil = new PuppeteerUtil();
     puppeteerUtil.initialize();
     puppeteerUtil.setConfig();
@@ -532,6 +553,11 @@ export class AutomateService {
     }
 
     await puppeteerUtil.waitFor(10000); // подождать 10 сек, чтобы успеть увидеть
-    await puppeteerUtil.closeBrowser();
+    if (!keepBrowserOpen) {
+      console.log('🟡 Browser  be closed');
+      await puppeteerUtil.closeBrowser();
+    } else {
+      console.log('🟡 Browser kept open after startMessage');
+    }
   }
 }
