@@ -512,6 +512,16 @@ const onStartCronJobManually = async () =>
   });
 };
 
+const onStartCronSuper = async () =>
+{
+  await cronStore.triggerSuperManually();
+  notify({
+    title: "Success",
+    type: "success",
+    text: "Cron job started!",
+  });
+};
+
 // add new feature for DropDown
 
 const messageNameOptions = [
@@ -634,6 +644,7 @@ onMounted(() =>
       <SectionTitleLineWithButton :icon="mdiMessage" title="Message" main>
         <BaseButton label="Restart server backend" color="danger" rounded-full @click="onRestartServer" />
         <BaseButton label="Trigger CronJob Manually" color="info" rounded small @click="onStartCronJobManually" />
+
       </SectionTitleLineWithButton>
       <CardBox class="mb-6">
         <div>
