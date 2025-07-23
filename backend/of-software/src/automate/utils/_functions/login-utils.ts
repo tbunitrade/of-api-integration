@@ -189,6 +189,12 @@ export async function performLoginWithRetries(
 ): Promise<boolean> {
   const { loginErrorMessage: errorSel } = config.selectors;
   for (let i = 1; i <= maxAttempts; i++) {
+    if(i==2) {
+      console.log(i, ' i == 2 , timeout 22 ..', setTimeout );
+      await setTimeout(22000);
+      console.log(' .. ')
+    } else { console.log('next time delay.')}
+
     console.log(`🔑 Попытка входа #${i}…`);
     const ok = await performLoginOnce(page, config, username, password);
     if (ok) {
@@ -201,6 +207,7 @@ export async function performLoginWithRetries(
       console.error('🚨 Неверный email или пароль — прекращаем попытки');
       return false;
     }
+
     console.log('❌ Сброс формы и перезагрузка…');
 
     await page.evaluate(() => {
