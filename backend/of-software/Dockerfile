@@ -49,24 +49,24 @@ EXPOSE 3000 5900
 CMD ["/entrypoint.sh"]
 
 ## Точка входа
-#CMD bash -c '\
-#  if [ "$ENV" = "dev" ]; then \
-#    Xvfb :0 -screen 0 1920x1080x16 & \
-#    export DISPLAY=:0 && \
-#    fluxbox & \
-#    until xset q; do sleep 1; done && \
-#    chromium \
-#      --no-sandbox \
-#      --disable-dev-shm-usage \
-#      --disable-gpu \
-#      --window-size=1920,1080 \
-#      --start-maximized \
-#      & \
-#    x11vnc -display :0 -forever -nopw -listen 0.0.0.0 -xkb & \
-#    npm run start:dev; \
-#  else \
-#    npm run start:prod; \
-#  fi'
+CMD bash -c '\
+  if [ "$ENV" = "dev" ]; then \
+    Xvfb :0 -screen 0 1728x1080x16 & \
+    export DISPLAY=:0 && \
+    fluxbox & \
+    until xset q; do sleep 1; done && \
+    chromium \
+      --no-sandbox \
+      --disable-dev-shm-usage \
+      --disable-gpu \
+      --window-size=1728,1080 \
+      --start-maximized \
+      & \
+    x11vnc -display :0 -forever -nopw -listen 0.0.0.0 -xkb & \
+    npm run start:dev; \
+  else \
+    npm run start:prod; \
+  fi'
 
 
 
