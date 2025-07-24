@@ -222,7 +222,7 @@ export class PuppeteerUtil {
   }
 
   // 8) Логика входа: сначала loadCookiesFromFile, потом performLoginWithRetries, потом saveCookieToFile
-  async login(username: string, password: string, cookieFileName: string, skipLoadCookies = false): Promise<boolean> {
+  async login(username: string, password: string, cookieFileName: string, skipLoadCookies = false, waitForManualLogin = false): Promise<boolean> {
 
     this._username = username;
     this._password = password;
@@ -242,7 +242,7 @@ export class PuppeteerUtil {
       console.log('Не удалось загрузить файл "${cookieFileName}", продолжим без него:', error)
     }
     resetCaptchaFlag();
-    const success = await performLoginWithRetries(this._page, this._config, username, password);
+    const success = await performLoginWithRetries(this._page, this._config, username, password, waitForManualLogin);
     if (success) {
       console.log('✅ Login прошёл успешно, сохраняем куки - создаем файл?');
       console.log('[LOGIN] ✅ Успешный вход. Готовимся вызвать saveCookieToFile');

@@ -35,7 +35,8 @@ export async function performLoginOnce(
   page: Page,
   config: typeof CONFIG,
   username: string,
-  password: string
+  password: string,
+  waitForManualLogin?:boolean // flag
 ): Promise<boolean> {
   const { idSelector, passwordSelector, submitSelector } = config.login;
   const { loginErrorMessage: errorSel, profileFeed: feedSel } = config.selectors;
@@ -45,6 +46,13 @@ export async function performLoginOnce(
   // 1) вводим email + password
   await page.type(idSelector, username, { delay: 130 });
   await page.type(passwordSelector, password, { delay: 200 });
+
+  // После ввода email+password, но ПЕРЕД первым кликом добавляем паузу по флагу
+  if (waitForManualLogin) {
+    console.log('[LOGIN] Пауза перед первым кликом по кнопке входа, ждём ручного ввода...');
+    await setTimeout(60000);  // 60 секунд, время можно менять
+    console.log('[LOGIN] Пауза закончилась, продолжаем');
+  }
 
   // === Первый клик ===
   await setTimeout(5000);
@@ -185,12 +193,13 @@ export async function performLoginWithRetries(
   config: typeof CONFIG,
   username: string,
   password: string,
-  maxAttempts = 3
+  maxAttempts= 3,
+  waitForManualLogin?: boolean,
 ): Promise<boolean> {
   const { loginErrorMessage: errorSel } = config.selectors;
   for (let i = 1; i <= maxAttempts; i++) {
     console.log(`🔑 Попытка входа #${i}…`);
-    const ok = await performLoginOnce(page, config, username, password);
+    const ok = await performLoginOnce(page, config, username, password, waitForManualLogin);
     if (ok) {
       console.log('✅ Успешно вошли');
       return true;
