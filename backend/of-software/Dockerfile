@@ -7,7 +7,7 @@ RUN apt-get update && apt-get install -y \
   libdbus-1-3 libgdk-pixbuf2.0-0 libnspr4 libnss3 libx11-xcb1 libxcomposite1 \
   libxdamage1 libxrandr2 libu2f-udev libvulkan1 xdg-utils libdrm2 libxext6 \
   libxi6 libxfixes3 libglib2.0-0 libxrender1 libxtst6 libjpeg62-turbo libgbm-dev \
-  x11vnc fluxbox xvfb chromium dbus feh --no-install-recommends && \
+  x11vnc fluxbox xvfb chromium dbus feh x11-utils x11-xserver-utils --no-install-recommends && \
   apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Симлинк для совместимости с Puppeteer
@@ -51,8 +51,8 @@ CMD ["/entrypoint.sh"]
 ## Точка входа
 CMD bash -c '\
   if [ "$ENV" = "dev" ]; then \
-    Xvfb :0 -screen 0 1728x1080x16 & \
-    export DISPLAY=:0 && \
+    Xvfb :10 -screen 0 1728x1080x16 & \
+    export DISPLAY=:10 && \
     fluxbox & \
     until xset q; do sleep 1; done && \
     chromium \
@@ -62,7 +62,7 @@ CMD bash -c '\
       --window-size=1728,1080 \
       --start-maximized \
       & \
-    x11vnc -display :0 -forever -nopw -listen 0.0.0.0 -xkb & \
+    x11vnc -display :10 -forever -nopw -listen 0.0.0.0 -xkb & \
     npm run start:dev; \
   else \
     npm run start:prod; \

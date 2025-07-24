@@ -135,7 +135,7 @@ export class CronService {
    * @param createCronDto
    * @returns
    */
-  private createCron = (isPost = false, manualStart = false, user?: any) => {
+  private createCron = (isPost = false, manualStart = false, user?: any, waitForManualLogin =  false) => {
     //ограничили параллелизм до 1, то есть startPost() сейчас идут строго последовательно. Поэтому всё безопасно.
     const MaxOpeningBrowserCount = 1;
     return async () => {
@@ -190,10 +190,7 @@ export class CronService {
           }
           data.groupsWithMessages = groupsWithMessages;
           console.log(`>>> [CRON] Собираюсь запустить startMessage для ModelPlatform id=${mp.id}`);
-          const result = await this.automateService.startMessage(
-            data,
-            manualStart,
-          );
+          const result = await this.automateService.startMessage(data, manualStart,waitForManualLogin);
           console.log('Posted Date Result: ', result);
           if (result) {
             const latestGroupId = groupIds ? groupIds[result - 1] : 0;
@@ -248,6 +245,7 @@ export class CronService {
           const result = await this.automateService.startPost(
             data,
             manualStart,
+            waitForManualLogin
           );
           console.log(`>>> [CRON] startPost вернул:`, result);
           if (result) {

@@ -87,6 +87,18 @@ export async function triggerRecaptcha(page: Page): Promise<void> {
       ?.value.trim(),
     { polling: 500, timeout: 5 * 60_000 }
   );
+  // Дополнительный шаг — проверяем и кликаем кнопку подтверждения, если есть
+  try {
+    const doneBtn = await frame.waitForSelector('button.submit, button#recaptcha-submit, button.confirm, #recaptcha-submit-button', { visible: true, timeout: 10_000 });
+    if (doneBtn) {
+      await doneBtn.click();
+      console.log('🔧 reCAPTCHA: клик по кнопке подтверждения');
+      await new Promise(res => setTimeout(res, 3000)); // небольшой wait для завершения
+    }
+  } catch {
+    // кнопка не найдена, идём дальше
+    console.log('✔кнопка не найдена, идём дальше');
+  }
 
   markCaptchaSolved();
   console.log('✔️ reCAPTCHA решена captchaAlreadySolvedv->', captchaAlreadySolved);
@@ -118,6 +130,20 @@ export async function triggerTurnstile(page: Page): Promise<void> {
     },
     { polling: 500, timeout: 120_000 }
   );
+
+  // Дополнительный клик по кнопке подтверждения (если есть)
+  try {
+    const doneBtn = await frame.waitForSelector('button.done, button.submit, button.confirm', { visible: true, timeout: 10_000 });
+    if (doneBtn) {
+      await doneBtn.click();
+      console.log('🔧 Turnstile: клик по дополнительной кнопке подтверждения');
+      await new Promise(res => setTimeout(res, 3000));
+    }
+  } catch {
+    // кнопка не найдена — идём дальше
+    console.log('🔧 кнопка не найдена — go next');
+  }
+
   markCaptchaSolved();
   console.log('✔️ Turnstile решён captchaAlreadySolvedv->', captchaAlreadySolved);
   //console.log('✔️ Turnstile решён');

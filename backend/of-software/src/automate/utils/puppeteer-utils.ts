@@ -110,9 +110,11 @@ export class PuppeteerUtil {
 
     this._browser = await this._puppeteer.launch({
       headless: this.headless,
-      slowMo: 40,
+      slowMo: 50,
       args: [
         `--no-sandbox`,
+        `--disable-gpu`,
+        `--disable-software-rasterizer`,
         `--disable-setuid-sandbox`,
         `--disable-extensions-except=${ext}`,
         `--load-extension=${ext}`,

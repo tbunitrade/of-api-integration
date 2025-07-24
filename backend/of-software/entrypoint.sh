@@ -3,10 +3,19 @@
 echo "[entrypoint] Creating cookies dir if missing ..."
 mkdir -p /app/cookies
 
-export DISPLAY=:0
+export DISPLAY=:10
+
+echo "[entrypoint] Removing old X lock files if exist..."
+rm -f /tmp/.X10-lock /tmp/.X11-unix/X10
 
 # Запускаем виртуальный X сервер
-Xvfb :10 -screen 0 1920x1080x16 &
+Xvfb :10 -screen 0 1728x1080x16 &
+
+# Ждем, пока X сервер станет доступен
+until xset q; do
+  echo "Waiting for X server to start..."
+  sleep 1
+done
 
 # Менеджер окон
 fluxbox &

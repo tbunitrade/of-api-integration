@@ -46,6 +46,7 @@ export class CronController {
     @Request() req,
     @Query() { isPost = false , waitForManualLogin = false }: ManualStartDto,
   ) {
+    console.log(`[CRON] manualStart called: isPost=${isPost}, waitForManualLogin=${waitForManualLogin}`);
     try {
       const id = req.user.id;
       const user = this.userService.findById(id);
