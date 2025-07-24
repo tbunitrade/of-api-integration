@@ -35,7 +35,8 @@ export async function performLoginOnce(
   page: Page,
   config: typeof CONFIG,
   username: string,
-  password: string
+  password: string,
+  waitForManualLogin = false // pause flag
 ): Promise<boolean> {
   const { idSelector, passwordSelector, submitSelector } = config.login;
   const { loginErrorMessage: errorSel, profileFeed: feedSel } = config.selectors;
@@ -50,6 +51,16 @@ export async function performLoginOnce(
   await setTimeout(5000);
   await page.click(submitSelector);
   console.log('▶️ Первый клик по Login');
+
+
+
+  // Если нужно ждать ручного входа — пауза
+  if (waitForManualLogin === true) {
+    console.log('[LOGIN] Пауза перед первым кликом по кнопке входа, ждём...');
+    await setTimeout(180_000); // 60 секунд, можно менять
+    console.log('[LOGIN] Пауза закончилась, продолжаем');
+  }
+
   await setTimeout(5000);
 
   // 2) ждём кнопку или ошибку (10 с)
