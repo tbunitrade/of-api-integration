@@ -35,8 +35,7 @@ export async function performLoginOnce(
   page: Page,
   config: typeof CONFIG,
   username: string,
-  password: string,
-  waitForManualLogin = false // pause flag
+  password: string
 ): Promise<boolean> {
   const { idSelector, passwordSelector, submitSelector } = config.login;
   const { loginErrorMessage: errorSel, profileFeed: feedSel } = config.selectors;
@@ -51,16 +50,6 @@ export async function performLoginOnce(
   await setTimeout(5000);
   await page.click(submitSelector);
   console.log('▶️ Первый клик по Login');
-
-
-
-  // Если нужно ждать ручного входа — пауза
-  if (waitForManualLogin === true) {
-    console.log('[LOGIN] Пауза перед первым кликом по кнопке входа, ждём...');
-    await setTimeout(180_000); // 60 секунд, можно менять
-    console.log('[LOGIN] Пауза закончилась, продолжаем');
-  }
-
   await setTimeout(5000);
 
   // 2) ждём кнопку или ошибку (10 с)
@@ -76,9 +65,9 @@ export async function performLoginOnce(
 
   // 3) краткая проверка капчи (7 с)
   const [capRecap, capTurn] = await Promise.all([
-    page.waitForSelector('.captcha_wrapper iframe[title="reCAPTCHA"]', { hidden: true, timeout: 3_500 })
+    page.waitForSelector('.captcha_wrapper iframe[title="reCAPTCHA"]', { timeout: 3_500 })
       .then(() => true).catch(() => false),
-    page.waitForSelector('iframe[title*="challenge"]', { hidden: true, timeout: 3_500 })
+    page.waitForSelector('iframe[title*="challenge"]', { timeout: 3_500 })
       .then(() => true).catch(() => false),
   ]);
 
@@ -196,25 +185,22 @@ export async function performLoginWithRetries(
   config: typeof CONFIG,
   username: string,
   password: string,
-  maxAttempts = 3,
-  waitForManualLogin = false
+  maxAttempts = 3
 ): Promise<boolean> {
   const { loginErrorMessage: errorSel } = config.selectors;
   for (let i = 1; i <= maxAttempts; i++) {
-    console.log(`🔑 Entry login try #${i}…`);
-    if( i === 2 ) await setTimeout(122000); //   // 2 минут
-    if( i === 3 ) await setTimeout(300000); //   // 5 минут
+    console.log(`🔑 Попытка входа #${i}…`);
     const ok = await performLoginOnce(page, config, username, password);
-    if (ok) return true;
-
+    if (ok) {
+      console.log('✅ Успешно вошли');
+      return true;
+    }
     // если «Wrong email or password» — сразу прекратить
     const err = await page.$eval(errorSel, el => el.textContent?.trim()).catch(() => '');
     if (err.includes('Wrong email or password')) {
       console.error('🚨 Неверный email или пароль — прекращаем попытки');
-      console.error('🚨 Invalid email or password — stopping attempts');
       return false;
     }
-
     console.log('❌ Сброс формы и перезагрузка…');
 
     await page.evaluate(() => {
@@ -225,18 +211,6 @@ export async function performLoginWithRetries(
     await page.reload({ waitUntil: 'networkidle2' });
     await acceptCookie.call(this); // ✅ this = PuppeteerUtil
   }
-
-  // Все 3 попытки неуспешны — даём 5 минут для ручного входа
-  console.warn('⛔ All login attempts failed. Waiting 5 minutes for manual login...');
-
-  if (waitForManualLogin) {
-    console.warn('⛔ Все попытки неуспешны. Ждём 5 минут для ручного входа...');
-    await setTimeout(300000);
-    // Можно проверить вручную, вошёл ли пользователь
-    // или вернуть специальный статус
-  } else {
-    console.warn('⛔ Все попытки неуспешны. Ручной вход не предусмотрен.');
-  }
-
+  console.error('⛔ Не удалось войти за все попытки');
   return false;
 }
