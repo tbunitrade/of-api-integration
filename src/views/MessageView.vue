@@ -512,15 +512,15 @@ const onStartCronJobManually = async () =>
   });
 };
 
-const onStartCronSuper = async () =>
-{
-  await cronStore.triggerSuperManually();
-  notify({
-    title: "Success",
-    type: "success",
-    text: "Cron job started!",
-  });
-};
+// const onStartCronSuper = async () =>
+// {
+//   await cronStore.triggerSuperManually();
+//   notify({
+//     title: "Success",
+//     type: "success",
+//     text: "Cron job started!",
+//   });
+// };
 
 // add new feature for DropDown
 

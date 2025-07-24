@@ -8,9 +8,14 @@ const useCronStore = defineStore({
     crons: []
   }),
   actions: {
-    async triggerCronJobManually() {
+    async triggerCronJobManually( waitForManualLogin = false ) {
+      console.log('🔥🔥 triggerCronJobManually action called with waitForManualLogin =', waitForManualLogin);
       try {
-        axios.get(`${import.meta.env.VITE_APP_ROOT_API}/cron/manual-start`);
+        const params = new URLSearchParams();
+        if (waitForManualLogin) {
+          params.append('waitForManualLogin', 'true');
+        }
+        await axios.get(`${import.meta.env.VITE_APP_ROOT_API}/cron/manual-start?${params.toString()}`);
         console.log('triggerCronJobManually front end cron store started',);
         return true;
       } catch (error) {
@@ -18,26 +23,33 @@ const useCronStore = defineStore({
         throw error
       }
     },
-    async triggerPostCronJobManually() {
+    async triggerPostCronJobManually( waitForManualLogin = false) {
+      console.log('🔥 triggerPostCronJobManually action called with waitForManualLogin =', waitForManualLogin);
       try {
-        axios.get(`${import.meta.env.VITE_APP_ROOT_API}/cron/manual-start?isPost=true`);
-        console.log('triggerPostCronJobManually front end cron store started',);
+        const params = new URLSearchParams();
+        params.append('isPost', 'true');
+        if (waitForManualLogin){
+          params.append('waitForManualLogin', 'true');
+        }
+
+        await axios.get(`${import.meta.env.VITE_APP_ROOT_API}/cron/manual-start?${params.toString()}`);
+        console.log('🔥 Axios request sent');
         return true;
       } catch (error) {
         console.error('Cronjob start failed:', error)
         throw error
       }
     },
-    async triggerSuperManually() {
-      try {
-        axios.get(`${import.meta.env.VITE_APP_ROOT_API}/cron/manual-start/?waitForManualLogin=true`);
-        console.log('triggerCronJobManually front end cron store started',);
-        return true;
-      } catch (error) {
-        console.error('Cronjob start failed:', error)
-        throw error
-      }
-    },
+    // async triggerSuperManually() {
+    //   try {
+    //     axios.get(`${import.meta.env.VITE_APP_ROOT_API}/cron/manual-start/?waitForManualLogin=true`);
+    //     console.log('triggerCronJobManually front end cron store started',);
+    //     return true;
+    //   } catch (error) {
+    //     console.error('Cronjob start failed:', error)
+    //     throw error
+    //   }
+    // },
   }
 })
 export { useCronStore }

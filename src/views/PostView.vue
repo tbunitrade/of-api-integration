@@ -346,8 +346,11 @@ const fetchData = async () => {
   }
 };
 
-const onStartCronJobManually = async () => {
-  await cronStore.triggerPostCronJobManually();
+const onStartCronJobManually = async (wait) => {
+  //await cronStore.triggerPostCronJobManually();
+  console.log('🔥 onStartCronJobManually called, waitForManualLogin =', wait);
+
+  await cronStore.triggerPostCronJobManually(wait);
   notify({
     title: "Success",
     type: "success",
@@ -355,14 +358,23 @@ const onStartCronJobManually = async () => {
   });
 };
 
-const onStartCronSuper = async () => {
-  await cronStore.triggerSuperManually();
-  notify({
-    title: "Success",
-    type: "success",
-    text: "Cron job started!",
-  });
-};
+const waitForManualLogin = ref(false);
+
+const onManualClick = () =>{
+  console.log('⚡ Button Manual clicked') ;
+  onStartCronJobManually(true);
+}
+
+
+
+// const onStartCronSuper = async () => {
+//   await cronStore.triggerSuperManually();
+//   notify({
+//     title: "Success",
+//     type: "success",
+//     text: "Cron job started!",
+//   });
+// };
 
 const openFileInput = () => {
   fileInputRef.value.click();
@@ -486,9 +498,15 @@ onMounted(() => {
   <LayoutAuthenticated>
     <SectionMain>
       <SectionTitleLineWithButton :icon="mdiTableBorder" title="Post" main>
-        <BaseButton label="Restart server backend" color="danger" rounded-full @click="onRestartServer" />
-        <BaseButton label="Trigger CronJob Manually" color="info" rounded small @click="onStartCronJobManually" />
-        <BaseButton label="Super Mode" color="info" rounded small @click="onStartCronSuper" />
+        <BaseButton label="Restart backend" color="danger" rounded small @click="onRestartServer" />
+        <BaseButton label="Start CronJob" color="info" rounded small @click="onStartCronJobManually(false);" />
+        <BaseButton
+          label="Manual"
+          color="info"
+          rounded small
+          @click="onManualClick"
+        />
+        <!--        <BaseButton label="Super Mode" color="info" rounded small @click="onStartCronSuper" />-->
       </SectionTitleLineWithButton>
 
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
