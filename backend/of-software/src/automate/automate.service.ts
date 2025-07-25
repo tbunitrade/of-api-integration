@@ -36,7 +36,8 @@ export class AutomateService {
 
   async startMessage(data: any = {},
                      manualStart = false,
-                     keepBrowserOpen = false ) {
+                     waitForManualLogin = false ) {
+    console.log(`[startMessage] start for modelPlatform id=${data.model_id}`);
     console.log('[startMessage] started startMessage');
     let scheduledCount = 0;
     try {
@@ -71,7 +72,7 @@ export class AutomateService {
         if (!cookiesAreValid || isLoginPage) {
           await puppeteerUtil.clearCookies();
           await puppeteerUtil.reload();
-          await puppeteerUtil.login(data.username, data.password, cookieFileName,true);
+          await puppeteerUtil.login(data.username, data.password, cookieFileName,true, waitForManualLogin);
           console.log('🧁 Плохие куки, запускаем заново Логин без cookieFile');
         } else {
           console.log('✅ Cookie сработали');
@@ -94,7 +95,7 @@ export class AutomateService {
           if (!data.username) break;
 
           if (isLoginPage) {
-            isLoggedIn = await puppeteerUtil.login(data.username, data.password, cookieFileName, true);
+            isLoggedIn = await puppeteerUtil.login(data.username, data.password, cookieFileName, true, waitForManualLogin);
             loginTried++;
             if (loginTried >= 3) await puppeteerUtil.waitFor(200000);
 
@@ -188,7 +189,7 @@ export class AutomateService {
             }
 
             console.log('[startMessage] Work Finished');
-            if (!keepBrowserOpen) {
+            if (!waitForManualLogin) {
               await puppeteerUtil.closeBrowser();
             } else {
               console.log('🟡 Browser kept open after startMessage');
@@ -207,7 +208,7 @@ export class AutomateService {
       }
       //await puppeteerUtil.closeBrowser();
 
-      if (!keepBrowserOpen) {
+      if ( !waitForManualLogin ) {
         await puppeteerUtil.closeBrowser();
       }
       return scheduledCount;
@@ -227,7 +228,7 @@ export class AutomateService {
       prokey: string;
     },
     manualStart = false,
-    keepBrowserOpen = false
+    waitForManualLogin = false
 
   ) {
     let scheduledCount = 0;
@@ -240,6 +241,7 @@ export class AutomateService {
       prokey,
     } = allData;
     try {
+
       console.log('[startPost] started startPost');
       const puppeteerUtil = new PuppeteerUtil();
       puppeteerUtil.initialize();
@@ -271,7 +273,7 @@ export class AutomateService {
         if (!cookiesAreValid || isLoginPage) {
           await puppeteerUtil.clearCookies();
           await puppeteerUtil.reload();
-          await puppeteerUtil.login(modelPlatform.username, modelPlatform.password, cookieFileName, true);
+          await puppeteerUtil.login(modelPlatform.username, modelPlatform.password, cookieFileName, true,waitForManualLogin);
           console.log('🧁 Плохие куки, вошли вручную');
         } else {
           console.log('✅ Cookie сработали, логин не нужен');
@@ -314,7 +316,7 @@ export class AutomateService {
               console.log('no pro key -> ',prokey);
             }
 
-            isLoggedIn = await puppeteerUtil.login( modelPlatform.username,  modelPlatform.password, cookieFileName, true );
+            isLoggedIn = await puppeteerUtil.login( modelPlatform.username,  modelPlatform.password, cookieFileName, true,waitForManualLogin );
             loginTried++;
             if (loginTried >= 3) await puppeteerUtil.waitFor(300000);
           } else {
@@ -489,7 +491,7 @@ export class AutomateService {
             }
 
             console.log('Work Finished');
-            if (!keepBrowserOpen) {
+            if ( !waitForManualLogin ) {
               await puppeteerUtil.closeBrowser();
             } else {
               console.log('🟡 Browser kept open after startMessage');
@@ -507,7 +509,7 @@ export class AutomateService {
           //continue;
         }
       }
-      if (!keepBrowserOpen) {
+      if ( !waitForManualLogin ) {
         await puppeteerUtil.closeBrowser();
       } else {
         console.log('🟡 Browser kept open after startMessage');
@@ -553,11 +555,11 @@ export class AutomateService {
     }
 
     await puppeteerUtil.waitFor(10000); // подождать 10 сек, чтобы успеть увидеть
-    if (!keepBrowserOpen) {
+    //if ( !waitForManualLogin ) {
       console.log('🟡 Browser  be closed');
       await puppeteerUtil.closeBrowser();
-    } else {
+    //} else {
       console.log('🟡 Browser kept open after startMessage');
-    }
+    //}
   }
 }

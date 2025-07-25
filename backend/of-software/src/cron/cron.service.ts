@@ -147,7 +147,7 @@ export class CronService {
       console.log('>>> ENV.PUPPETEER_EXECUTABLE_PATH =', process.env.PUPPETEER_EXECUTABLE_PATH);
 
       console.log(
-        `[CRON START] ${isPost ? 'Post' : 'Message'} job ${
+        `this [CRON START] ${isPost ? 'Post' : 'Message'} job ${
           manualStart ? '(manual)' : '(scheduled)'
         } started at ${new Date().toISOString()}`,
       );
@@ -161,7 +161,9 @@ export class CronService {
         for (const mp of modelPlatforms) {
           console.log(`→ mp.id=${mp.id}, username="${mp.username}", password="${mp.password ? '••••••' : '(пусто)'}"`);
         }
-        const sendAMessage = async (mp: ModelPlatform, manualStart) => {
+        console.log('911');
+        const sendAMessage = async (mp: ModelPlatform, manualStart: boolean = false, waitForManualLogin: boolean = false) => {
+          console.log('sendAMessage', sendAMessage)
           let groups = await this.groupService.findNGroupsByPlatformId(
             mp.platform_id,
             mp.latest_group_id || 0,
@@ -192,6 +194,7 @@ export class CronService {
           console.log(`>>> [CRON] Собираюсь запустить startMessage для ModelPlatform id=${mp.id}`);
           const result = await this.automateService.startMessage(data, manualStart,waitForManualLogin);
           console.log('Posted Date Result: ', result);
+          console.log('9015');
           if (result) {
             const latestGroupId = groupIds ? groupIds[result - 1] : 0;
             const now =
@@ -212,10 +215,14 @@ export class CronService {
               await this.groupService.update(_id, {
                 added_on_platform_at: postedDate,
               });
+              console.log('9017');
             });
+            console.log('9018');
           }
+          console.log('9019');
         };
-        const postAPost = async (mp: ModelPlatform, manualStart) => {
+        console.log('9020');
+        const postAPost = async (mp: ModelPlatform, manualStart: boolean = false, waitForManualLogin: boolean = false) => {
           console.log(`>>> [CRON] Собираюсь запустить startPost для ModelPlatform id=${mp.id}`);
 
           const postWithTimesAndCaptions = await this.postService.findById(
@@ -259,8 +266,11 @@ export class CronService {
             await this.postService.update(postWithTimesAndCaptions.id, {
               scheduled_date: afterDays.toDateString(),
             });
+            console.log('9027');
           }
+          console.log('9028');
         };
+        console.log('9029');
 
         let i = 0;
         let promises = [];
@@ -277,11 +287,12 @@ export class CronService {
               postWithTimesAndCaptions &&
               postWithTimesAndCaptions.number_of_days !== 0
             ) {
-              promises.push(postAPost(mp, manualStart));
+              console.log(' promises.push',  waitForManualLogin);
+              promises.push(postAPost(mp, manualStart, waitForManualLogin));
             }
           } else {
             if (mp.number_of_days !== 0) {
-              promises.push(sendAMessage(mp, manualStart));
+              promises.push(sendAMessage(mp, manualStart, waitForManualLogin));
             }
           }
 
@@ -290,6 +301,8 @@ export class CronService {
             promises = [];
           }
         }
+
+        console.log('9039');
       } catch (error) {
         console.error('Error in Cron job => ', error?.message ?? 'Unknown');
       }
