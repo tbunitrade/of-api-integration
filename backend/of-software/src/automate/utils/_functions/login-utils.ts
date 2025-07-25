@@ -49,8 +49,8 @@ export async function performLoginOnce(
 
   // После ввода email+password, но ПЕРЕД первым кликом добавляем паузу по флагу
   if (waitForManualLogin) {
-    console.log('[LOGIN] Пауза перед первым кликом по кнопке входа, ждём ручного ввода...');
-    await setTimeout(160000);  // 60 секунд, время можно менять
+    console.log('[LOGIN] Pause 200 sec started, Пауза перед первым кликом по кнопке входа, ждём ручного ввода...');
+    await setTimeout(200000);  // 60 секунд, время можно менять
     console.log('[LOGIN] Пауза закончилась, продолжаем');
   }
 
