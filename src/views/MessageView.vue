@@ -502,15 +502,24 @@ const bulkUpdateStatus = async (ids, value) =>
   await groupStore.bulkUpdateStatus(data);
 };
 
-const onStartCronJobManually = async () =>
-{
-  await cronStore.triggerCronJobManually();
+const onStartCronJobManually = async (wait) => {
+  //await cronStore.triggerPostCronJobManually();
+  console.log('🔥 onStartCronJobManually called, waitForManualLogin =', wait);
+
+  await cronStore.triggerPostCronJobManually(wait);
   notify({
     title: "Success",
     type: "success",
     text: "Cron job started!",
   });
 };
+
+const waitForManualLogin = ref(false);
+
+const onManualClick = () =>{
+  console.log('⚡ Button Manual clicked') ;
+  onStartCronJobManually(true);
+}
 
 // const onStartCronSuper = async () =>
 // {
@@ -643,8 +652,13 @@ onMounted(() =>
     <SectionMain>
       <SectionTitleLineWithButton :icon="mdiMessage" title="Message" main>
         <BaseButton label="Restart server backend" color="danger" rounded-full @click="onRestartServer" />
-        <BaseButton label="Trigger CronJob Manually" color="info" rounded small @click="onStartCronJobManually" />
-
+        <BaseButton label="Trigger CronJob Manually" color="info" rounded small @click="onStartCronJobManually(false)" />
+        <BaseButton
+          label="Manual"
+          color="info"
+          rounded small
+          @click="onManualClick"
+        />
       </SectionTitleLineWithButton>
       <CardBox class="mb-6">
         <div>
