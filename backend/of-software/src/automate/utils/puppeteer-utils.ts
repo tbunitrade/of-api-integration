@@ -114,8 +114,12 @@ export class PuppeteerUtil {
       args: [
         `--no-sandbox`,
         `--disable-setuid-sandbox`,
-        // `--disable-extensions-except=${ext}`,
-        // `--load-extension=${ext}`,
+        `--disable-gpu`,
+        `--disable-dev-shm-usage`,
+        `--single-process`,
+        `--no-zygote`,
+        `--disable-extensions-except=${ext}`,
+        `--load-extension=${ext}`,
         `--window-size=1728,1080`,
       ],
       dumpio: true, // чтобы видеть логи браузера
