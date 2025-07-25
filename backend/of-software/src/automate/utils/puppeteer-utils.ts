@@ -113,15 +113,16 @@ export class PuppeteerUtil {
       slowMo: 50,
       args: [
         `--no-sandbox`,
-        `--disable-gpu`,
-        `--disable-software-rasterizer`,
         `--disable-setuid-sandbox`,
-        `--disable-extensions-except=${ext}`,
-        `--load-extension=${ext}`,
+        // `--disable-extensions-except=${ext}`,
+        // `--load-extension=${ext}`,
         `--window-size=1728,1080`,
       ],
+      dumpio: true, // чтобы видеть логи браузера
       executablePath: exePath,
     });
+
+    console.log('dumpio', this._browser.debugInfo.pendingProtocolErrors);
 
     console.log('>>> Puppeteer запустил браузер, PID=', this._browser.process().pid);
 
@@ -242,7 +243,7 @@ export class PuppeteerUtil {
       console.log('Не удалось загрузить файл "${cookieFileName}", продолжим без него:', error)
     }
     resetCaptchaFlag();
-    const success = await performLoginWithRetries(this._page, this._config, username, password, waitForManualLogin);
+    const success = await performLoginWithRetries(this._page, this._config, username, password, { waitForManualLogin });
     if (success) {
       console.log('✅ Login прошёл успешно, сохраняем куки - создаем файл?');
       console.log('[LOGIN] ✅ Успешный вход. Готовимся вызвать saveCookieToFile');

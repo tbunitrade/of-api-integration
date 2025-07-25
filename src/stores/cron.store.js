@@ -27,12 +27,12 @@ const useCronStore = defineStore({
       console.log('🔥 triggerPostCronJobManually action called with waitForManualLogin =', waitForManualLogin);
       try {
         const params = new URLSearchParams();
-        params.append('isPost', 'true');
+        //params.append('isPost', 'true');
         if (waitForManualLogin){
           params.append('waitForManualLogin', 'true');
         }
 
-        await axios.get(`${import.meta.env.VITE_APP_ROOT_API}/cron/manual-start?${params.toString()}`);
+        await axios.get(`${import.meta.env.VITE_APP_ROOT_API}/cron/manual-start?isPost=true&${params.toString()}`);
         console.log('🔥 Axios request sent');
         return true;
       } catch (error) {

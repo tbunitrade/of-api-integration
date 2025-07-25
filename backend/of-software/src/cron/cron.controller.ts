@@ -49,7 +49,7 @@ export class CronController {
     console.log(`[CRON] manualStart called: isPost=${isPost}, waitForManualLogin=${waitForManualLogin}`);
     try {
       const id = req.user.id;
-      const user = this.userService.findById(id);
+      const user = await this.userService.findById(id);
 
       // 🔥 ЗАПУСКАЕМ ФОНОМ, НЕ ЖДЁМ
       setTimeout(() => {

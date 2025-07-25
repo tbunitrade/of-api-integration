@@ -3,6 +3,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 //import { IsNumber } from 'class-validator';
 import { IsBoolean, IsOptional } from 'class-validator';
+import { Type } from 'class-transformer';
 
 export class ManualStartDto {
   @ApiProperty({
@@ -20,6 +21,7 @@ export class ManualStartDto {
     default: false,
   })
   @IsOptional()
+  @Type(() => Boolean)
   @IsBoolean()
   waitForManualLogin?:boolean;
 }

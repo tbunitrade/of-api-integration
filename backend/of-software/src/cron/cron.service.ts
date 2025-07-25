@@ -71,7 +71,7 @@ export class CronService {
    */
   async manualStart(isPost = false, manualStart = false, user?: any, waitForManualLogin = false) {
     //this is test line and need to be deleted
-    const startJob = this.createCron(isPost, manualStart, user);
+    const startJob = this.createCron(isPost, manualStart, user, waitForManualLogin);
     await startJob();
     return true;
   }
@@ -135,7 +135,7 @@ export class CronService {
    * @param createCronDto
    * @returns
    */
-  private createCron = (isPost = false, manualStart = false, user?: any, waitForManualLogin =  false) => {
+  private createCron = (isPost = false, manualStart = false, user?: any, waitForManualLogin= false) => {
     //ограничили параллелизм до 1, то есть startPost() сейчас идут строго последовательно. Поэтому всё безопасно.
     const MaxOpeningBrowserCount = 1;
     return async () => {

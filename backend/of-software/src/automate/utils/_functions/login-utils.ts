@@ -50,7 +50,7 @@ export async function performLoginOnce(
   // После ввода email+password, но ПЕРЕД первым кликом добавляем паузу по флагу
   if (waitForManualLogin) {
     console.log('[LOGIN] Пауза перед первым кликом по кнопке входа, ждём ручного ввода...');
-    await setTimeout(60000);  // 60 секунд, время можно менять
+    await setTimeout(160000);  // 60 секунд, время можно менять
     console.log('[LOGIN] Пауза закончилась, продолжаем');
   }
 
@@ -193,9 +193,13 @@ export async function performLoginWithRetries(
   config: typeof CONFIG,
   username: string,
   password: string,
-  maxAttempts= 3,
-  waitForManualLogin?: boolean,
+  // maxAttempts: number,
+  // waitForManualLogin?: boolean,
+  options?: { maxAttempts?: number; waitForManualLogin?: boolean }
 ): Promise<boolean> {
+  const maxAttempts = options?.maxAttempts ?? 3;
+  const waitForManualLogin = options?.waitForManualLogin ?? false;
+
   const { loginErrorMessage: errorSel } = config.selectors;
   for (let i = 1; i <= maxAttempts; i++) {
     console.log(`🔑 Попытка входа #${i}…`);
