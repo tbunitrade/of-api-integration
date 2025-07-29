@@ -1,3 +1,4 @@
+# src  of-software/backend/of-software/Dockerfile
 FROM node:20.19
 
 # Установка зависимостей, необходимых для Chromium и GUI
