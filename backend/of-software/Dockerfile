@@ -1,4 +1,5 @@
 # src  of-software/backend/of-software/Dockerfile
+# updates
 FROM node:20.19
 
 # Установка зависимостей, необходимых для Chromium и GUI
@@ -38,7 +39,6 @@ RUN mkdir -p /app/cookies/
 COPY .env .env
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
-
 
 # Сборка проекта
 RUN npm run build
