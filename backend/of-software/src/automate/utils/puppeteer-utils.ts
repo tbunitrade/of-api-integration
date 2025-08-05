@@ -101,32 +101,55 @@ export class PuppeteerUtil {
     const headlessMode = raw === 'false' || raw === '0' ? false : true;
     this.headless = headlessMode;
     console.log('>>> [DEBUG] HEADLESS_MODE =', process.env.HEADLESS_MODE, '→ headless =', headlessMode);
-
+    const localhost = process.env.ENV;
     const exePath = process.env.PUPPETEER_EXECUTABLE_PATH?.trim() || executablePath();
     console.log('>>> [DEBUG] executablePath =', exePath);
 
-    const ext = path.resolve(__dirname, '../../../extensions/hcapt/0.4.1_0');
-    console.log('EXTENSION PATH for extensions/hcapt/0.4.1_0:', ext);
+    if ( localhost === 'local') {
+      this._browser = await this._puppeteer.launch({
+        headless: this.headless,
+        slowMo: 50,
+        args: [
+          `--no-sandbox`,
+          `--disable-setuid-sandbox`,
+          `--disable-gpu`,
+          `--disable-dev-shm-usage`,
+          `--single-process`,
+          `--no-zygote`,
+          `--window-size=1728,1080`,
+        ],
+        dumpio: false, // чтобы видеть логи браузера
+        executablePath: exePath,
+      });
 
-    this._browser = await this._puppeteer.launch({
-      headless: this.headless,
-      slowMo: 50,
-      args: [
-        `--no-sandbox`,
-        `--disable-setuid-sandbox`,
-        `--disable-gpu`,
-        `--disable-dev-shm-usage`,
-        `--single-process`,
-        `--no-zygote`,
-        `--disable-extensions-except=${ext}`,
-        `--load-extension=${ext}`,
-        `--window-size=1728,1080`,
-      ],
-      dumpio: true, // чтобы видеть логи браузера
-      executablePath: exePath,
-    });
+      console.log('dumpio', this._browser.debugInfo.pendingProtocolErrors);
+    } else {
 
-    console.log('dumpio', this._browser.debugInfo.pendingProtocolErrors);
+      const ext = path.resolve(__dirname, '../../../extensions/hcapt/0.4.1_0');
+      console.log('EXTENSION PATH for extensions/hcapt/0.4.1_0:', ext);
+
+      this._browser = await this._puppeteer.launch({
+        headless: this.headless,
+        slowMo: 50,
+        args: [
+          `--no-sandbox`,
+          `--disable-setuid-sandbox`,
+          `--disable-gpu`,
+          `--disable-dev-shm-usage`,
+          `--single-process`,
+          `--no-zygote`,
+          `--disable-extensions-except=${ext}`,
+          `--load-extension=${ext}`,
+          `--window-size=1728,1080`,
+        ],
+        dumpio: true, // чтобы видеть логи браузера
+        executablePath: exePath,
+      });
+
+      console.log('dumpio', this._browser.debugInfo.pendingProtocolErrors);
+    }
+
+
 
     console.log('>>> Puppeteer запустил браузер, PID=', this._browser.process().pid);
 

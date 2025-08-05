@@ -2,6 +2,7 @@
 
 import { setTimeout } from 'node:timers/promises';
 import process from "node:process";
+import * as path from 'path';
 
 export async function work(_config: any = null) {
   //wait for page loaded
@@ -136,26 +137,33 @@ export async function work(_config: any = null) {
           break;
 
         case 'appendMedias':
-          if (!step.value || step.value?.length === 0) break;
+          if (!step.value || step.value.length === 0) break;
+
           const fileNameList = step.value.split(',') || [];
+          const isDockerLocal = process.env.ENV === 'local';
 
           const filePathList = fileNameList.map((it) => {
             const fileName = it.replace(/^.*[\\/]/, '');
-            return `${process.env.UPLOAD_FOLDER_URL}/${fileName}`;
+
+            if (isDockerLocal) {
+              return path.resolve('/app/uploads', fileName); // внутри контейнера
+            } else {
+              return `${process.env.UPLOAD_FOLDER_URL}/${fileName}`; // обычный путь
+            }
           });
+
           for (let fidx = 0; fidx < filePathList.length; fidx++) {
             const [fileChooser] = await Promise.all([
               this._page.waitForFileChooser(),
               this._page.$eval(step.selector, (element) => element.click()),
             ]);
+
             const fileName = filePathList[fidx];
+            console.log('[appendMedias] Uploading file:', fileName);
             await fileChooser.accept([fileName]);
-            //await this._page.setTimeout(100);
             await setTimeout(100);
           }
 
-          // await fileChooser.accept(filePathList);
-          //await this._page.setTimeout(500);
           await setTimeout(500);
 
           const waitForUploadDone = async () => {
@@ -163,9 +171,7 @@ export async function work(_config: any = null) {
               try {
                 await this._page.waitForFunction(
                   () =>
-                    !document.querySelector(
-                      'span.b-dropzone__preview__progress',
-                    ),
+                    !document.querySelector('span.b-dropzone__preview__progress'),
                   {
                     timeout: 3000,
                   },
@@ -176,7 +182,9 @@ export async function work(_config: any = null) {
               }
             }
           };
+
           await waitForUploadDone();
+
           const closeFileTypeNotAllowed = [
             {
               type: 'click',
@@ -184,12 +192,7 @@ export async function work(_config: any = null) {
             },
           ];
           await this.work(closeFileTypeNotAllowed);
-          // await this._page.waitForSelector(
-          //   'button.b-dropzone__preview__edit',
-          //   {
-          //     timeout: 60000,
-          //   },
-          // );
+
           break;
         case 'waitForTime':
           try {

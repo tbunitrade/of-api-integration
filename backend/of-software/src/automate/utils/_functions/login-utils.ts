@@ -202,7 +202,15 @@ export async function performLoginWithRetries(
 
   const { loginErrorMessage: errorSel } = config.selectors;
   for (let i = 1; i <= maxAttempts; i++) {
-    console.log(`🔑 Попытка входа #${i}…`);
+
+
+    if (maxAttempts === 3) {
+
+      console.log(`t0🔑 Попытка входа # start delay ${i}…`);
+      await setTimeout(5_000);
+      console.log(`t1🔑 Попытка входа # start delay 255 sec`);
+    }
+    console.log(`t2🔑 Попытка входа #${i}…`);
     const ok = await performLoginOnce(page, config, username, password, waitForManualLogin);
     if (ok) {
       console.log('✅ Успешно вошли');
