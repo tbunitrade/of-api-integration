@@ -1,4 +1,5 @@
 # src  of-software/backend/of-software/Dockerfile
+# updates
 FROM node:20.19
 
 # Установка зависимостей, необходимых для Chromium и GUI
@@ -8,7 +9,7 @@ RUN apt-get update && apt-get install -y \
   libdbus-1-3 libgdk-pixbuf2.0-0 libnspr4 libnss3 libx11-xcb1 libxcomposite1 \
   libxdamage1 libxrandr2 libu2f-udev libvulkan1 xdg-utils libdrm2 libxext6 \
   libxi6 libxfixes3 libglib2.0-0 libxrender1 libxtst6 libjpeg62-turbo libgbm-dev \
-  x11vnc fluxbox xvfb chromium dbus feh x11-utils x11-xserver-utils --no-install-recommends && \
+  x11vnc fluxbox xvfb chromium dbus feh x11-utils x11-xserver-utils net-tools --no-install-recommends && \
   apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Симлинк для совместимости с Puppeteer
@@ -38,7 +39,6 @@ RUN mkdir -p /app/cookies/
 COPY .env .env
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
-
 
 # Сборка проекта
 RUN npm run build

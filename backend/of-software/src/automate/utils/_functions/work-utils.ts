@@ -138,27 +138,34 @@ export async function work(_config: any = null) {
 
         case 'appendMedias':
           if (!step.value || step.value.length === 0) break;
+
           const fileNameList = step.value.split(',') || [];
           const isDockerLocal = process.env.ENV === 'local';
+
           const filePathList = fileNameList.map((it) => {
             const fileName = it.replace(/^.*[\\/]/, '');
+
             if (isDockerLocal) {
               return path.resolve('/app/uploads', fileName); // внутри контейнера
             } else {
               return `${process.env.UPLOAD_FOLDER_URL}/${fileName}`; // обычный путь
             }
           });
+
           for (let fidx = 0; fidx < filePathList.length; fidx++) {
             const [fileChooser] = await Promise.all([
               this._page.waitForFileChooser(),
               this._page.$eval(step.selector, (element) => element.click()),
             ]);
+
             const fileName = filePathList[fidx];
             console.log('[appendMedias] Uploading file:', fileName);
             await fileChooser.accept([fileName]);
             await setTimeout(100);
           }
+
           await setTimeout(500);
+
           const waitForUploadDone = async () => {
             while (1) {
               try {
@@ -175,7 +182,9 @@ export async function work(_config: any = null) {
               }
             }
           };
+
           await waitForUploadDone();
+
           const closeFileTypeNotAllowed = [
             {
               type: 'click',
@@ -183,7 +192,8 @@ export async function work(_config: any = null) {
             },
           ];
           await this.work(closeFileTypeNotAllowed);
-          break
+
+          break;
         case 'waitForTime':
           try {
             //await this._page.setTimeout(step.value);
