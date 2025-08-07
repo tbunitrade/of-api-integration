@@ -192,8 +192,7 @@ export async function work(_config: any = null) {
             },
           ];
           await this.work(closeFileTypeNotAllowed);
-
-          break;
+          break
         case 'waitForTime':
           try {
             //await this._page.setTimeout(step.value);
