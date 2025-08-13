@@ -57,9 +57,17 @@ export class FileUploadController {
           }
         },
         filename: ( req, file, cb ) => {
-          const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+          //const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+
+          const d = new Date();
+          const pad = ( n: number) => String(n).padStart(2, '0');
+
+          const uniqueSuffix =
+            `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}_` +
+            `${pad(d.getHours())}-${pad(d.getMinutes())}-${pad(d.getSeconds())}`; // 2025-07-29_17-57-08
           const sanitizedName = file.originalname.replace(/\s+/g, '_');
-          cb(null, `${uniqueSuffix}-${sanitizedName}`);
+          //cb(null, `${sanitizedName}-${uniqueSuffix}`);
+          cb(null, `${sanitizedName}`);
         }
 
         // destination : uploadDirectory,
