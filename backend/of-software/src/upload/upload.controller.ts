@@ -15,7 +15,7 @@ import { MessageService } from 'src/message/message.service';
 // import { diskStorage } from 'multer';
 // import { mkdirSync } from 'fs';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
-import { uploadDirectory, resolveModelFolder } from "../utils/upload";
+import { uploadDirectory, resolveModelFolder, getTypeSubDir } from "../utils/upload";
 import * as fs from 'fs-extra';
 import * as path from 'path';
 
@@ -45,7 +45,8 @@ export class FileUploadController {
               ( req?.query && ( req.query.model_id as string )) ||
               '';
 
-            const folder = resolveModelFolder(raw, modelId);
+            const subdir = getTypeSubDir(file?.mimetype);
+            const folder = resolveModelFolder(raw, modelId, subdir);
             console.log('[upload] destination model:', raw, 'id:', modelId, '→', folder);
             cb(null, folder);
           } catch (e) {

@@ -20,12 +20,14 @@ export function getModelDirname(name: string) {
 
 // Абсолютный путь к папке uploads/{model}{id}/files
 // СОВМЕСТИМОСТЬ: id опциональный, старые вызовы без id не ломаем
-export function resolveModelFolder(modelName?: string, id?: string | number) {
+export function resolveModelFolder(modelName?: string, id?: string | number, subdir?: string) {
   const dir = getModelDirname(modelName || 'unknown-model');
   const idPart =
     id !== undefined && id !== null && String(id).trim() !== '' ? String(id).trim() : '';
   // новая иерархия: uploads/{modelname}{id}/files
-  const full = path.resolve(uploadDirectory, `${dir}${idPart}`, 'files');
+
+  const leaf = subdir && subdir.trim() ? subdir : getTypeSubDir(); // ← тут используем subdir
+  const full = path.resolve(uploadDirectory, `${dir}${idPart}`, leaf);
   fs.ensureDirSync(full);
   return full;
 }
@@ -68,6 +70,18 @@ export function unlinkSmart(filePath: string) {
     // отдаём промис отклонения наружу, как и раньше
     return Promise.reject(e);
   }
+}
+
+// + NEW: определяем подкаталог по mime
+export function getTypeSubDir(mime?: string) {
+  if (!mime) return 'files';
+
+  const top = mime.split('/')[0];
+
+  if ( top === 'image') return 'files/image';
+  if ( top === 'video') return 'files/video';
+
+  return 'files';
 }
 
 // Универсальная запись файла. Если передать modelName/modelId — кладёт в uploads/{model}{id}/files.
