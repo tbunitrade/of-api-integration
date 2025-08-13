@@ -138,37 +138,44 @@ export class PostFileService {
 
       if (!filesToDelete.length) {
         console.warn('[⚠️ deleteMany] No files found for deletion.');
-        console.warn(`⚠️ [${timestamp}] No PostFiles found for provided IDs.`);
+        console.warn(`⚠️ [${timestamp}] No files in Post found for provided IDs.`);
         return [];
       }
 
       const deletedIds = filesToDelete.map((f) => f.id); // ✅ сохраняем ДО удаления
 
       for (const file of filesToDelete) {
-        if (file.url) {
-          console.log('File file.url- ', file.url);
-
-          const filePath = path.resolve('uploads', path.basename(file.url)); // ⬅️ скорректируй если другой путь
-          try {
-            await fs.access(filePath); // check if file exists
-            await fs.unlink(filePath);
-            console.log(`🧹 Deleted file: ${filePath}`);
-          } catch (err) {
-            if (err.code === 'ENOENT') {
-              console.warn(`⚠️ File not found (already deleted?): ${filePath}`);
-            } else {
-              console.warn(`⚠️ Failed to delete file: ${filePath}`, err.message);
-            }
+        try {
+          if (file.url) {
+            await unlinkSmart(file.url);
+            console.log(`🧹 [${timestamp}] Deleted: ${file.url}`);
+          }
+          deletedIds.push(file.id);
+        } catch (err:any) {
+          if (err.code === 'ENOENT') {
+            console.warn(`⚠️ [${timestamp}] ️ File not found (already deleted?): ${file.url}`);
+          } else {
+            console.warn(`⚠️ Failed to delete file: ${file.url}`, err.message);
           }
         }
+        // if (file.url) {
+        //   console.log('File file.url- ', file.url);
+        //
+        //   const filePath = path.resolve('uploads', path.basename(file.url)); // ⬅️ скорректируй если другой путь
+        //   try {
+        //     await fs.access(filePath); // check if file exists
+        //     await fs.unlink(filePath);
+        //     console.log(`🧹 Deleted file: ${filePath}`);
+        //   } catch (err) {
+        //
+        //   }
+        // }
       }
 
       await this.postFileRepository.remove(filesToDelete);
 //      return filesToDelete.map((f) => f.id);
-      console.log('We delete this ', filesToDelete , ' ID ' ,deletedIds);;
+      console.log('delete-many result ', filesToDelete , ' ID ' ,deletedIds);
       return deletedIds; // ✅ теперь возвращаем корректный список ID
-
-
     } catch (err) {
       console.error('❌ deleteMany error', err);
       throw err;
