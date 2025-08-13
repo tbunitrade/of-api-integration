@@ -81,6 +81,12 @@ const deleteFile = async (file) => {
 };
 const processFiles = async (selectedFiles) => {
   const formData = new FormData();
+  // 👇 ДОБАВЛЕНО
+  formData.append('model_name', 'message');
+  formData.append('model_id', String(props.id || 0));
+  console.log('[message-upload] meta', { model_name: 'message', model_id: String(props.id || 0) });
+  // 👆 ДОБАВЛЕНО
+
   for (let i = 0; i < selectedFiles.length; i++) {
 
     const file = selectedFiles[i];

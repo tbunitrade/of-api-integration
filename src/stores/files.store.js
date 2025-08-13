@@ -30,7 +30,6 @@ const useFileStore = defineStore({
             'Content-Type': 'multipart/form-data'
           }
         })
-
         if (response.data) {
           const files = response.data
           this.files = [...this.files, ...files]

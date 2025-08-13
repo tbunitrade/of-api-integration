@@ -15,7 +15,9 @@ import { MessageService } from 'src/message/message.service';
 // import { diskStorage } from 'multer';
 // import { mkdirSync } from 'fs';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
-import {uploadDirectory} from "../utils/upload";
+import { uploadDirectory, resolveModelFolder } from "../utils/upload";
+import * as fs from 'fs-extra';
+import * as path from 'path';
 
 @Controller('upload')
 @ApiTags('upload')
@@ -31,12 +33,41 @@ export class FileUploadController {
   @UseInterceptors(
     FilesInterceptor('files', 10000, {
       storage: diskStorage({
-        destination : uploadDirectory,
-        filename: ( req, file, cb) => {
+        destination: (req, file, cb) => {
+          try {
+            const raw =
+              ( req?.body && (req.body.model_name || req.body.model )) ||
+              ( req?.query && ( req.query.model_name as string )) ||
+              'unknown-model';
+
+            const modelId =
+              ( req?.body && ( req.body.model_id || req.body.id )) ||
+              ( req?.query && ( req.query.model_id as string )) ||
+              '';
+
+            const folder = resolveModelFolder(raw, modelId);
+            console.log('[upload] destination model:', raw, 'id:', modelId, '→', folder);
+            cb(null, folder);
+          } catch (e) {
+            console.error('[upload] destination error:', e);
+            // fallback в корень uploads
+
+            fs.ensureDirSync(uploadDirectory);
+            cb(null, path.resolve(uploadDirectory));
+          }
+        },
+        filename: ( req, file, cb ) => {
           const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
           const sanitizedName = file.originalname.replace(/\s+/g, '_');
           cb(null, `${uniqueSuffix}-${sanitizedName}`);
-        },
+        }
+
+        // destination : uploadDirectory,
+        // filename: ( req, file, cb) => {
+        //   const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+        //   const sanitizedName = file.originalname.replace(/\s+/g, '_');
+        //   cb(null, `${uniqueSuffix}-${sanitizedName}`);
+        // },
       }),
       limits: {
         fileSize: 6 * 1024 * 1024 * 1024, // 6GB

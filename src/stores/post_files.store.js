@@ -89,7 +89,6 @@ const usePostFileStore = defineStore({
           //if (fileDeleteResponse.data) {
           this.post_files = this.post_files.filter((it) => it.id !== id)
           //this.post_files = this.post_files.filter((it) => it.url !== file)
-
           //}
         }
         //this.isLoading = false

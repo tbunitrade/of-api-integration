@@ -9,7 +9,10 @@ export default defineConfig({
   plugins: [vue()],
   server: {
     proxy: {
-      '/uploads' : 'http://localhost:3000',
+      '/uploads': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+      },
     },
   },
   resolve: {

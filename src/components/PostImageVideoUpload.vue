@@ -2,12 +2,13 @@
 <script setup>
 import { computed, ref, watch } from 'vue';
 import BaseButton from './BaseButton.vue';
-import { usePostFileStore } from '@/stores';
+import {useModelStore, usePostFileStore} from '@/stores';
 import { notify } from '@kyvg/vue3-notification';
 import { ClipLoader } from 'vue3-spinner';
 import { mdiClose } from '@mdi/js';
 import throttle from 'lodash/throttle';
-
+const modelStore = useModelStore();
+const selectedModel = computed(() => modelStore.selectedModel);
 
 const props = defineProps({ id: { type: Number, default: 0 } });
 const fileInputRef = ref(null);
@@ -110,6 +111,14 @@ const processFiles = async (selectedFiles) => {
 
   // Готовим FormData
   const formData = new FormData();
+// 👇 добавляем мету для маршрутизации на бэке
+//   formData.append('model_name', 'post');
+  if (selectedModel?.value?.name) {
+    formData.append('model_name', selectedModel.value.name)
+  }
+  formData.append('model_id', String(props.id || 0));
+  console.log('[post-upload] meta', { model_name: 'post', model_id: String(props.id || 0) });
+
   for (let i = 0; i < selectedFiles.length; i++) {
     formData.append(`files`, selectedFiles[i]);
   }

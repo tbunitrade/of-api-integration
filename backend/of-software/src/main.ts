@@ -4,6 +4,8 @@ import { CorsOptions } from '@nestjs/common/interfaces/external/cors-options.int
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import * as bodyParser from 'body-parser';
+import * as path from 'path';
+import * as express from 'express';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
@@ -31,9 +33,12 @@ async function bootstrap() {
     // credentials: true,
   };
   app.enableCors(corsOptions);
-  app.useStaticAssets('uploads', {
-    prefix: '/uploads',
-  });
+  // app.useStaticAssets('uploads', {
+  //   prefix: '/uploads',
+  // });
+  const uploadsRoot = process.env.UPLOAD_FOLDER_URL || path.resolve(process.cwd(), 'uploads');
+  app.use('/uploads', express.static(uploadsRoot));
+  console.log('[static] /uploads ->', uploadsRoot);
   app.use(bodyParser.json({ limit: '10gb' }));
   app.use(bodyParser.urlencoded({ limit: '10gb', extended: true }));
   const server = app.getHttpServer();
