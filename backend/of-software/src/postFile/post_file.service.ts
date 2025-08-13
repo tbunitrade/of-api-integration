@@ -12,6 +12,7 @@ import { PostFileDto } from 'src/dtos/post-file.dto';
 
 import * as fs from 'fs/promises';
 import * as path from 'path';
+import { unlinkSmart } from 'src/utils/upload'; // добавь импорт
 
 @Injectable()
 export class PostFileService {
@@ -84,7 +85,6 @@ export class PostFileService {
         throw new NotFoundException(`PostFile with ID ${id} not found`);
       }
 
-
       const deletedId = post.id;
       const deletedUrl = post.url;
       const targetUrl = fileUrl || post.url;
@@ -93,31 +93,32 @@ export class PostFileService {
       console.log(`📋 [${timestamp}] Deleting PostFile ID:${deletedId}, URL:${deletedUrl}`);
 
       if (targetUrl) {
-        const filePath = path.resolve('uploads', path.basename(targetUrl));
+        //const filePath = path.resolve('uploads', path.basename(targetUrl));
         try {
-          await fs.access(filePath); // check if file exists
-          await fs.unlink(filePath);
-          console.log(`🧹 Deleted file: ${filePath}`);
-          console.log(`🧹 [${timestamp}] File deleted from disk: ${filePath}`);
-        } catch (err) {
+         // await fs.access(filePath); // check if file exists
+          //await fs.access(targetUrl); // check if file exists
+          //await fs.unlink(filePath);
+          //await fs.unlink(targetUrl);
+
+          await unlinkSmart(targetUrl);
+          //console.log(`🧹 Deleted file: ${filePath}`);
+          console.log(`🧹 Deleted file targetUrl: ${targetUrl}`);
+          //console.log(`🧹 [${timestamp}] File deleted from disk: ${filePath}`);
+          console.log(`🧹 [${timestamp}] File deleted from disk targetUrl: ${targetUrl}`);
+        } catch (err: any) {
           if (err.code === 'ENOENT') {
-            console.warn(`⚠️ File not found (already deleted?): ${filePath}`);
-            console.warn(`⚠️ [${timestamp}] File not found (already deleted?): ${filePath}`);
+            console.warn(`⚠️ [${timestamp}] File not found (already deleted?): ${targetUrl}`, err?.message || err );
           } else {
-            console.warn(`⚠️ Could not delete file: ${filePath}`, err.message);
-            console.error(`❌ [${timestamp}] Error deleting file: ${filePath}`, err.message);
+            //console.warn(`⚠️ Could not delete file: ${filePath}`, err.message);
+            console.error(`❌ [${timestamp}] Error deleting file: ${targetUrl}`, err?.message || err);
           }
         }
       }
+
       //return
       await this.postFileRepository.remove(post);
       console.log(`✅ [${timestamp}] PostFile ID:${deletedId} removed from DB`);
-      return {
-        id: deletedId,
-        url: deletedUrl,
-        deleted: true,
-      };
-
+      return { id: deletedId,  url: deletedUrl,  deleted: true };
       //return post; //Возвращаем ДО удаления
     } catch (err) {
       console.error('PostFile deletePostFile error', err);
