@@ -32,6 +32,7 @@ import { useFileStore } from '@/stores/files.store';
 import { notify } from '@kyvg/vue3-notification';
 import { ClipLoader } from 'vue3-spinner';
 import { mdiClose } from '@mdi/js';
+import {useModelStore} from "@/stores";
 
 const props = defineProps({
   id: {
@@ -46,6 +47,9 @@ const fileStore = useFileStore();
 const files = ref([]);
 
 const filesInStore = computed(() => fileStore.files);
+
+const modelStore = useModelStore();
+const selectedModel = computed(() => modelStore.selectedModel);
 
 const isImage = (file) => {
   return /\.(jpe?g|png|gif|bmp)$/i.test(file);
@@ -64,7 +68,7 @@ const openFileInput = () => {
 };
 
 const deleteFile = async (file) => {
-  const result = await fileStore.deleteFile(file, props.id || null);
+  const result = await fileStore.deleteFile(file, props.id || null, selectedModel.value.name );
   if (result) {
     notify({
       title: "Success",
@@ -81,11 +85,16 @@ const deleteFile = async (file) => {
 };
 const processFiles = async (selectedFiles) => {
   const formData = new FormData();
+  if (selectedModel.value.name) {
+    formData.append('model_name', selectedModel.value.name);
+  }
   // 👇 ДОБАВЛЕНО
-  formData.append('model_name', 'message');
+
   formData.append('model_id', String(props.id || 0));
   console.log('[message-upload] meta', { model_name: 'message', model_id: String(props.id || 0) });
   // 👆 ДОБАВЛЕНО
+
+  formData.append('entity', 'messages'); // <-- ВАЖНО
 
   for (let i = 0; i < selectedFiles.length; i++) {
 
@@ -93,7 +102,17 @@ const processFiles = async (selectedFiles) => {
     formData.append(`files`, file);
   }
 
+  if (!selectedModel.value?.name) return;
+
   const result = await fileStore.uploadFiles(formData);
+
+  // 🔁 Сразу обновляем список из реальной папки:
+  await fileStore.refreshFiles({
+    model_name: selectedModel.value.name,
+    model_id: String(props.id || 0),
+    entity: 'messages',
+  });
+
   if (result) {
     notify({
       title: "Success",
@@ -101,6 +120,8 @@ const processFiles = async (selectedFiles) => {
       text: "ImageVideoUpload file uploaded successfully",
     });
   }
+
+
 };
 watch(filesInStore, () => {
   if (filesInStore.value.length === 0) {

@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import * as fs from 'fs-extra';
 import * as path from 'path';
-import { uploadDirectory, uploadFile, unlinkSmart, toPublicUrl } from 'src/utils/upload';
+import { uploadDirectory, uploadFile, unlinkSmart, toPublicUrl, listPublicFiles } from 'src/utils/upload';
 
 @Injectable()
 export class FileUploadService {
@@ -78,5 +78,9 @@ export class FileUploadService {
     } catch (err) {
       console.error('File Upload  error', err);
     }
+  }
+
+  async listByModel(modelName: string, modelId: string | number, entity = 'post') {
+    return listPublicFiles(modelName, modelId, entity);
   }
 }

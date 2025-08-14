@@ -20,14 +20,20 @@ export function getModelDirname(name: string) {
 
 // Абсолютный путь к папке uploads/{model}{id}/files
 // СОВМЕСТИМОСТЬ: id опциональный, старые вызовы без id не ломаем
-export function resolveModelFolder(modelName?: string, id?: string | number, subdir?: string) {
+export function resolveModelFolder(
+  modelName?: string,
+  id?: string | number,
+  subdir?: string,
+  entityPrefix: string = 'post' // default
+) {
   const dir = getModelDirname(modelName || 'unknown-model');
   const idPart =
     id !== undefined && id !== null && String(id).trim() !== '' ? String(id).trim() : '';
   // новая иерархия: uploads/{modelname}{id}/files
 
+  // files / files/image / files/video
   const leaf = subdir && subdir.trim() ? subdir : getTypeSubDir(); // ← тут используем subdir
-  const full = path.resolve(uploadDirectory, `${dir}${idPart}`, leaf);
+  const full = path.resolve(uploadDirectory, dir, `${entityPrefix}${idPart}`, leaf);
   fs.ensureDirSync(full);
   return full;
 }
@@ -49,7 +55,7 @@ export function toPublicUrl(absPath: string): string {
 }
 
 // Удаление по абсолютному пути, относительному или по публичному URL (/uploads/…)
-export function unlinkSmart(filePath: string) {
+export async function unlinkSmart(filePath: string) {
   try {
     let full = filePath;
 
@@ -61,6 +67,19 @@ export function unlinkSmart(filePath: string) {
 
     if (!path.isAbsolute(full)) {
       full = path.resolve(uploadDirectory, full);
+    }
+
+    // если файла нет по новому пути — пробуем старый формат
+    if (!(await fs.pathExists(full))) {
+      // попытка преобразовать <model><id>/files -> <model>/post<id>/files
+      const m = full.match(/(.*\/uploads\/)([^/]+?)(\d+)\/(files.*)/);
+      if (m) {
+        const [, prefix, model, idNum, rest] = m;
+        const tryNew = path.join(prefix, model, `post${idNum}`, rest);
+        if (await fs.pathExists(tryNew)) {
+          full = tryNew;
+        }
+      }
     }
 
     console.log('[unlinkSmart] remove:', full);
@@ -160,3 +179,21 @@ export const uploadFile = async (
     }
   });
 };
+
+// ↓ ДОБАВЬ в конец файла
+export async function listPublicFiles(modelName: string, modelId: string | number, entity: string = 'post') {
+  const root = resolveModelFolder(modelName, modelId, 'files', entity);
+  const urls: string[] = [];
+  const walk = (dir: string) => {
+    for (const entry of fs.readdirSync(dir)) {
+      if (entry === '.DS_Store') continue;
+      const full = path.join(dir, entry);
+      const stat = fs.statSync(full);
+      if (stat.isDirectory()) walk(full);
+      else urls.push(toPublicUrl(full));
+    }
+  };
+  fs.ensureDirSync(root);
+  walk(root);
+  return urls.sort();
+}

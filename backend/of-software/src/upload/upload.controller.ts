@@ -15,7 +15,7 @@ import { MessageService } from 'src/message/message.service';
 // import { diskStorage } from 'multer';
 // import { mkdirSync } from 'fs';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
-import { uploadDirectory, resolveModelFolder, getTypeSubDir } from "../utils/upload";
+import { uploadDirectory, resolveModelFolder, getTypeSubDir, toPublicUrl } from "../utils/upload";
 import * as fs from 'fs-extra';
 import * as path from 'path';
 
@@ -45,9 +45,16 @@ export class FileUploadController {
               ( req?.query && ( req.query.model_id as string )) ||
               '';
 
+            // новое: тип сущности (post|message|messages). По умолчанию — 'post'
+            const entity =
+              (req?.body && (req.body.entity || req.body.model_entity)) ||
+              (req?.query && (req.query.entity as string)) ||
+              'post';
+
             const subdir = getTypeSubDir(file?.mimetype);
-            const folder = resolveModelFolder(raw, modelId, subdir);
-            console.log('[upload] destination model:', raw, 'id:', modelId, '→', folder);
+            const folder = resolveModelFolder(raw, modelId, subdir, entity);
+            //console.log('[upload] destination model:', raw, 'id:', modelId, '→', folder);
+            console.log('[upload] destination model:', raw, 'id:', modelId, 'entity:', entity, '→', folder);
             cb(null, folder);
           } catch (e) {
             console.error('[upload] destination error:', e);
@@ -133,5 +140,16 @@ export class FileUploadController {
     } catch (error) {
       throw error;
     }
+  }
+
+  @Get('list')
+  @ApiBearerAuth('jwt')
+  @UseGuards(JwtAuthGuard)
+  async listFiles(
+    @Query('model_name') modelName: string,
+    @Query('model_id') modelId: string,
+    @Query('entity') entity?: string,
+  ): Promise<string[]> {
+    return this.fileUploadService.listByModel(modelName, modelId, entity || 'post');
   }
 }

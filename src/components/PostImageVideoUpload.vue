@@ -117,6 +117,8 @@ const processFiles = async (selectedFiles) => {
     formData.append('model_name', selectedModel.value.name)
   }
   formData.append('model_id', String(props.id || 0));
+  formData.append('entity', 'post'); // <-- ВАЖНО
+
   console.log('[post-upload] meta', { model_name: 'post', model_id: String(props.id || 0) });
 
   for (let i = 0; i < selectedFiles.length; i++) {

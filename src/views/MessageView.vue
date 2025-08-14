@@ -629,8 +629,15 @@ const onRestartServer = async () => {
   }
 }
 
+// MessageView.vue
+const props = defineProps({
+  id: {
+    type: Number,
+    default: 0,
+  },
+});
 
-onMounted(() =>
+onMounted( async() =>
 {
   if (!selectedModel.value || !selectedPlatform.value)
   {
@@ -643,6 +650,7 @@ onMounted(() =>
   }
   fetchData();
 
+  await fileStore.refreshFiles({ model_name: selectedModel.value.name, model_id: String(props.id || 0), entity: 'messages' });
 
 });
 
