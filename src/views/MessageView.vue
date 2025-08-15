@@ -1,5 +1,6 @@
 <script setup>
 import { computed, onMounted, reactive, ref, watch } from "vue";
+import { useRoute } from 'vue-router'
 import { mdiKey, mdiMessage } from '@mdi/js';
 import { useNotification } from "@kyvg/vue3-notification";
 import { ClipLoader } from "vue3-spinner";
@@ -637,6 +638,10 @@ const props = defineProps({
   },
 });
 
+
+ const route = useRoute()
+ const messageId = computed(() => String(route.params.id || 0))
+
 onMounted( async() =>
 {
   if (!selectedModel.value || !selectedPlatform.value)
@@ -650,7 +655,19 @@ onMounted( async() =>
   }
   fetchData();
 
-  await fileStore.refreshFiles({ model_name: selectedModel.value.name, model_id: String(props.id || 0), entity: 'messages' });
+  // await fileStore.refreshFiles({
+  //   model_name: selectedModel.value.name,
+  //   model_id: String(props.id || 0),
+  //   entity: 'messages'
+  // });
+
+  if (selectedModel.value?.name) {
+       await fileStore.refreshFiles({
+          model_name: selectedModel.value.name,
+           model_id: messageId.value,
+           entity: 'messages'
+       })
+  }
 
 });
 
@@ -696,7 +713,7 @@ onMounted( async() =>
                   </div>
                 </div>
                 <TableMessageGroup :groups="groupStore.groups" @view-row="onViewGroup" @click-row="onClickEditGroup"
-                  @delete-row="onDeleteGroup" @check-rows="onCheckGroups" checkable="true" />
+                  @delete-row="onDeleteGroup" @check-rows="onCheckGroups" :checkable="true" />
                 <div class="w-full text-right">
                   <BaseButton label="Add Group" color="info" rounded small @click="onAddNewGroup" />
                 </div>
