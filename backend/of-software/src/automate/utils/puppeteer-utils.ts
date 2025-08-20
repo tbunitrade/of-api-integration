@@ -118,11 +118,13 @@ export class PuppeteerUtil {
           `--no-zygote`,
           `--window-size=1728,1080`,
         ],
-        dumpio: false, // чтобы видеть логи браузера
+        //dumpio: false, // чтобы видеть логи браузера
         executablePath: exePath,
       });
 
-      console.log('dumpio', this._browser.debugInfo.pendingProtocolErrors);
+      console.log('dumpio 01',
+        //this._browser.debugInfo.pendingProtocolErrors
+      );
     } else {
 
       const ext = path.resolve(__dirname, '../../../extensions/hcapt/0.4.1_0');
@@ -142,23 +144,21 @@ export class PuppeteerUtil {
           `--load-extension=${ext}`,
           `--window-size=1728,1080`,
         ],
-        dumpio: true, // чтобы видеть логи браузера
+        //dumpio: false, // чтобы видеть логи браузера
         executablePath: exePath,
       });
 
-      console.log('dumpio', this._browser.debugInfo.pendingProtocolErrors);
+      console.log('dumpio 99 ', this._browser.debugInfo.pendingProtocolErrors);
     }
 
-
-
-    console.log('>>> Puppeteer запустил браузер, PID=', this._browser.process().pid);
+    console.log('>>> Puppeteer started browser, PID=', this._browser.process().pid);
 
     const targets = await this._browser.targets();
     console.log('All targets:', targets.map(t => t.url()));
     this._isclosed = false;
 
     this._browser.on('disconnected', () => {
-      console.log('⚠️ Puppeteer браузер закрылся (disconnected)');
+      console.log('⚠️ Puppeteer closed browser, браузер закрылся (disconnected)');
       this._isclosed = true;
     });
 
@@ -256,7 +256,7 @@ export class PuppeteerUtil {
     this._password = password;
 
     console.log('[LOGIN] Username:', this._username);
-    console.log('[LOGIN] Password:', this._password);
+    console.log('[LOGIN] Password:', this._password ? '••••••' : '(пусто)');
 
 
     if (!this._page || !this._config) throw new Error('Page or config is not initialized');
