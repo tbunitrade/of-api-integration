@@ -29,7 +29,8 @@ export class ModelController {
   async findAll() {
     try {
       const result = await this.modelService.findAll();
-      console.log('Model controller all', result);
+      console.log('Model controller findAll');
+      //console.log('Model controller all', result);
       return result;
     } catch (error) {
       throw error;

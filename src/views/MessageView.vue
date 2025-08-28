@@ -1,7 +1,7 @@
 <script setup>
-import { computed, onMounted, reactive, ref, watch } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import { useRoute } from 'vue-router'
-import { mdiKey, mdiMessage } from '@mdi/js';
+import { mdiMessage } from '@mdi/js';
 import { useNotification } from "@kyvg/vue3-notification";
 import { ClipLoader } from "vue3-spinner";
 import { useGroupStore, useModelPlatformStore, useModelStore, usePlatformStore, useCronStore, useAuthStore } from '@/stores';
@@ -62,7 +62,7 @@ const selectedMessage = ref({
   free_preview: 0,
 });
 
-
+const spinnerColor = '#3B82F6' // или любой твой бренд-цвет
 const isGroupModalActive = ref(false);
 const isMessageModalActive = ref(false);
 const isModalDangerActive = ref(false);
@@ -210,7 +210,11 @@ async function onSubmitMessage()
         selectedMessage.value = {
           ...selectedMessage.value,
           ...(fileStore.files.length > 0 ? { content: fileStore.files.join(','), content_attached: true } : { content_attached: false }),
-          message_time: selectedMessage.value.message_time.split(":").slice(0, 2).join(":")
+          //message_time: selectedMessage.value.message_time.split(":").slice(0, 2).join(":")
+          message_time: (typeof selectedMessage.value.message_time === 'string'
+           ? selectedMessage.value.message_time
+           : (selectedMessage.value.message_time?.value || '')
+            ).split(":").slice(0,2).join(":")
         };
         const add_result = await messageStore.updateMessage(selectedMessage.value);
         if (add_result)
@@ -370,9 +374,9 @@ const onAddNewMessage = () =>
     price: 0,
     free_preview: 0,
     message: "",
-    message_list: "",
     message_time: "",
-    message_exclude_list: "",
+    message_list: [],
+    message_exclude_list: [],
     release_form_tags: "",
     release_user_tags: "",
     content_attached: false,
@@ -745,7 +749,7 @@ onMounted( async() =>
             </TabContent>
           </template>
         </TabContainer>
-        <ClipLoader class="absolute top-0 left-0 w-full h-full flex justify-center items-center" :color="info"
+        <ClipLoader class="absolute top-0 left-0 w-full h-full flex justify-center items-center" :color="spinnerColor"
           v-if="groupStore.isLoading || messageStore.isLoading" />
       </CardBox>
 
@@ -762,7 +766,7 @@ onMounted( async() =>
             </div>
           </div>
         </CardBox>
-        <ClipLoader class="absolute w-full h-full top-0 left-0 flex justify-center items-center" :color="info"
+        <ClipLoader class="absolute w-full h-full top-0 left-0 flex justify-center items-center" :color="spinnerColor"
           v-if="groupStore.isLoading" />
       </CardBoxModal>
 
@@ -820,6 +824,7 @@ onMounted( async() =>
                       <Multiselect
                         v-model="selectedMessage.message_time"
                         :options="messageTimeOptions"
+                        value-prop="value"
                         label="label"
                         track-by="value"
                         :can-clear="true"
@@ -895,20 +900,6 @@ onMounted( async() =>
                 <div class="flex gap-5 md:flex-row flex-col">
                   <div class="flex-1">
                     <FormField label="Free Preview">
-<!--                      <FormControl v-model="selectedMessage.free_preview" name="free_preview" type="number"-->
-<!--                        autocomplete="free_preview" />-->
-
-<!--                      <Multiselect-->
-<!--                        v-model="selectedMessage.free_preview"-->
-<!--                        :options="freePreviewOptions"-->
-<!--                        label="label"-->
-<!--                        track-by="value"-->
-<!--                        :can-clear="true"-->
-<!--                        :searchable="true"-->
-<!--                        placeholder="Select Time"-->
-<!--                      />-->
-
-
                         <select
                           v-model="selectedMessage.free_preview"
                           class="w-full rounded border px-2 py-1"
@@ -934,12 +925,12 @@ onMounted( async() =>
           </div>
         </CardBox>
 
-        <ClipLoader class="absolute w-full h-full top-0 left-0 flex justify-center items-center" :color="info"
+        <ClipLoader class="absolute w-full h-full top-0 left-0 flex justify-center items-center" :color="spinnerColor"
           v-if="messageStore.isLoading" />
       </CardBoxModal>
 
       <CardBoxModal v-model="isModalDangerActive" title="Please confirm" button="danger" button-label="Delete"
-        has-cancel @confirm="confirmDelete">
+        :has-cancel="true" @confirm="confirmDelete">
         <p>Are you sure you want to delete? </p>
       </CardBoxModal>
 

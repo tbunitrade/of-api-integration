@@ -6,6 +6,7 @@ import router from './router'
 //import SimpleVueValidation from 'simple-vue-validator'
 import Notifications from '@kyvg/vue3-notification'
 //import vue3Spinner from 'vue3-spinner'
+import { ClipLoader } from 'vue3-spinner'   // ✅ берём компонент
 import { useMainStore } from '@/stores/main.js'
 
 import './css/main.css'
@@ -20,6 +21,7 @@ app.use(pinia)
 
 //app.use(vue3Spinner)
 //app.use(router).use(SimpleVueValidation).mount('#app')
+app.component('ClipLoader', ClipLoader)
 app.use(router).mount('#app')
 // Init main store
 const mainStore = useMainStore(pinia)
