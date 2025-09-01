@@ -65,17 +65,40 @@ export class FileUploadController {
           }
         },
         filename: ( req, file, cb ) => {
-          //const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+          try {
+            const d = new Date();
+            const pad = ( n: number) => String(n).padStart(2, '0');
 
-          const d = new Date();
-          const pad = ( n: number) => String(n).padStart(2, '0');
+            const uniqueSuffix =
+              `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}_` +
+              `${pad(d.getHours())}-${pad(d.getMinutes())}-${pad(d.getSeconds())}`; // 2025-07-29_17-57-08
+            //const sanitizedName = file.originalname.replace(/\s+/g, '_');
 
-          const uniqueSuffix =
-            `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}_` +
-            `${pad(d.getHours())}-${pad(d.getMinutes())}-${pad(d.getSeconds())}`; // 2025-07-29_17-57-08
-          const sanitizedName = file.originalname.replace(/\s+/g, '_');
-          //cb(null, `${sanitizedName}-${uniqueSuffix}`);
-          cb(null, `${sanitizedName}`);
+            const ext = path.extname(file.originalname);
+            const base = path.basename(file.originalname, ext ).replace(/\s+/g, '_');
+            let finalName = `${uniqueSuffix}-${base}${ext}`;
+
+            // destination уже вычислён раньше; Multer прокидывает его в file.destination
+            const dest = ( file as any ).destination || resolveModelFolder('unknown-model');
+            const full = path.join(dest, finalName);
+
+            // если такое имя вдруг уже есть — добьём случайный хвост
+            if (fs.existsSync(full)) {
+              finalName = `${uniqueSuffix}-${Math.round(Math.random() * 1e9)}-${base}${ext}`;
+            }
+            cb( null, finalName)
+
+          } catch ( e ) {
+            // аварийный фолбэк: дата + оригинал
+            const sanitizedName = file.originalname.replace(/\s+/g, '_');
+            cb(null, `${Date.now()}-${sanitizedName}`);
+            //cb(null, `${sanitizedName}-${uniqueSuffix}`);
+            //cb(null, `${sanitizedName}`);
+          }
+           //const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+
+
+
         }
 
         // destination : uploadDirectory,

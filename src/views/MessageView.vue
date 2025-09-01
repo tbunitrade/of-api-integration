@@ -668,7 +668,8 @@ onMounted( async() =>
   if (selectedModel.value?.name) {
        await fileStore.refreshFiles({
           model_name: selectedModel.value.name,
-           model_id: messageId.value,
+           //model_id: messageId.value,
+           model_id: String(props.id || 0),
            entity: 'messages'
        })
   }

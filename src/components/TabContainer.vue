@@ -11,6 +11,12 @@ const toggleTabs = (tabNumber) => {
   emit('click-tab', tabNumber);
 };
 </script>
+<style>
+table {
+  overflow: scroll;
+  display: block;
+}
+</style>
 
 <template>
   <div class="flex flex-wrap ">

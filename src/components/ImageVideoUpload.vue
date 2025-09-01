@@ -4,6 +4,14 @@
     <input ref="fileInputRef" type="file" @change="handleFileChange" multiple
       accept=".jpg, .jpeg, .gif, .png, .heic, .mp4, .mov, .m4v, .mpg, .mpeg, .wmv, .avi, .webm, .mkv, .mp3, .wav, .ogg"
       hidden /> <!-- image/*, video/*-->
+    <BaseButton
+      label="Refresh"
+      color="info"
+      small
+      class="ml-2"
+      :disabled="isRefreshing"
+      @click="onRefreshFiles"
+    />
     <div class="w-full border border-gray-300 p-3 rounded mt-2 flex min-h-32 flex-wrap gap-3 max-h-64 overflow-scroll">
       <div v-for="(file, index) in files" :key="index">
         <div class="relative">
@@ -19,7 +27,7 @@
           <video :src="file.previewUrl" controls class="w-32 h-32 object-cover rounded"></video>
         </div> -->
       </div>
-      <ClipLoader class="absolute top-0 left-0 w-full h-full flex justify-center items-center" :color="info"
+      <ClipLoader class="absolute top-0 left-0 w-full h-full flex justify-center items-center" :color="'#38bdf8'"
         v-if="fileStore.isLoading" />
     </div>
   </div>
@@ -38,6 +46,9 @@ const props = defineProps({
   id: {
     type: Number,
     default: 0
+  },
+  info: {
+    type: Object,default: () =>({})
   }
 });
 
@@ -132,4 +143,42 @@ watch(filesInStore, () => {
   }
 })
 
+
+// ... остальной импорт оставляем как есть
+// можно без новых импортов, notify уже есть, fileStore есть
+
+// 👇 ДОБАВИТЬ
+const isRefreshing = ref(false); // не обязательно, просто для UX
+
+const onRefreshFiles = async () => {
+  try {
+    isRefreshing.value = true;
+    console.log('[message-upload] manual refresh', {
+      model_name: selectedModel.value?.name,
+      model_id: String(props.id || 0),
+      entity: 'messages',
+    });
+
+    await fileStore.refreshFiles({
+      model_name: selectedModel.value?.name,
+      model_id: String(props.id || 0),
+      entity: 'messages',
+    });
+
+    notify({
+      title: 'Refreshed',
+      type: 'success',
+      text: 'Список файлов обновлён',
+    });
+  } catch (e) {
+    console.log('[message-upload] refresh error', e);
+    notify({
+      title: 'Error',
+      type: 'error',
+      text: 'Не удалось обновить список файлов',
+    });
+  } finally {
+    isRefreshing.value = false;
+  }
+};
 </script>
