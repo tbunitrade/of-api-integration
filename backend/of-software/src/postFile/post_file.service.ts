@@ -71,12 +71,12 @@ export class PostFileService {
 
     const newPostFile = this.postFileRepository.create(postFile);
     const result = await this.postFileRepository.save(newPostFile);
-
     return await this.findById(result.id);
   }
 
-  //async deletePostFile(id: number, fileUrl?: string): Promise<PostFile> {
   async deletePostFile(id: number, fileUrl?: string): Promise<{id: number; url: string; deleted: boolean}> {
+    console.log('deletePostFile start', id);
+
     try {
       const post = await this.postFileRepository.findOne({ where: { id } });
 
@@ -93,23 +93,13 @@ export class PostFileService {
       console.log(`📋 [${timestamp}] Deleting PostFile ID:${deletedId}, URL:${deletedUrl}`);
 
       if (targetUrl) {
-        //const filePath = path.resolve('uploads', path.basename(targetUrl));
         try {
-         // await fs.access(filePath); // check if file exists
-          //await fs.access(targetUrl); // check if file exists
-          //await fs.unlink(filePath);
-          //await fs.unlink(targetUrl);
-
           await unlinkSmart(targetUrl);
-          //console.log(`🧹 Deleted file: ${filePath}`);
-          console.log(`🧹 Deleted file targetUrl: ${targetUrl}`);
-          //console.log(`🧹 [${timestamp}] File deleted from disk: ${filePath}`);
           console.log(`🧹 [${timestamp}] File deleted from disk targetUrl: ${targetUrl}`);
         } catch (err: any) {
           if (err.code === 'ENOENT') {
             console.warn(`⚠️ [${timestamp}] File not found (already deleted?): ${targetUrl}`, err?.message || err );
           } else {
-            //console.warn(`⚠️ Could not delete file: ${filePath}`, err.message);
             console.error(`❌ [${timestamp}] Error deleting file: ${targetUrl}`, err?.message || err);
           }
         }
@@ -158,22 +148,9 @@ export class PostFileService {
             console.warn(`⚠️ Failed to delete file: ${file.url}`, err.message);
           }
         }
-        // if (file.url) {
-        //   console.log('File file.url- ', file.url);
-        //
-        //   const filePath = path.resolve('uploads', path.basename(file.url)); // ⬅️ скорректируй если другой путь
-        //   try {
-        //     await fs.access(filePath); // check if file exists
-        //     await fs.unlink(filePath);
-        //     console.log(`🧹 Deleted file: ${filePath}`);
-        //   } catch (err) {
-        //
-        //   }
-        // }
       }
 
       await this.postFileRepository.remove(filesToDelete);
-//      return filesToDelete.map((f) => f.id);
       console.log('delete-many result ', filesToDelete , ' ID ' ,deletedIds);
       return deletedIds; // ✅ теперь возвращаем корректный список ID
     } catch (err) {

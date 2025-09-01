@@ -69,9 +69,8 @@ export async function unlinkSmart(filePath: string) {
       full = path.resolve(uploadDirectory, full);
     }
 
-    // если файла нет по новому пути — пробуем старый формат
+    // попытка совместимости со старой схемой — как у тебя уже было
     if (!(await fs.pathExists(full))) {
-      // попытка преобразовать <model><id>/files -> <model>/post<id>/files
       const m = full.match(/(.*\/uploads\/)([^/]+?)(\d+)\/(files.*)/);
       if (m) {
         const [, prefix, model, idNum, rest] = m;
@@ -82,11 +81,16 @@ export async function unlinkSmart(filePath: string) {
       }
     }
 
+    // 🔸 ключевое: если файла нет — не бросаем исключение
+    if (!(await fs.pathExists(full))) {
+      console.log('[unlinkSmart] not found, skip:', full);
+      return;
+    }
+
     console.log('[unlinkSmart] remove:', full);
     return fs.unlink(full);
   } catch (e) {
     console.error('[unlinkSmart] error:', e);
-    // отдаём промис отклонения наружу, как и раньше
     return Promise.reject(e);
   }
 }

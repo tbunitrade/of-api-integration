@@ -7,17 +7,7 @@ import { uploadDirectory, uploadFile, unlinkSmart, toPublicUrl, listPublicFiles 
 export class FileUploadService {
   async deleteFile(file: string): Promise<boolean> {
     try {
-      //const filename = file.replace(/^.*[\\/]/, '');
-
-      // если приходит абсолютный путь (как мы отдаем при аплоаде) — удаляем его
-      // если относительный — удаляем из uploads
-     // console.log('FileUploadService filename ', file );
-      //console.log('FileUploadService filename ', filename );
-      //await fs.unlink(`${uploadDirectory}/${filename}`);
-
-      // если приходит абсолютный путь — удаляем его как есть
-      // если относительный — удаляем из uploads
-      console.log('FileUploadService filename ', file);
+      console.log(' FileUploadService deleteFile the filename ', file);
       await unlinkSmart(file);
       return true;
     } catch (err) {
@@ -27,13 +17,6 @@ export class FileUploadService {
   }
 
   async uploadFiles (files: Express.Multer.File[]): Promise<string[]> {
-
-    //return files.map( (file) => `${uploadDirectory}/${file.filename}`);
-
-    // return files.map( (file) => {
-    //   console.log(`📂 Saved file: ${file.filename} (${(file.size / (1024 * 1024)).toFixed(2)} MB)`);
-    //   return `${uploadDirectory}/${file.filename}`;
-    // });
 
     return files.map((file) => {
       // Multer с diskStorage кладёт в file.destination + file.filename
@@ -48,16 +31,9 @@ export class FileUploadService {
   async getAllFiles(): Promise<string[]> {
     try {
       // Create the uploads directory if it doesn't exist
-      //const files = fs.readdirSync(uploadDirectory);
       const arrayOfFiles: string[] = [];
       const  root = path.resolve(uploadDirectory);
       fs.ensureDirSync(root);
-      // files.forEach(function (file) {
-      //   if (file === '.DS_Store') return;
-      //   if (!fs.statSync(path.join(uploadDirectory, file)).isDirectory()) {
-      //     arrayOfFiles.push(path.join(uploadDirectory, file));
-      //   }
-      // });
 
       const walk = (dir: string) => {
         for (const entry of fs.readdirSync(dir)) {
@@ -71,7 +47,6 @@ export class FileUploadService {
         }
       };
 
-      //walk(path.resolve(uploadDirectory));
       walk(root);
 
       return arrayOfFiles;
