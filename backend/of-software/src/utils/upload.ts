@@ -190,9 +190,16 @@ export async function listPublicFiles(modelName: string, modelId: string | numbe
   const urls: string[] = [];
   const walk = (dir: string) => {
     for (const entry of fs.readdirSync(dir)) {
-      if (entry === '.DS_Store') continue;
+      if (entry === '.DS_Store' || entry.startsWith('._')) continue;
       const full = path.join(dir, entry);
-      const stat = fs.statSync(full);
+      let stat
+        try {
+         stat = fs.statSync(full);
+        } catch(e) {
+          console.warn('[listPublicFiles.walk] skip:', full, e?.message || e);
+          continue;
+        }
+
       if (stat.isDirectory()) walk(full);
       else urls.push(toPublicUrl(full));
     }

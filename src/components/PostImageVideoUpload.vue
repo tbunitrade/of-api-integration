@@ -2,9 +2,9 @@
 <script setup>
 import { computed, ref, watch } from 'vue';
 import BaseButton from './BaseButton.vue';
-import {useModelStore, usePostFileStore} from '@/stores';
+import { useModelStore, usePostFileStore } from '@/stores';
 import { notify } from '@kyvg/vue3-notification';
-import { ClipLoader } from 'vue3-spinner';
+//import { ClipLoader } from 'vue3-spinner';
 import { mdiClose } from '@mdi/js';
 import throttle from 'lodash/throttle';
 const modelStore = useModelStore();
@@ -43,12 +43,12 @@ const deleteFile = async (file, id) => {
     });
   }
 };
-// Throttle progress updates
+// Throttle progress updatesfor Media uploading
 const throttledProgress = throttle((percent) => {
   // Прокидываем 1% сразу
   if (percent === 1 && lastPercent === 0) {
     uploadProgress.value = percent;
-    console.log(`Upload progress: ${percent}%`);
+    console.log(`Upload progress for Media uploading for post: ${percent}%`);
     lastPercent = percent;
     return;
   }
@@ -271,11 +271,11 @@ const toggleSelectAllFiles = () => {
         </div>
       </div>
 
-      <ClipLoader
-        class="absolute top-0 left-0 w-full h-full flex justify-center items-center"
-        :color="'#3b82f6'"
-        v-if="fileStore.isLoading"
-      />
+<!--      <ClipLoader-->
+<!--        class="absolute top-0 left-0 w-full h-full flex justify-center items-center"-->
+<!--        :color="'#3b82f6'"-->
+<!--        v-if="fileStore.isLoading"-->
+<!--      />-->
     </div>
   </div>
 </template>

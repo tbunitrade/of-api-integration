@@ -22,14 +22,23 @@ const useFileStore = defineStore({
     setEmpty() {
       this.files = []
     },
-    async uploadFiles(data) {
+    async uploadFiles( data, onProgress, signal ) {
       try {
         this.isLoading = true
         const response = await axios.post(`${import.meta.env.VITE_APP_ROOT_API}/upload`, data, {
           headers: {
             'Content-Type': 'multipart/form-data'
-          }
-        })
+          },
+          onUploadProgress: (progressEvent) => {
+            if (onProgress && progressEvent.lengthComputable) {
+              const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+              onProgress(percentCompleted);
+            }
+          },
+          signal,
+          timeout: 0,
+        });
+
         if (response.data) {
           const files = response.data
           this.files = [...this.files, ...files]

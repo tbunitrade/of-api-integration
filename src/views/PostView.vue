@@ -575,7 +575,7 @@ onMounted(() => {
 
 
       <CardBoxModal v-model="isTimeModalActive" title="Time" size="xxl:!w-8/12 xl:!w-8/12 md:w-4/5 lg:w-4/5 w-4/5"
-        :buttonLabel="selectedPostTime.isEdit ? 'Update Time' : 'Add Time'" @confirm="onAddTimeDone" has-cancel="true">
+        :buttonLabel="selectedPostTime.isEdit ? 'Update Time' : 'Add Time'" @confirm="onAddTimeDone" :has-cancel="true">
         <CardBox is-form>
           <div class="flex flex-col">
             <div class="flex flex-wrap">
