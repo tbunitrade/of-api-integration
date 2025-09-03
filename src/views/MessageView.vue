@@ -625,7 +625,7 @@ const onRestartServer = async () => {
       text: 'Server restart triggered!',
     });
   } catch (e) {
-    console.log('err '.e);
+    console.log('err ',e);
     notify({
       title: 'Error',
       type: 'error',
@@ -668,8 +668,8 @@ onMounted( async() =>
   if (selectedModel.value?.name) {
        await fileStore.refreshFiles({
           model_name: selectedModel.value.name,
-           //model_id: messageId.value,
-           model_id: String(props.id || 0),
+           model_id: messageId.value,
+           //model_id: String(props.id || 0),
            entity: 'messages'
        })
   }
@@ -920,7 +920,8 @@ onMounted( async() =>
             </div>
             <div class="flex flex-col mt-5">
               <div class="flex flex-wrap">
-                <ImageVideoUpload :id="selectedMessage.id" />
+                <ImageVideoUpload :message-id="messageId" />
+<!--                <ImageVideoUpload :id="selectedMessage.id" />-->
               </div>
             </div>
           </div>

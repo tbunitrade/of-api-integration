@@ -44,7 +44,7 @@ const onRestartServer = async () => {
       text: 'Server restart triggered!',
     });
   } catch (e) {
-    console.log('err '.e);
+    console.log('err ',e);
     notify({
       title: 'Error',
       type: 'error',

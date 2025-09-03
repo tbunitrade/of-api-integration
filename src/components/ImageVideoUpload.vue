@@ -7,11 +7,12 @@ import { notify } from '@kyvg/vue3-notification';
 // import { ClipLoader } from 'vue3-spinner';
 import { mdiClose } from '@mdi/js';
 import throttle from 'lodash/throttle';
+import messageId from "simple-vue-validator/src/rule";
 
 const modelStore = useModelStore();
 const selectedModel = computed(() => modelStore.selectedModel);
 
-const props = defineProps({ id: { type: Number, default: 0 },  info: { type: Object,default: () =>({})} });
+const props = defineProps({ messageId: { type: String, required: true },  info: { type: Object, default: () => ({}) } });
 const fileInputRef = ref(null);
 const fileStore = useFileStore();
 const filesInStore = computed(() => fileStore.files);
@@ -116,9 +117,12 @@ const processFiles = async (selectedFiles) => {
     formData.append('model_name', selectedModel.value.name);
   }
   // 👇 ДОБАВЛЕНО
-  formData.append('model_id', String(props.id || 0));
+  if ( props.messageId ) {
+    formData.append('model_id', props.messageId );
+  }
+
   formData.append('entity', 'messages'); // <-- ВАЖНО
-  console.log('[message-upload] meta', { model_name: 'message', model_id: String(props.id || 0) });
+  console.log('[message-upload] meta', { model_name: selectedModel.value?.name , model_id: props.messageId, entity: 'messages' });
   // 👆 ДОБАВЛЕНО
   for (let i = 0; i < selectedFiles.length; i++) {
     const file = selectedFiles[i];
@@ -134,10 +138,12 @@ const processFiles = async (selectedFiles) => {
       controller.signal,
     );
 
+
+
     // 🔁 Сразу обновляем список из реальной папки:
     await fileStore.refreshFiles({
       model_name: selectedModel.value.name,
-      model_id: String(props.id || 0),
+      model_id: props.messageId,
       entity: 'messages',
     });
     if (result) {
@@ -180,7 +186,7 @@ onMounted(async () => {
     isRefreshing.value = true;
     await fileStore.refreshFiles({
       model_name: selectedModel.value.name,
-      model_id: String(props.id || 0 ),
+      model_id: props.messageId,
       entity: 'messages'
     });
   } catch (e) {
@@ -196,7 +202,7 @@ watch([selectedModel, () => props.id], async ([model]) => {
     isRefreshing.value = true;
     await fileStore.refreshFiles({
       model_name: model.name,
-      model_id: String(props.id || 0),
+      model_id: props.messageId,
       entity: 'messages',
     });
   } catch (e) {
@@ -211,13 +217,13 @@ const onRefreshFiles = async () => {
     isRefreshing.value = true;
     console.log('[message-upload] manual refresh', {
       model_name: selectedModel.value?.name,
-      model_id: String(props.id || 0),
+      model_id: props.messageId,
       entity: 'messages',
     });
 
     await fileStore.refreshFiles({
       model_name: selectedModel.value?.name,
-      model_id: String(props.id || 0),
+      model_id: props.messageId,
       entity: 'messages',
     });
 
