@@ -920,7 +920,11 @@ onMounted( async() =>
             </div>
             <div class="flex flex-col mt-5">
               <div class="flex flex-wrap">
-                <ImageVideoUpload :message-id="messageId" />
+                <ImageVideoUpload
+                  :message-id="messageId"
+                  :message-name="selectedMessage?.name"
+                  :info="{ entity: 'messages' }"
+                />
 <!--                <ImageVideoUpload :id="selectedMessage.id" />-->
               </div>
             </div>

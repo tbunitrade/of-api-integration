@@ -7,12 +7,15 @@ import { notify } from '@kyvg/vue3-notification';
 // import { ClipLoader } from 'vue3-spinner';
 import { mdiClose } from '@mdi/js';
 import throttle from 'lodash/throttle';
-import messageId from "simple-vue-validator/src/rule";
 
 const modelStore = useModelStore();
 const selectedModel = computed(() => modelStore.selectedModel);
 
-const props = defineProps({ messageId: { type: String, required: true },  info: { type: Object, default: () => ({}) } });
+const props = defineProps({
+  messageId: { type: String, required: true },
+  messageName: { type: String, default: ''},
+  info: { type: Object, default: () => ({}) }
+});
 const fileInputRef = ref(null);
 const fileStore = useFileStore();
 const filesInStore = computed(() => fileStore.files);
@@ -38,7 +41,7 @@ const openFileInput = () => {
 };
 
 const deleteFile = async (file) => {
-  const result = await fileStore.deleteFile(file, props.id || null, selectedModel.value.name );
+  const result = await fileStore.deleteFile(file, props.messageId, selectedModel.value.name, 'messages' );
   if (result) {
     notify({
       title: "Success",
@@ -117,11 +120,9 @@ const processFiles = async (selectedFiles) => {
     formData.append('model_name', selectedModel.value.name);
   }
   // 👇 ДОБАВЛЕНО
-  if ( props.messageId ) {
-    formData.append('model_id', props.messageId );
-  }
-
   formData.append('entity', 'messages'); // <-- ВАЖНО
+  if (props.messageId) formData.append('model_id', props.messageId );
+  if (props.messageName) formData.append('message_name', props.messageName); // для slug
   console.log('[message-upload] meta', { model_name: selectedModel.value?.name , model_id: props.messageId, entity: 'messages' });
   // 👆 ДОБАВЛЕНО
   for (let i = 0; i < selectedFiles.length; i++) {
@@ -145,6 +146,7 @@ const processFiles = async (selectedFiles) => {
       model_name: selectedModel.value.name,
       model_id: props.messageId,
       entity: 'messages',
+      message_name: props.messageName || ''
     });
     if (result) {
       notify({
@@ -187,7 +189,8 @@ onMounted(async () => {
     await fileStore.refreshFiles({
       model_name: selectedModel.value.name,
       model_id: props.messageId,
-      entity: 'messages'
+      entity: 'messages',
+      message_name: props.messageName || ''
     });
   } catch (e) {
       console.log('err 911', e)
@@ -196,14 +199,17 @@ onMounted(async () => {
   }
 });
 
-watch([selectedModel, () => props.id], async ([model]) => {
-  if (!model?.name) return;
+// watch([selectedModel, () => props.messageId], async ([model]) => {
+//   if (!model?.name ) return;
+watch([selectedModel, () => props.messageId], async ([model]) => {
+  if (!model?.name || !props.messageId) return;
   try {
     isRefreshing.value = true;
     await fileStore.refreshFiles({
       model_name: model.name,
       model_id: props.messageId,
       entity: 'messages',
+      message_name: props.messageName || ''
     });
   } catch (e) {
     console.log('error 922', e);
@@ -219,12 +225,14 @@ const onRefreshFiles = async () => {
       model_name: selectedModel.value?.name,
       model_id: props.messageId,
       entity: 'messages',
+      message_name: props.messageName || ''
     });
 
     await fileStore.refreshFiles({
       model_name: selectedModel.value?.name,
       model_id: props.messageId,
       entity: 'messages',
+      message_name: props.messageName || ''
     });
 
     notify({

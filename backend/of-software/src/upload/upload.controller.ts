@@ -15,7 +15,7 @@ import { MessageService } from 'src/message/message.service';
 // import { diskStorage } from 'multer';
 // import { mkdirSync } from 'fs';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
-import { uploadDirectory, resolveModelFolder, getTypeSubDir, toPublicUrl } from "../utils/upload";
+import {uploadDirectory, resolveModelFolder, getTypeSubDir, toPublicUrl, getModelDirname} from "../utils/upload";
 import * as fs from 'fs-extra';
 import * as path from 'path';
 
@@ -51,7 +51,20 @@ export class FileUploadController {
               (req?.query && (req.query.entity as string)) ||
               'post';
 
-            const subdir = getTypeSubDir(file?.mimetype);
+            //new
+            const msgName =
+              ( req?.body && ( req.body.message_name as string)) ||
+              ( req?.query && ( req.query.message_name as string)) ||
+              '';
+
+            // пустая строка, если имени нет
+            const slug = getModelDirname(msgName);
+
+            // базовый подкаталог по mime: files / files/image / files/video
+            const baseSubdir = getTypeSubDir(file?.mimetype);
+            // если есть slug → "<slug>/files/image", иначе как раньше
+            const subdir =  slug? `${slug}/${baseSubdir}` : baseSubdir;
+
             const folder = resolveModelFolder(raw, modelId, subdir, entity);
             //console.log('[upload] destination model:', raw, 'id:', modelId, '→', folder);
             console.log('[upload] destination model:', raw, 'id:', modelId, 'entity:', entity, '→', folder);
@@ -92,21 +105,8 @@ export class FileUploadController {
             // аварийный фолбэк: дата + оригинал
             const sanitizedName = file.originalname.replace(/\s+/g, '_');
             cb(null, `${Date.now()}-${sanitizedName}`);
-            //cb(null, `${sanitizedName}-${uniqueSuffix}`);
-            //cb(null, `${sanitizedName}`);
           }
-           //const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-
-
-
         }
-
-        // destination : uploadDirectory,
-        // filename: ( req, file, cb) => {
-        //   const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-        //   const sanitizedName = file.originalname.replace(/\s+/g, '_');
-        //   cb(null, `${uniqueSuffix}-${sanitizedName}`);
-        // },
       }),
       limits: {
         fileSize: 6 * 1024 * 1024 * 1024, // 6GB
@@ -119,18 +119,18 @@ export class FileUploadController {
     try {
       console.log(`📥 Start uploading ${uploaded_files.length} file(s)...`);
       const startTime = Date.now();
+      console.log (startTime, ' progress time ')
 
       uploaded_files.forEach( file => {
         console.log(`⏳ Uploading: ${file.originalname} (${(file.size / (1024 * 1024)).toFixed(2)} MB)`);
       });
 
-      const result = await this.fileUploadService.uploadFiles(uploaded_files);
-
-      //return await this.fileUploadService.uploadFiles(uploaded_files);
-
       const endTime = Date.now();
-      console.log (startTime, ' progress time ',endTime)
+      console.log ('End load progress time ',endTime)
+
+      const result = await this.fileUploadService.uploadFiles(uploaded_files);
       console.log(`✅ All files uploaded successfully in ${(endTime - startTime) / 1000}s`);
+      //return await this.fileUploadService.uploadFiles(uploaded_files);
       return result;
     } catch (error) {
       throw error;
@@ -172,7 +172,8 @@ export class FileUploadController {
     @Query('model_name') modelName: string,
     @Query('model_id') modelId: string,
     @Query('entity') entity?: string,
+    @Query('message_name') messageName?: string,
   ): Promise<string[]> {
-    return this.fileUploadService.listByModel(modelName, modelId, entity || 'post');
+    return this.fileUploadService.listByModel(modelName, modelId, entity || 'post', messageName);
   }
 }

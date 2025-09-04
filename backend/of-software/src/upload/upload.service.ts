@@ -55,7 +55,7 @@ export class FileUploadService {
     }
   }
 
-  async listByModel(modelName: string, modelId: string | number, entity = 'post') {
-    return listPublicFiles(modelName, modelId, entity);
+  async listByModel(modelName: string, modelId: string | number, entity = 'post', messageName?: string) {
+    return listPublicFiles(modelName, modelId, entity, messageName);
   }
 }

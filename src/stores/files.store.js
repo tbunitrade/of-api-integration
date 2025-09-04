@@ -77,12 +77,12 @@ const useFileStore = defineStore({
     async refreshFiles(params) {
       try {
         // params: { model_name: 'message', model_id: '123' }
-        const { model_name, model_id, entity } = params || {};
+        const { model_name, model_id, entity, message_name } = params || {};
         if (!model_name || !model_id) return [];
 
         const res = await axios.get(
           `${import.meta.env.VITE_APP_ROOT_API}/upload/list`,
-          { params: { model_name, model_id, entity } }
+          { params: { model_name, model_id, entity, message_name } }
         );
         const files = res.data || [];
         this.files = files;
