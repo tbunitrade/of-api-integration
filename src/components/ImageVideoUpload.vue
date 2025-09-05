@@ -12,6 +12,8 @@ const modelStore = useModelStore();
 const selectedModel = computed(() => modelStore.selectedModel);
 
 const props = defineProps({
+  groupId: { type: String },
+  modelName: { type: String },
   messageId: { type: String, required: true },
   messageName: { type: String, default: ''},
   info: { type: Object, default: () => ({}) }
@@ -41,7 +43,11 @@ const openFileInput = () => {
 };
 
 const deleteFile = async (file) => {
-  const result = await fileStore.deleteFile(file, props.messageId, selectedModel.value.name, 'messages' );
+  const result = await fileStore.deleteFile(
+    file,
+    props.messageId,
+    selectedModel.value.name,
+    'messages' );
   if (result) {
     notify({
       title: "Success",
@@ -75,6 +81,8 @@ const throttledProgress = throttle((percent) => {
     }
   }
 }, 300);
+
+
 const processFiles = async (selectedFiles) => {
 
   if (isUploading) {
@@ -115,20 +123,57 @@ const processFiles = async (selectedFiles) => {
     lastPercent = 0;
   }, timeoutDuration);
 
-  const formData = new FormData();
-  if (selectedModel?.value?.name) {
-    formData.append('model_name', selectedModel.value.name);
+
+  if (!selectedModel.value?.id) {
+    notify( {
+      title: 'Error',
+      type: 'error',
+      text : 'Error group_id not found',
+    });
   }
-  // 👇 ДОБАВЛЕНО
-  formData.append('entity', 'messages'); // <-- ВАЖНО
-  if (props.messageId) formData.append('model_id', props.messageId );
-  if (props.messageName) formData.append('message_name', props.messageName); // для slug
-  console.log('[message-upload] meta', { model_name: selectedModel.value?.name , model_id: props.messageId, entity: 'messages' });
-  // 👆 ДОБАВЛЕНО
+
+  if (!props.messageId || Number(props.messageId) <=0 ) {
+    notify( {
+      title: 'Error',
+      type: 'error',
+      text : 'Error no correct id of message',
+    });
+  }
+
+
+
+
+  const formData = new FormData();
+
+  console.log('selectedModel !!!! ', selectedModel);
+  console.log('me', selectedModel?.value?.name);
+  console.log('me 2', props.model_name);
+  console.log('message_id', props.messageId);
+  console.log('group_id', props.group_id);
+  console.log('messageId String(', String(props.messageId));
+  console.log('group_id String(', String(props.group_id));
+
+  formData.append('entity', 'messages');
+
+  formData.append('model_name', props.modelName || selectedModel.value?.name || '');
+  formData.append('group_id', String(props.groupId));      // ВАЖНО: тут именно groupId из selectedGroup.id
+  formData.append('message_id', String(props.messageId));
+
+
+  console.log('[message-upload] meta', {
+
+    entity: 'messages',
+    model_name: selectedModel.value?.name,
+    groupId: props.groupId,
+    messageId: props.messageId,
+     });
+
   for (let i = 0; i < selectedFiles.length; i++) {
     const file = selectedFiles[i];
     formData.append(`files`, file);
+    console.log('file list', file);
   }
+
   if (!selectedModel.value?.name) return;
 
   // Загружаем с передачей signal feature
@@ -139,14 +184,13 @@ const processFiles = async (selectedFiles) => {
       controller.signal,
     );
 
-
-
     // 🔁 Сразу обновляем список из реальной папки:
     await fileStore.refreshFiles({
-      model_name: selectedModel.value.name,
-      model_id: props.messageId,
       entity: 'messages',
-      message_name: props.messageName || ''
+      //model_name: props.modelName || selectedModel.value?.name,
+      model_name: selectedModel.value.name,
+      group_id: String(props.groupId),
+      message_id: String(props.messageId),
     });
     if (result) {
       notify({
@@ -187,13 +231,13 @@ onMounted(async () => {
   try {
     isRefreshing.value = true;
     await fileStore.refreshFiles({
-      model_name: selectedModel.value.name,
-      model_id: props.messageId,
       entity: 'messages',
-      message_name: props.messageName || ''
+      model_name: selectedModel.value.name,
+      group_id: String(props.groupId),
+      message_id: String(props.messageId),
     });
   } catch (e) {
-      console.log('err 911', e)
+      console.log('fileStore.refreshFiles err 911', e)
   } finally {
     isRefreshing.value = false;
   }
@@ -201,18 +245,19 @@ onMounted(async () => {
 
 // watch([selectedModel, () => props.messageId], async ([model]) => {
 //   if (!model?.name ) return;
-watch([selectedModel, () => props.messageId], async ([model]) => {
+watch([selectedModel, () => props.groupId, () => props.messageId], async ([model]) => {
   if (!model?.name || !props.messageId) return;
+
+  if (!selectedModel.value?.name) return;
+  if (props.groupId == null || props.messageId == null) return;
+  isRefreshing.value = true;
   try {
-    isRefreshing.value = true;
     await fileStore.refreshFiles({
-      model_name: model.name,
-      model_id: props.messageId,
       entity: 'messages',
-      message_name: props.messageName || ''
+      model_name: selectedModel.value?.name,
+      group_id: selectedModel.value?.id,
+      message_id: String(props.messageId),
     });
-  } catch (e) {
-    console.log('error 922', e);
   } finally {
     isRefreshing.value = false;
   }

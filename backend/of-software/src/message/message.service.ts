@@ -7,6 +7,7 @@ import { Message } from './message.entity';
 import { MessageDto } from 'src/dtos/message.dto';
 import { GroupMessage } from 'src/groupMessages/group_message.entity';
 import { GroupMessageDto } from 'src/dtos/group_message.dto';
+import * as path from 'path';
 
 @Injectable()
 export class MessageService {
@@ -175,6 +176,37 @@ export class MessageService {
       return updatedMessage;
     } catch (err) {
       console.error('Message delete error', err);
+    }
+  }
+
+  async deleteFileByPath(id: number, file: string): Promise<Message> {
+
+    try {
+      const options: FindOneOptions<Message> = { where: { id } };
+      const message = await this.messageRepository.findOne(options);
+      if (!message) throw new NotFoundException(`Message with ID ${id} not found`);
+
+      const target = (file || '').trim();
+      const targetBase = path.basename(target);
+
+      const content = message.content || '';
+      const parts = content.split(',').map(s => s.trim()).filter(Boolean);
+
+      const filtered = parts.filter(p => {
+        const pTrim = p.trim();
+        const pBase = path.basename(pTrim);
+        // выкидываем, если совпал полный путь или basename
+        return !(pTrim === target || pTrim.endsWith(target) || pBase === targetBase);
+      });
+
+      // Если ничего не изменилось — просто вернуть без записи
+      if (filtered.length === parts.length) return message;
+
+      message.content = filtered.join(',');
+      return await this.update(id, message);
+    } catch (err) {
+      console.error('Message delete error', err);
+      throw err;
     }
   }
 }

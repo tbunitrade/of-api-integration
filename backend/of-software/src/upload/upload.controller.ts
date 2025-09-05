@@ -15,7 +15,7 @@ import { MessageService } from 'src/message/message.service';
 // import { diskStorage } from 'multer';
 // import { mkdirSync } from 'fs';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
-import {uploadDirectory, resolveModelFolder, getTypeSubDir, toPublicUrl, getModelDirname} from "../utils/upload";
+import { uploadDirectory, resolveModelFolder, getTypeSubDir, toPublicUrl, getModelDirname } from "../utils/upload";
 import * as fs from 'fs-extra';
 import * as path from 'path';
 
@@ -35,39 +35,52 @@ export class FileUploadController {
       storage: diskStorage({
         destination: (req, file, cb) => {
           try {
-            const raw =
-              ( req?.body && (req.body.model_name || req.body.model )) ||
+            const rawModelName =
+              ( req?.body && (req.body.model_name || req.body.modelName )) ||
               ( req?.query && ( req.query.model_name as string )) ||
               'unknown-model';
 
-            const modelId =
-              ( req?.body && ( req.body.model_id || req.body.id )) ||
+            let modelId =
+              ( req?.body && ( req.body.model_id || req.body.modelId)) ||
               ( req?.query && ( req.query.model_id as string )) ||
               '';
 
-            // новое: тип сущности (post|message|messages). По умолчанию — 'post'
-            const entity =
-              (req?.body && (req.body.entity || req.body.model_entity)) ||
-              (req?.query && (req.query.entity as string)) ||
-              'post';
+            //console.log('modelId ->', modelId); // empty
+            //console.log('req ->', req as any) ; // empty
+            console.log('req.body ->', req.body);
+            console.log('req.query ->', req.query);
 
-            //new
-            const msgName =
-              ( req?.body && ( req.body.message_name as string)) ||
-              ( req?.query && ( req.query.message_name as string)) ||
+            const entity = (( req?.body?.entity || req?.query?.entity ) ?? 'post').toString();
+
+            const groupIdFromBody =
+              (req?.body && (req.body.group_id || req.body.groupId)) ||
+              (req?.query && (req.query.group_id as string)) ||
+              '';
+            const messageIdFromBody =
+              (req?.body && (req.body.message_id || req.body.messageId)) ||
+              (req?.query && (req.query.message_id as string)) ||
               '';
 
-            // пустая строка, если имени нет
-            const slug = getModelDirname(msgName);
+            console.log('groupIdFromBody ->', groupIdFromBody);
+            console.log('messageIdFromBody ->', messageIdFromBody);
 
-            // базовый подкаталог по mime: files / files/image / files/video
             const baseSubdir = getTypeSubDir(file?.mimetype);
-            // если есть slug → "<slug>/files/image", иначе как раньше
-            const subdir =  slug? `${slug}/${baseSubdir}` : baseSubdir;
 
-            const folder = resolveModelFolder(raw, modelId, subdir, entity);
-            //console.log('[upload] destination model:', raw, 'id:', modelId, '→', folder);
-            console.log('[upload] destination model:', raw, 'id:', modelId, 'entity:', entity, '→', folder);
+            // --- наша структура только для entity=messages ---
+            if (entity !== 'messages') {
+              console.log('wtf');
+            }
+
+            if (!groupIdFromBody || !messageIdFromBody) {
+              // жёстко валидируем — без этих двух полей мы путь собрать не можем
+              throw new Error('[upload] Both group_id and message_id are required for entity=messages');
+            }
+
+            const subdir = `group${String(groupIdFromBody).trim()}/messages${String(messageIdFromBody).trim()}/${baseSubdir}`;
+
+            const folder = resolveModelFolder(rawModelName, undefined, subdir, '');
+
+            console.log('[upload] destination model:', rawModelName, 'entity:', entity, 'subdir', subdir, '→', folder);
             cb(null, folder);
           } catch (e) {
             console.error('[upload] destination error:', e);
@@ -141,16 +154,23 @@ export class FileUploadController {
   @ApiBearerAuth('jwt')
   async deleteFile(
     @Query('file') filePath: string,
-    @Query('id') messageId: number,
+    @Query('id') id?: number,
+    @Query('message_id') mid?: number,
   ): Promise<boolean> {
     try {
-      if (messageId && messageId > 0) {
+      const messageId = Number( mid?? id ?? 0);
+
+      if (messageId > 0) {
         await this.messageService.deleteFile(messageId, filePath);
+        console.log('911');
       }
 
       return await this.fileUploadService.deleteFile(filePath);
+
     } catch (error) {
+      console.error('[deleteFile] unexpected error:', error);
       throw error;
+      //return true; // всё равно true, чтобы UI не вис
     }
   }
 
@@ -170,10 +190,11 @@ export class FileUploadController {
   @UseGuards(JwtAuthGuard)
   async listFiles(
     @Query('model_name') modelName: string,
-    @Query('model_id') modelId: string,
+    @Query('model_id') modelId: string, // для messages игнорится
     @Query('entity') entity?: string,
-    @Query('message_name') messageName?: string,
+    @Query('group_id') groupId?: string,
+    @Query('message_id') messageId?: string,
   ): Promise<string[]> {
-    return this.fileUploadService.listByModel(modelName, modelId, entity || 'post', messageName);
+    return this.fileUploadService.listByModel(modelName, modelId, entity || 'post', groupId, messageId);
   }
 }

@@ -134,6 +134,7 @@ const onPageNumberClick = (page) => {
           <TableCheckboxCell v-if="checkable" @checked="checkAll($event)" />
         </th>
         <th class="text-left" v-if="props.showGroup"> Group Name </th>
+        <th class="text-left"> Message Id </th>
         <th class="text-left"> Message Name </th>
         <th class="text-right">Message Time</th>
         <th class="text-right">Message List</th>
@@ -151,6 +152,9 @@ const onPageNumberClick = (page) => {
     <tbody>
       <tr v-for="client in itemsPaginated" :key="client.id">
         <TableCheckboxCell v-if="checkable" @checked="checked($event, client)" />
+        <td data-label="ID" class="text-left">
+          {{ client.id || client.message_id }}
+        </td>
         <td data-label="Group Name" class="text-left" v-if="props.showGroup">
           {{ client.group_name }}
         </td>

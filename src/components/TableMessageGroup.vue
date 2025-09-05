@@ -207,6 +207,13 @@ const addTableRowsMovable = () => {
   }
 };
 
+
+//
+const selectedGroup = ref({
+  name: "",
+  isEdit: false
+});
+
 //----------------- Table Drag and Drop Start -----------------
 const messageGroupTable = ref(null);
 watch(itemsPaginated, () => {
@@ -229,6 +236,7 @@ onMounted(() => {
         <TableCheckboxCell v-if="checkable" @checked="checkAll($event)" type="th" />
         <th class="w-10" />
         <th class="text-left">Group Name</th>
+        <th class="text-left">Group Id</th>
         <th>Messages</th>
         <th>Added to OnlyFans</th>
         <th>Status</th>
@@ -246,6 +254,13 @@ onMounted(() => {
         <td data-label="Name" class="text-left">
           {{ client.name }}
         </td>
+
+        <td data-label="Name" class="text-left">
+          {{ client.id }}
+        </td>
+<!--        <td>-->
+<!--          {{ selectedGroup.id }}-->
+<!--        </td>-->
         <td data-label="Messages">
           {{ client.message_count ?? 0 }}
         </td>
