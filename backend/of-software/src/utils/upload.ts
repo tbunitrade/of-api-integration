@@ -38,14 +38,50 @@ export function resolveModelFolder(
   return full;
 }
 
+const PUBLIC_BASE =
+  process.env.UPLOAD_PUBLIC_BASE // например: http://localhost:3000
+  || '';                         // по умолчанию оставляем относительный /uploads
+
+// Нормализация публичного URL (для локалки и не только)
+function normalizePublicUrlTail(tail: string) {
+  // 1) слэши
+  let s = tail.replace(/\\/g, '/');
+
+  // 2) убрать повторные слэши внутри пути
+  s = s.replace(/\/{2,}/g, '/');
+
+  // 3) кодировать только сегменты пути с пробелами и не-ASCII
+  // (без трогания начального /uploads)
+  const parts = s.split('/').map((p, i) => (i === 0 ? p : encodeURIComponent(p)));
+  s = parts.join('/');
+
+  // 4) финал: гарантируем один ведущий слэш
+  s = s.replace(/^\/?uploads\/?/, '/uploads/');
+
+  return s;
+}
+
+
 // Абсолютный путь → публичный URL (/uploads/…)
 export function toPublicUrl(absPath: string): string {
   try {
     const normalized = absPath.replace(/\\/g, '/');
     const baseNorm = uploadDirectory.replace(/\\/g, '/');
+
     if (normalized.startsWith(baseNorm)) {
       const tail = normalized.slice(baseNorm.length).replace(/^\/+/, '');
-      return `/uploads/${tail}`;
+      //return `/uploads/${tail}`;
+      const publicTail = normalizePublicUrlTail(`/uploads/${tail}`);
+
+      // Локалка: хочешь полный URL — задай UPLOAD_PUBLIC_BASE=http://localhost:3000
+      if (PUBLIC_BASE) {
+        // убираем завершающий / у базы и склеиваем
+        const base = PUBLIC_BASE.replace(/\/+$/, '');
+        return `${base}${publicTail}`;
+      }
+
+      // по умолчанию — относительный путь
+      return publicTail;
     }
     return normalized; // fallback — не ломаем старые записи
   } catch (e) {

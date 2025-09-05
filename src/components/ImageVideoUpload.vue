@@ -12,9 +12,9 @@ const modelStore = useModelStore();
 const selectedModel = computed(() => modelStore.selectedModel);
 
 const props = defineProps({
-  groupId: { type: String },
-  modelName: { type: String },
-  messageId: { type: String, required: true },
+  groupId: { type: [String, Number ], required: true },
+  modelName: { type: String, default: '' },
+  messageId: { type: [ String, Number ], required: true },
   messageName: { type: String, default: ''},
   info: { type: Object, default: () => ({}) }
 });
@@ -45,9 +45,15 @@ const openFileInput = () => {
 const deleteFile = async (file) => {
   const result = await fileStore.deleteFile(
     file,
-    props.messageId,
-    selectedModel.value.name,
-    'messages' );
+    {
+      messageId : String(selectedMessage.id),
+      groupId: String(selectedGroup.id),
+      modelName: selectedModel.name,
+      entity: 'messages',
+    });
+    // props.messageId,
+    // selectedModel.value.name,
+    //'messages' );
   if (result) {
     notify({
       title: "Success",
@@ -84,6 +90,16 @@ const throttledProgress = throttle((percent) => {
 
 
 const processFiles = async (selectedFiles) => {
+  // ✅ Жёсткая валидация перед отправкой
+  if (props.groupId == null || props.messageId == null) {
+    notify({ title: 'Missing IDs', type: 'error', text: 'groupId и messageId обязательны' });
+    return;
+  }
+  if (!selectedModel.value?.name) {
+    notify({ title: 'No model', type: 'error', text: 'Не выбран модель (model_name)' });
+    return;
+  }
+
 
   if (isUploading) {
     console.warn('⛔ Upload already in progress. Ignoring duplicate call.');
@@ -147,16 +163,20 @@ const processFiles = async (selectedFiles) => {
 
   console.log('selectedModel !!!! ', selectedModel);
   console.log('me', selectedModel?.value?.name);
-  console.log('me 2', props.model_name);
-  console.log('message_id', props.messageId);
-  console.log('group_id', props.group_id);
-  console.log('messageId String(', String(props.messageId));
-  console.log('group_id String(', String(props.group_id));
+  console.log('me 2', props.modelName);
+
+
+  console.log('group_id', props.groupId);
+  console.log('no (', props.messageId);
+  console.log('String(', String(props.messageId));
 
   formData.append('entity', 'messages');
 
   formData.append('model_name', props.modelName || selectedModel.value?.name || '');
-  formData.append('group_id', String(props.groupId));      // ВАЖНО: тут именно groupId из selectedGroup.id
+  // formData.append('group_id', props.groupId);      // ВАЖНО: тут именно groupId из selectedGroup.id
+  // formData.append('message_id', props.messageId);
+
+  formData.append('group_id', String(props.groupId));
   formData.append('message_id', String(props.messageId));
 
 
@@ -192,6 +212,7 @@ const processFiles = async (selectedFiles) => {
       group_id: String(props.groupId),
       message_id: String(props.messageId),
     });
+    notify({ title: 'Success', type: 'success', text: 'Файлы успешно загружены' });
     if (result) {
       notify({
         title: "Success",
@@ -232,9 +253,9 @@ onMounted(async () => {
     isRefreshing.value = true;
     await fileStore.refreshFiles({
       entity: 'messages',
-      model_name: selectedModel.value.name,
-      group_id: String(props.groupId),
-      message_id: String(props.messageId),
+      model_name: props.modelName || selectedModel.value?.name || '',
+      group_id: props.groupId,
+      message_id: props.messageId,
     });
   } catch (e) {
       console.log('fileStore.refreshFiles err 911', e)

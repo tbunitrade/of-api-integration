@@ -31,9 +31,12 @@ const useFileStore = defineStore({
           },
           onUploadProgress: (progressEvent) => {
             if (onProgress && progressEvent.lengthComputable) {
+              console.log('refresh');
               const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
               onProgress(percentCompleted);
             }
+
+            console.log('refresh 2');
           },
           signal,
           timeout: 0,
@@ -53,38 +56,34 @@ const useFileStore = defineStore({
     },
     //async deleteFile(file, id, modelName, entity = 'messages') {
     //async deleteFile(file, id, modelName, entity = 'messages', groupId = null) {
-    async deleteFile(file, arg2, arg3, arg4 = 'messages') {
+    async deleteFile(file, meta) {
       try {
         this.isLoading = true;
-
-         // Поддержка старого сигнатура: (file, id, modelName, entity?)
-           // И нового: (file, { messageId, groupId, modelName, entity })
-         let messageId, groupId, modelName, entity
-         if (typeof arg2 === 'object') {
-             ({ messageId, groupId, modelName, entity = 'messages' } = arg2)
-         } else {
-             messageId = arg2
-             modelName = arg3
-             entity = arg4
-         }
-
+        // meta: { messageId, groupId, modelName, entity }
+        const { messageId, modelName, entity = 'messages' } = meta || {}
         const response = await axios.get(
-          `${import.meta.env.VITE_APP_ROOT_API}/upload/delete?id=${messageId}&file=${encodeURIComponent(file)}`
-        );
+      `${import.meta.env.VITE_APP_ROOT_API}/upload/delete?id=${encodeURIComponent(messageId)}&file=${encodeURIComponent(file)}`
+        )
+
+        // const response = await axios.get(
+        //   `${import.meta.env.VITE_APP_ROOT_API}/upload/delete?id=${messageId}&file=${encodeURIComponent(file)}`
+        // );
 
         // затем честный рефреш
         if (entity === 'messages') {
           await this.refreshFiles({
             entity: 'messages',
             model_name: modelName,
-            group_id: String(groupId),
-            message_id: String(messageId)
+            group_id: meta.group_id,
+            message_id: meta.group_id
           })
         } else {
           await this.refreshFiles({
+            entity,
             model_name: modelName,
-            model_id: String(messageId), // старый кейс для post, если надо
-            entity
+            group_id: meta.group_id,
+            model_id: meta.model_id, // старый кейс для post, если надо
+
           })
         }
 
@@ -106,48 +105,18 @@ const useFileStore = defineStore({
         throw err
       }
     },
-    async refreshFiles(params) {
+    async refreshFiles( params = {} ) {
       try {
-        // params: { model_name: 'message', model_id: '123' }
-        // const { model_name, entity, model_id, , message_name, groud_id, } = params || {};
-       //  const { model_name, entity, group_id, message_id, model_id, message_name } = params || {}
-       //
-       //
-       //  if (entity === 'messages') {
-       //    if (!model_name || !group_id || !message_id) return []
-       //    const res = await axios.get(`${import.meta.env.VITE_APP_ROOT_API}/upload/list`, {
-       //      params: { model_name, entity, group_id, message_id }
-       //    })
-       //    this.files = res.data || []
-       //    return this.files
-       //  }
-       //
-       //  // fallback для post/старого
-       //  if (!model_name || !model_id) return [];
-       //
-       //  const res = await axios.get(
-       //    `${import.meta.env.VITE_APP_ROOT_API}/upload/list`,
-       //    { params: { model_name, model_id, entity, message_name } }
-       //  );
+        const { entity = 'post', model_name, model_id, group_id, message_id, message_name } = params;
+        if (!model_name) return [];
 
-           const { model_name, entity, model_id, group_id, message_id } = params || {};
-           if (!model_name) return [];
+        // Для messages используем group_id + message_id
 
-             // Для messages нужны group_id + message_id
-           const query =
-           entity === 'messages'
-             ? { model_name, entity, group_id, message_id }
-               : { model_name, entity, model_id };
-
-           // Валидация для messages
-           if (entity === 'messages' && (!group_id || !message_id)) return [];
-
-           const res = await axios.get(
-             `${import.meta.env.VITE_APP_ROOT_API}/upload/list`,
-             { params: query }
-           );
-
-
+        const query =
+          entity === 'messages'
+            ? { model_name, entity, group_id, message_id }
+            : { model_name, entity, model_id, message_name }
+        const res = await axios.get(`${import.meta.env.VITE_APP_ROOT_API}/upload/list`, { params: query });
         const files = res.data || [];
         this.files = files;
         return files;
