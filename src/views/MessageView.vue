@@ -928,20 +928,12 @@ onMounted( async() =>
             <div class="flex flex-col mt-5">
               <div class="flex flex-wrap">
                 <ImageVideoUpload
-                  v-if="selectedModel && selectedGroup && selectedMessage"
+                  v-if="selectedModel && selectedMessage"
                   :message-id="String(selectedMessage?.id ?? '')"
-                  :group-id="String(selectedGroup?.id ?? '')"
+                  :group-id="String(selectedGroup?.id ?? selectedMessage?.group_id ?? '')"
                   :model-name="selectedModel?.name ?? ''"
                   :info="{ entity: 'messages' }"
                 />
-<!--                -->
-<!--                <ImageVideoUpload-->
-<!--                  :message-id="selectedMessage.id"-->
-<!--                  :group-id="selectedGroup.id"-->
-<!--                  :model-name="selectedModel.name"-->
-<!--                  :info="{ entity: 'messages' }"-->
-<!--                />-->
-<!--                <ImageVideoUpload :id="selectedMessage.id" />-->
               </div>
             </div>
           </div>

@@ -60,33 +60,26 @@ const useFileStore = defineStore({
       try {
         this.isLoading = true;
         // meta: { messageId, groupId, modelName, entity }
-        const { messageId, modelName, entity = 'messages' } = meta || {}
+        const { messageId, groupId, modelName, entity = 'messages' } = meta || {}
         const response = await axios.get(
       `${import.meta.env.VITE_APP_ROOT_API}/upload/delete?id=${encodeURIComponent(messageId)}&file=${encodeURIComponent(file)}`
         )
 
-        // const response = await axios.get(
-        //   `${import.meta.env.VITE_APP_ROOT_API}/upload/delete?id=${messageId}&file=${encodeURIComponent(file)}`
-        // );
-
-        // затем честный рефреш
         if (entity === 'messages') {
           await this.refreshFiles({
             entity: 'messages',
             model_name: modelName,
-            group_id: meta.group_id,
-            message_id: meta.group_id
+            group_id: String(groupId),
+            message_id: String(messageId)
           })
         } else {
           await this.refreshFiles({
             entity,
             model_name: modelName,
-            group_id: meta.group_id,
-            model_id: meta.model_id, // старый кейс для post, если надо
-
+            model_id: String(meta.model_id ?? ''), // старый кейс для post, если надо
           })
         }
-
+        return true;
 
         if (response.data) {
           this.files = this.files.filter((it) => it !== file);

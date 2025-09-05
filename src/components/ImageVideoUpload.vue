@@ -12,9 +12,10 @@ const modelStore = useModelStore();
 const selectedModel = computed(() => modelStore.selectedModel);
 
 const props = defineProps({
-  groupId: { type: [String, Number ], required: true },
+  id:      { type: [String, Number], default: null }, // старый универсальный id
+  groupId: { type: [String, Number ], default: null  },
   modelName: { type: String, default: '' },
-  messageId: { type: [ String, Number ], required: true },
+  messageId: { type: [ String, Number ], default: null },
   messageName: { type: String, default: ''},
   info: { type: Object, default: () => ({}) }
 });
@@ -46,9 +47,9 @@ const deleteFile = async (file) => {
   const result = await fileStore.deleteFile(
     file,
     {
-      messageId : String(selectedMessage.id),
-      groupId: String(selectedGroup.id),
-      modelName: selectedModel.name,
+      messageId : String(props.messageId),
+      groupId: String(props.groupId),
+      modelName: selectedModel.value?.name,
       entity: 'messages',
     });
     // props.messageId,
@@ -91,14 +92,14 @@ const throttledProgress = throttle((percent) => {
 
 const processFiles = async (selectedFiles) => {
   // ✅ Жёсткая валидация перед отправкой
-  if (props.groupId == null || props.messageId == null) {
-    notify({ title: 'Missing IDs', type: 'error', text: 'groupId и messageId обязательны' });
-    return;
-  }
-  if (!selectedModel.value?.name) {
-    notify({ title: 'No model', type: 'error', text: 'Не выбран модель (model_name)' });
-    return;
-  }
+  // if (props.groupId == null || props.messageId == null) {
+  //   notify({ title: 'Missing IDs', type: 'error', text: 'groupId и messageId обязательны' });
+  //   return;
+  // }
+  // if (!selectedModel.value?.name) {
+  //   notify({ title: 'No model', type: 'error', text: 'Не выбран модель (model_name)' });
+  //   return;
+  // }
 
 
   if (isUploading) {
@@ -205,13 +206,17 @@ const processFiles = async (selectedFiles) => {
     );
 
     // 🔁 Сразу обновляем список из реальной папки:
-    await fileStore.refreshFiles({
-      entity: 'messages',
-      //model_name: props.modelName || selectedModel.value?.name,
-      model_name: selectedModel.value.name,
-      group_id: String(props.groupId),
-      message_id: String(props.messageId),
-    });
+    const groupId   = String(props.groupId ?? selectedGroup?.value?.id ?? '');
+    const messageId = String(props.messageId ?? props.id ?? selectedMessage?.value?.id ?? '');
+    const modelName = props.modelName || selectedModel.value?.name || '';
+    if (groupId && messageId && modelName) {
+        await fileStore.refreshFiles({
+            entity: 'messages',
+            model_name: modelName,
+            group_id: groupId,
+            message_id: messageId,
+        });
+    }
     notify({ title: 'Success', type: 'success', text: 'Файлы успешно загружены' });
     if (result) {
       notify({
@@ -254,8 +259,8 @@ onMounted(async () => {
     await fileStore.refreshFiles({
       entity: 'messages',
       model_name: props.modelName || selectedModel.value?.name || '',
-      group_id: props.groupId,
-      message_id: props.messageId,
+      group_id: String(props.groupId),
+      message_id: String(props.messageId),
     });
   } catch (e) {
       console.log('fileStore.refreshFiles err 911', e)
