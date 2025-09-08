@@ -49,19 +49,31 @@ const selectedGroup = ref({
 });
 
 const selectedMessage = ref({
-  id:'',
+  id:null,
   name: "",
   group_id: 0,
   price: 0,
+  free_preview: 0,
   message: "",
   message_time: "",
   message_list: "",
   message_exclude_list: "",
-  release_form_tags: "",
+  release_form_tags: '',
+  release_user_tags: '',
   content_attached: false,
   content: "",
-  free_preview: 0,
+  isEdit: false,
 });
+
+const isRealMessageId = computed(() =>
+  selectedMessage.value?.id != null && /^\d+$/.test(String(selectedMessage.value.id))
+)
+
+if (!selectedMessage.value.id) {
+  selectedMessage.value.id = Date.now(); // временный уникальный ID
+}
+
+
 
 const spinnerColor = '#3B82F6' // или любой твой бренд-цвет
 const isGroupModalActive = ref(false);
@@ -193,6 +205,21 @@ const onSubmitGroup = async () =>
 // const onSubmitMessage = async () =>
 async function onSubmitMessage()
 {
+  const onSubmitMessage = async () => {
+    const payload = { ...selectedMessage.value }
+    delete payload.id
+    payload.group_id = selectedGroup.value?.id
+
+    const saved = selectedMessage.value.isEdit
+      ? await messageStore.updateMessage(payload)     // если у тебя есть апдейт
+      : await messageStore.addMessage(payload)        // создание
+
+    if (saved?.id) {
+      selectedMessage.value.id = saved.id            // ← вот теперь у нас реальный id
+    }
+    isMessageModalActive.value = false;
+  };
+
   if (selectedMessage.value.isEdit)
   {
     const result = $mv.value.$validate();
@@ -285,88 +312,34 @@ const onClickEditGroup = (id) =>
 
 };
 
-const onClickEditMessage = (id) =>
-{
-  const message = messagesInStore.value.filter((it) => it.id === id);
-  if (message)
-  {
-    selectedMessage.value = {
-      group_id: selectedGroup.value.id,
-      ...message[0], isEdit: true }; //
+const onClickEditMessage = (id) => {
+  const [row] = messagesInStore.value.filter((it) => it.id === id);
+  if (!row) return;
 
-    // Конвертация free_preview, если он пришел как объект { label, value }
-    if (
-      typeof selectedMessage.value.free_preview === "object" &&
-      selectedMessage.value.free_preview !== null
-    ) {
-      selectedMessage.value.free_preview =
-        selectedMessage.value.free_preview.value ?? 0;
-    }
-
-    if (typeof selectedMessage.value.message_list === 'string') {
-      selectedMessage.value.message_list = selectedMessage.value.message_list
-        .split(',')
-        .map(s => s.trim())
-        .filter(Boolean);
-    }
-
-    if (typeof selectedMessage.value.message_exclude_list === 'string') {
-      selectedMessage.value.message_exclude_list = selectedMessage.value.message_exclude_list
-        .split(',')
-        .map(s => s.trim())
-        .filter(Boolean);
-    }
-
-    if (selectedMessage.value.content?.length > 0)
-    {
-      const _files = selectedMessage.value.content.split(',');
-      fileStore.setFiles(_files);
-    }
-
-    isMessageModalActive.value = true;
+  selectedMessage.value = {
+    isEdit: true,
+    id: String(row.id ?? ''),
+    ...selectedMessage.value,
+    ...row,
+    name: String(row.name ?? ''),
+    group_id: Number(row.group_id ?? selectedGroup.value?.id ?? 0),
+    price: Number(row.price ?? 0),
+    free_preview: Number(row.free_preview ?? 0),
+    message_time: String(row.message_time ?? ''),
+    message_list: Array.isArray(row.message_list) ? (row.message_list[0] ?? '') : String(row.message_list ?? ''),
+    message_exclude_list: Array.isArray(row.message_exclude_list) ? (row.message_exclude_list[0] ?? '') : String(row.message_exclude_list ?? ''),
+    release_form_tags: String(row.release_form_tags ?? ''),
+    release_user_tags: String(row.release_user_tags ?? ''),
+    content_attached: !!row.content_attached,
+    content: String(row.content ?? ''),
+  };
+  // Превью файлов
+  if (typeof selectedMessage.value.content === 'string' && selectedMessage.value.content.length > 0) {
+    fileStore.setFiles(selectedMessage.value.content.split(','));
   }
-
+  isMessageModalActive.value = true;
 };
 
-// function normalizeMessage(raw) {
-//   return {
-//     ...raw,
-//     isEdit: true,
-//     id: String(raw?.id ?? ''),
-//     group_id: Number(raw?.group_id ?? selectedGroup.value?.id ?? 0),
-//     price: Number(raw?.price ?? 0),
-//     free_preview: Number(raw?.free_preview ?? 0),
-//
-//     // всё храним как строки (single)
-//     message_time: typeof raw?.message_time === 'string'
-//       ? raw.message_time
-//       : (raw?.message_time?.value ?? ''),
-//
-//     message_list: Array.isArray(raw?.message_list)
-//       ? (raw.message_list[0] ?? '')
-//       : String(raw?.message_list ?? ''),
-//
-//     message_exclude_list: Array.isArray(raw?.message_exclude_list)
-//       ? (raw.message_exclude_list[0] ?? '')
-//       : String(raw?.message_exclude_list ?? ''),
-//
-//     release_form_tags: String(raw?.release_form_tags ?? ''),
-//     release_user_tags: String(raw?.release_user_tags ?? ''),
-//     content_attached: !!raw?.content_attached,
-//   };
-// }
-//
-// const onClickEditMessage = (row) => {
-//   // row — это объект сообщения, который эмитит TableMessages
-//   selectedMessage.value = normalizeMessage(row);
-//
-//   // подхватим файлы для превью, если есть
-//   if (typeof selectedMessage.value.content === 'string' && selectedMessage.value.content.length > 0) {
-//     fileStore.setFiles(selectedMessage.value.content.split(','));
-//   }
-//
-//   isMessageModalActive.value = true;
-// };
 
 const onChangeSearchString = (e) =>
 {
@@ -417,9 +390,9 @@ const onAddNewMessage = () =>
 {
   selectedMessage.value = {
     isEdit: false,
-    id:"",
+    id: null,
     name: "",
-    group_id: selectedGroup.value.id || 0,
+    group_id: selectedGroup.value?.id || 0,
     price: 0,
     free_preview: 0,
     message: "",
@@ -981,19 +954,12 @@ onMounted( async() =>
             <div class="flex flex-col mt-5">
               <div class="flex flex-wrap">
                 <ImageVideoUpload
-                  v-if="selectedModel && selectedGroup?.id && selectedMessage?.id"
+                  v-if="selectedModel?.name && selectedGroup?.id && isRealMessageId"
                   :message-id="String(selectedMessage.id)"
-                  :group-id="String(selectedGroup.id)"
-                  :model-name="selectedModel.name"
-                  :info="{ entity: 'messages' }"
+                :group-id="String(selectedGroup.id)"
+                :model-name="selectedModel.name"
+                :info="{ entity: 'messages' }"
                 />
-<!--                -->
-<!--                <ImageVideoUpload-->
-<!--                  :message-id="selectedMessage.id"-->
-<!--                  :group-id="selectedGroup.id"-->
-<!--                  :model-name="selectedModel.name"-->
-<!--                  :info="{ entity: 'messages' }"-->
-<!--                />-->
 <!--                <ImageVideoUpload :id="selectedMessage.id" />-->
               </div>
             </div>

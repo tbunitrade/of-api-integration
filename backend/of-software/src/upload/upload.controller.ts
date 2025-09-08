@@ -12,7 +12,6 @@ import { FilesInterceptor } from '@nestjs/platform-express/multer';
 import { diskStorage } from 'multer';
 import { FileUploadService } from './upload.service';
 import { MessageService } from 'src/message/message.service';
-// import { diskStorage } from 'multer';
 // import { mkdirSync } from 'fs';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { uploadDirectory, resolveModelFolder, getTypeSubDir, toPublicUrl, getModelDirname } from "../utils/upload";
@@ -40,52 +39,54 @@ export class FileUploadController {
               ( req?.query && ( req.query.model_name as string )) ||
               'unknown-model';
 
-            let modelId =
-              ( req?.body && ( req.body.model_id || req.body.modelId)) ||
-              ( req?.query && ( req.query.model_id as string )) ||
-              '';
+            const entityRaw =
+              ( req.body.entity || req.body.model ) ||
+              ( req.query.entity as string ) ||
+            'post';
 
-            //console.log('modelId ->', modelId); // empty
-            //console.log('req ->', req as any) ; // empty
-            console.log('req.body ->', req.body);
-            console.log('req.query ->', req.query);
+            const entity = String(entityRaw).toLowerCase() === 'messages' ? 'messages' : 'post';
+            const baseSubdir = getTypeSubDir(file?.mimetype);
 
-            const entity = (( req?.body?.entity || req?.query?.entity ) ?? 'post').toString();
+            // validation POST request END
+            // next logic goes
 
-            const groupIdFromBody =
+            if ( entity === 'post') {
+              const modelId =
+                ( req.body && ( req.body.model_id || req.body.id)) ||
+                ( req.query && ( req.query.model_id as string )) ||
+                '';
+              // НИЧЕГО из messages здесь не проверяем
+              const subdir = baseSubdir;  // files / files/image / files/video
+              const folder = resolveModelFolder(rawModelName, modelId, subdir, 'post');
+              console.log('[upload:post] →', folder);
+              cb(null, folder);
+              return;
+            }
+
+            // --- branch MESSAGES ---
+            const groupId =
               (req?.body && (req.body.group_id || req.body.groupId)) ||
               (req?.query && (req.query.group_id as string)) ||
               '';
-            const messageIdFromBody =
+
+            const messageId =
               (req?.body && (req.body.message_id || req.body.messageId)) ||
               (req?.query && (req.query.message_id as string)) ||
               '';
 
-            console.log('groupIdFromBody ->', groupIdFromBody);
-            console.log('messageIdFromBody ->', messageIdFromBody);
-
-            const baseSubdir = getTypeSubDir(file?.mimetype);
-
-            // --- наша структура только для entity=messages ---
-            if (entity !== 'messages') {
-              console.log('wtf');
-            }
-
-            if (!groupIdFromBody || !messageIdFromBody) {
-              // жёстко валидируем — без этих двух полей мы путь собрать не можем
+            if (!String(groupId).trim() || !String(messageId).trim()) {
               throw new Error('[upload] Both group_id and message_id are required for entity=messages');
             }
 
-            const subdir = `group${String(groupIdFromBody).trim()}/messages${String(messageIdFromBody).trim()}/${baseSubdir}`;
+            const subdir = `group${String(groupId).trim()}/messages${String(messageId).trim()}/${baseSubdir}`;
+            const folder = resolveModelFolder(rawModelName, '', subdir, '');
 
-            const folder = resolveModelFolder(rawModelName, undefined, subdir, '');
-
+            console.log('[upload:messages] →', folder);
             console.log('[upload] destination model:', rawModelName, 'entity:', entity, 'subdir', subdir, '→', folder);
             cb(null, folder);
           } catch (e) {
             console.error('[upload] destination error:', e);
             // fallback в корень uploads
-
             fs.ensureDirSync(uploadDirectory);
             cb(null, path.resolve(uploadDirectory));
           }
@@ -191,10 +192,10 @@ export class FileUploadController {
   async listFiles(
     @Query('model_name') modelName: string,
     @Query('model_id') modelId: string, // для messages игнорится
-    @Query('entity') entity?: string,
+    @Query('entity') entity: string = 'post',
     @Query('group_id') groupId?: string,
     @Query('message_id') messageId?: string,
   ): Promise<string[]> {
-    return this.fileUploadService.listByModel(modelName, modelId, entity || 'post', groupId, messageId);
+    return this.fileUploadService.listByModel(modelName, modelId || '', entity, groupId, messageId);
   }
 }

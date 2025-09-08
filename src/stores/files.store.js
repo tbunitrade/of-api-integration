@@ -1,5 +1,5 @@
 // files.store.js
-//для сообщений, работает в MessageView.vue
+// для сообщений, работает в MessageView.vue
 // (возможно чат или файл-менеджер не по постам)
 
 import { defineStore } from 'pinia'
@@ -51,7 +51,7 @@ const useFileStore = defineStore({
         throw error
       }
     },
-    async deleteFile(file, arg2, arg3, arg4 = 'messages') {
+    async deleteFile(file, arg2, arg4 = 'messages') {
       try {
         this.isLoading = true;
 
@@ -64,12 +64,12 @@ const useFileStore = defineStore({
              if (!groupId && arg2.group_id) groupId = arg2.group_id
          } else {
              messageId = arg2
-             modelName = arg3
              entity = arg4
          }
 
         const response = await axios.get(
-          `${import.meta.env.VITE_APP_ROOT_API}/upload/delete?id=${messageId}&file=${encodeURIComponent(file)}`
+          //`${import.meta.env.VITE_APP_ROOT_API}/upload/delete?id=${messageId}&file=${encodeURIComponent(file)}`
+            `${import.meta.env.VITE_APP_ROOT_API}/upload/delete?file=${encodeURIComponent(file)}`
         );
 
         // затем честный рефреш
@@ -108,27 +108,37 @@ const useFileStore = defineStore({
     async refreshFiles(params) {
       try {
 
-           const { model_name, entity, model_id, group_id, message_id } = params || {};
-           if (!model_name) return [];
+        const { model_name, entity = 'post', model_id, group_id, message_id } = params || {};
+        if (!model_name) return [];
 
-             // Для messages нужны group_id + message_id
-           const query =
-           entity === 'messages'
-             ? { model_name, entity, group_id, message_id }
-               : { model_name, entity, model_id };
+        // Для messages нужны group_id + message_id
+        const query =
+        entity === 'messages'
+        ? { model_name, entity, group_id, message_id }
+        : { model_name, entity, model_id };
 
            // Валидация для messages
-           if (entity === 'messages' && (!group_id || !message_id)) return [];
+        if (entity === 'messages') {
+            if (!group_id || !message_id || String(message_id).trim() === '') {
+              console.warn('refreshFiles: skip (no real message_id yet)');
+              return [];
+            }
+            const res = await axios.get(`${import.meta.env.VITE_APP_ROOT_API}/upload/list`, {
+               params: { model_name, entity, group_id, message_id }
+            });
+            this.files = res.data || [];
+            return this.files;
+        }
 
-           const res = await axios.get(
-             `${import.meta.env.VITE_APP_ROOT_API}/upload/list`,
-             { params: query }
-           );
+        if (!model_id) return [];
+        const res = await axios.get(
+          `${import.meta.env.VITE_APP_ROOT_API}/upload/list`, {
+          params: { model_name, model_id, entity }
+        });
 
 
-        const files = res.data || [];
-        this.files = files;
-        return files;
+        this.files = res.data || [];
+        return res.data || [];
       } catch (e) {
         console.error('refreshFiles failed:', e);
         throw e;

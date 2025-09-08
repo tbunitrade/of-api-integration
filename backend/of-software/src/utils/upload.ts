@@ -192,15 +192,26 @@ export async function listPublicFiles(
   groupId?: string,
   messageId?: string
 ) {
-
+  let root: string;
   let subdir = 'files';
   // для messages строим group{ID}/messages{ID}/files
   if (entity === 'messages' && groupId && messageId) {
+      // /uploads/<model_slug>/group{gid}/messages{mid}/files
       subdir = `group${String(groupId).trim()}/messages${String(messageId).trim()}/files`;
+      root = resolveModelFolder(modelName, '', subdir, ''); // ← важное изменение
+  } else if ( entity === 'post' && String(modelId)) {
+      // /uploads/<model_slug>/post{id}/files
+      root = resolveModelFolder(modelName, modelId, subdir, 'post'); // ← важное изменениеroot = resolveModelFolder(modelName, '', subdir, ''); // ← важное изменение
+  } else {
+    // безопасный fallback (старый формат)
+      root = resolveModelFolder(modelName, modelId, 'files', entity);
   }
-  // entityPrefix пустой → путь /uploads/<model>/<subdir>
-  const root = resolveModelFolder(modelName, '', subdir, ''); // ← важное изменение
+
+
   console.log('[listPublicFiles] entity:', entity, 'root:', root);
+
+
+  /// next recursive (рекурсивный обход + toPublicUrl)
   const urls: string[] = [];
   const walk = (dir: string) => {
     for (const entry of fs.readdirSync(dir)) {

@@ -8,16 +8,38 @@ import { notify } from '@kyvg/vue3-notification';
 import { mdiClose } from '@mdi/js';
 import throttle from 'lodash/throttle';
 
+
+const props = defineProps({
+  id: { type: [String, Number], default: '' }, // legacy
+  messageId: { type: [String , Number], default: 'true' },// mesages
+  groupId: { type: String },
+  modelId : { type: [String , Number], default: ''},  // for post
+  modelName: { type: String , default: '' },
+  messageName: { type: String, default: ''}, // общее
+  info: { type: Object, default: () => ({}) }
+});
+
+
 const modelStore = useModelStore();
 const selectedModel = computed(() => modelStore.selectedModel);
 
-const props = defineProps({
-  groupId: { type: String },
-  modelName: { type: String },
-  messageId: { type: String, required: true },
-  messageName: { type: String, default: ''},
-  info: { type: Object, default: () => ({}) }
+// Нормализация входных параметров (прозрачно для твоей разметки)
+const resolvedEntity    = computed(() => (props.info?.entity || 'post'));
+const resolvedMessageId = computed(() => String(props.messageId || props.id || '')); // <= вот тут legacy :id
+const resolvedGroupId   = computed(() => String(props.groupId || ''));
+const resolvedModelName = computed(() => props.modelName || selectedModel.value?.name || '');
+const resolvedModelId   = computed(() => String(selectedModel.value?.id || '')); // для post
+
+// Когда действительно можно ходить на /upload/list
+const canQueryFiles = computed(() => {
+  if (resolvedEntity.value === 'messages') {
+    return !!(resolvedModelName.value && resolvedGroupId.value && resolvedMessageId.value);
+  }
+  // post
+  return !!(resolvedModelName.value && resolvedModelId.value);
 });
+
+
 const info = props.info || {};
 const fileInputRef = ref(null);
 const fileStore = useFileStore();
@@ -44,13 +66,16 @@ const openFileInput = () => {
 };
 
 const deleteFile = async (file) => {
-  const result = await fileStore.deleteFile(
-    file,
-    {
-      messageId: String(props.messageId),
-      groupId: String(props.groupId),
-      modelName: selectedModel.value?.name || '',
-      entity: 'messages',
+  //const entity = info?.entity || 'post';
+  const result = await fileStore.deleteFile(file, {
+      entity : resolvedEntity.value,
+      modelName: resolvedModelName.value,
+      ...( resolvedEntity.value === 'messages'
+        ? { messageId: String(props.messageId), groupId: String(props.groupId) }
+        : {
+            //modelId: String(props.modelId || selectedModel.value?.id || '')
+          }
+      ),
     });
   if (result) {
     notify({
@@ -129,21 +154,19 @@ const processFiles = async (selectedFiles) => {
 
 
   const formData = new FormData();
-
-  console.log('selectedModel !!!! ', selectedModel);
-  console.log('name', selectedModel.value?.name);
-  console.log('message_id', props.messageId);
-  console.log('group_id', props.groupId);
-  console.log('messageId String(', String(props.messageId));
-  console.log('group_id String(', String(props.groupId));
-
-  //formData.append('entity', 'messages');
-  formData.append('entity', info?.entity || 'post');
-  formData.append('model_name', selectedModel.value?.name || '');
+  //const entity = info?.entity || 'post';
+  // вместо entity используем info?.entity с дефолтом 'post'
+  const ent = info?.entity || 'post';
+  console.log('AlexMe', ent);
+  formData.append('entity', ent);
+  formData.append('model_name', props.modelName || selectedModel.value?.name || '');
 
   if ((info?.entity || 'post') === 'messages') {
-    formData.append('group_id', String(props.groupId || ''));
-    formData.append('message_id', String(props.messageId || ''));
+    formData.append('group_id', resolvedGroupId.value);
+    formData.append('message_id', resolvedMessageId.value);
+  } else {
+    // post
+    formData.append('model_id',  resolvedModelId.value);
   }
 
   console.log('[message-upload] meta', {
@@ -170,13 +193,20 @@ const processFiles = async (selectedFiles) => {
     );
 
     // 🔁 Сразу обновляем список из реальной папки:
-    await fileStore.refreshFiles({
-      entity: 'messages',
-      //model_name: props.modelName || selectedModel.value?.name,
-      model_name: selectedModel.value.name,
-      group_id: String(props.groupId),
-      message_id: String(props.messageId),
-    });
+    await fileStore.refreshFiles(
+entity === 'messages'
+        ? {
+              entity: 'messages',
+              model_name: props.modelName || selectedModel.value?.name,
+              group_id: String(props.groupId),
+              message_id: String(props.messageId),
+          }
+        : {
+            entity: 'post',
+            model_name: props.modelName || selectedModel.value?.name,
+            model_id: String(props.modelId || selectedModel.value?.id || ''),
+          }
+    );
     if (result) {
       notify({
         title: "Success",
@@ -230,18 +260,23 @@ onMounted(async () => {
 
 // watch([selectedModel, () => props.messageId], async ([model]) => {
 //   if (!model?.name ) return;
-watch([selectedModel, () => props.groupId, () => props.messageId], async ([model]) => {
-  if (!model?.name || !props.messageId) return;
+watch([resolvedEntity, resolvedModelName, resolvedGroupId, resolvedMessageId, resolvedModelId],
+  async () => {
 
-  if (!selectedModel.value?.name) return;
-  if (props.groupId == null || props.messageId == null) return;
-  isRefreshing.value = true;
+        if (!canQueryFiles.value) return;
+        await fileStore.refreshFiles(
+  resolvedEntity.value === 'messages'
+          ? { entity: 'messages', model_name: resolvedModelName.value, group_id: resolvedGroupId.value, message_id: resolvedMessageId.value }
+          : { entity: 'post',     model_name: resolvedModelName.value, model_id: resolvedModelId.value }
+        );
+
+        isRefreshing.value = true;
   try {
     await fileStore.refreshFiles({
       entity: 'messages',
-      model_name: selectedModel.value?.name,
-      group_id: String(props.groupId),
-      message_id: String(props.messageId),
+      model_name: resolvedModelName.value,
+      group_id: resolvedGroupId.value,
+      message_id: resolvedMessageId.value,
     });
   } finally {
     isRefreshing.value = false;
@@ -254,14 +289,14 @@ const onRefreshFiles = async () => {
     console.log('[message-upload] manual refresh', {
       model_name: selectedModel.value?.name,
       model_id: props.messageId,
-      entity: 'messages',
+      entity: resolvedEntity.value,
       message_name: props.messageName || ''
     });
 
     await fileStore.refreshFiles({
       model_name: selectedModel.value?.name,
       model_id: props.messageId,
-      entity: 'messages',
+      entity: resolvedEntity.value,
       message_name: props.messageName || ''
     });
 
