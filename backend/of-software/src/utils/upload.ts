@@ -185,22 +185,22 @@ export const uploadFile = async (
 };
 
 // ↓ ДОБАВЬ в конец файла
-export async function listPublicFiles(modelName: string, modelId: string | number, entity: string = 'post', groupId?: string, messageId?: string) {
-  // было: resolveModelFolder(modelName, modelId, 'files', entity)
+export async function listPublicFiles(
+  modelName: string,
+  modelId: string | number,
+  entity: string = 'post',
+  groupId?: string,
+  messageId?: string
+) {
 
-  // если пришло имя — используем его как slug-папку
-  // const slug = (messageName || '')
-  //   .toString()
-  //   .normalize('NFKD')
-  //   .replace(/[^\w\s.-]/g, '')
-  //   .trim()
-  //   .replace(/\s+/g, '_')
-  //   .toLowerCase();
-
-  // когда есть messageName → корнем делаем "<slug>/files"
-  // иначе — корнем остаётся весь messages<ID> (как сейчас)
   let subdir = 'files';
+  // для messages строим group{ID}/messages{ID}/files
+  if (entity === 'messages' && groupId && messageId) {
+      subdir = `group${String(groupId).trim()}/messages${String(messageId).trim()}/files`;
+  }
+  // entityPrefix пустой → путь /uploads/<model>/<subdir>
   const root = resolveModelFolder(modelName, '', subdir, ''); // ← важное изменение
+  console.log('[listPublicFiles] entity:', entity, 'root:', root);
   const urls: string[] = [];
   const walk = (dir: string) => {
     for (const entry of fs.readdirSync(dir)) {

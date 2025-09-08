@@ -18,6 +18,7 @@ const props = defineProps({
   messageName: { type: String, default: ''},
   info: { type: Object, default: () => ({}) }
 });
+const info = props.info || {};
 const fileInputRef = ref(null);
 const fileStore = useFileStore();
 const filesInStore = computed(() => fileStore.files);
@@ -45,9 +46,12 @@ const openFileInput = () => {
 const deleteFile = async (file) => {
   const result = await fileStore.deleteFile(
     file,
-    props.messageId,
-    selectedModel.value.name,
-    'messages' );
+    {
+      messageId: String(props.messageId),
+      groupId: String(props.groupId),
+      modelName: selectedModel.value?.name || '',
+      entity: 'messages',
+    });
   if (result) {
     notify({
       title: "Success",
@@ -124,49 +128,30 @@ const processFiles = async (selectedFiles) => {
   }, timeoutDuration);
 
 
-  if (!selectedModel.value?.id) {
-    notify( {
-      title: 'Error',
-      type: 'error',
-      text : 'Error group_id not found',
-    });
-  }
-
-  if (!props.messageId || Number(props.messageId) <=0 ) {
-    notify( {
-      title: 'Error',
-      type: 'error',
-      text : 'Error no correct id of message',
-    });
-  }
-
-
-
-
   const formData = new FormData();
 
   console.log('selectedModel !!!! ', selectedModel);
-  console.log('me', selectedModel?.value?.name);
-  console.log('me 2', props.model_name);
+  console.log('name', selectedModel.value?.name);
   console.log('message_id', props.messageId);
-  console.log('group_id', props.group_id);
+  console.log('group_id', props.groupId);
   console.log('messageId String(', String(props.messageId));
-  console.log('group_id String(', String(props.group_id));
+  console.log('group_id String(', String(props.groupId));
 
-  formData.append('entity', 'messages');
+  //formData.append('entity', 'messages');
+  formData.append('entity', info?.entity || 'post');
+  formData.append('model_name', selectedModel.value?.name || '');
 
-  formData.append('model_name', props.modelName || selectedModel.value?.name || '');
-  formData.append('group_id', String(props.groupId));      // ВАЖНО: тут именно groupId из selectedGroup.id
-  formData.append('message_id', String(props.messageId));
-
+  if ((info?.entity || 'post') === 'messages') {
+    formData.append('group_id', String(props.groupId || ''));
+    formData.append('message_id', String(props.messageId || ''));
+  }
 
   console.log('[message-upload] meta', {
-
-    entity: 'messages',
+    entity: info?.entity,
     model_name: selectedModel.value?.name,
     groupId: props.groupId,
     messageId: props.messageId,
-     });
+  });
 
   for (let i = 0; i < selectedFiles.length; i++) {
     const file = selectedFiles[i];
@@ -255,7 +240,7 @@ watch([selectedModel, () => props.groupId, () => props.messageId], async ([model
     await fileStore.refreshFiles({
       entity: 'messages',
       model_name: selectedModel.value?.name,
-      group_id: selectedModel.value?.id,
+      group_id: String(props.groupId),
       message_id: String(props.messageId),
     });
   } finally {

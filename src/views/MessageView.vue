@@ -49,13 +49,14 @@ const selectedGroup = ref({
 });
 
 const selectedMessage = ref({
+  id:'',
   name: "",
   group_id: 0,
   price: 0,
   message: "",
   message_time: "",
-  message_list: [],
-  message_exclude_list: [],
+  message_list: "",
+  message_exclude_list: "",
   release_form_tags: "",
   content_attached: false,
   content: "",
@@ -283,6 +284,7 @@ const onClickEditGroup = (id) =>
   }
 
 };
+
 const onClickEditMessage = (id) =>
 {
   const message = messagesInStore.value.filter((it) => it.id === id);
@@ -302,11 +304,17 @@ const onClickEditMessage = (id) =>
     }
 
     if (typeof selectedMessage.value.message_list === 'string') {
-      selectedMessage.value.message_list = selectedMessage.value.message_list.split(',').map(s => s.trim()).filter(Boolean);
+      selectedMessage.value.message_list = selectedMessage.value.message_list
+        .split(',')
+        .map(s => s.trim())
+        .filter(Boolean);
     }
 
     if (typeof selectedMessage.value.message_exclude_list === 'string') {
-      selectedMessage.value.message_exclude_list = selectedMessage.value.message_exclude_list.split(',').map(s => s.trim()).filter(Boolean);
+      selectedMessage.value.message_exclude_list = selectedMessage.value.message_exclude_list
+        .split(',')
+        .map(s => s.trim())
+        .filter(Boolean);
     }
 
     if (selectedMessage.value.content?.length > 0)
@@ -319,6 +327,46 @@ const onClickEditMessage = (id) =>
   }
 
 };
+
+// function normalizeMessage(raw) {
+//   return {
+//     ...raw,
+//     isEdit: true,
+//     id: String(raw?.id ?? ''),
+//     group_id: Number(raw?.group_id ?? selectedGroup.value?.id ?? 0),
+//     price: Number(raw?.price ?? 0),
+//     free_preview: Number(raw?.free_preview ?? 0),
+//
+//     // всё храним как строки (single)
+//     message_time: typeof raw?.message_time === 'string'
+//       ? raw.message_time
+//       : (raw?.message_time?.value ?? ''),
+//
+//     message_list: Array.isArray(raw?.message_list)
+//       ? (raw.message_list[0] ?? '')
+//       : String(raw?.message_list ?? ''),
+//
+//     message_exclude_list: Array.isArray(raw?.message_exclude_list)
+//       ? (raw.message_exclude_list[0] ?? '')
+//       : String(raw?.message_exclude_list ?? ''),
+//
+//     release_form_tags: String(raw?.release_form_tags ?? ''),
+//     release_user_tags: String(raw?.release_user_tags ?? ''),
+//     content_attached: !!raw?.content_attached,
+//   };
+// }
+//
+// const onClickEditMessage = (row) => {
+//   // row — это объект сообщения, который эмитит TableMessages
+//   selectedMessage.value = normalizeMessage(row);
+//
+//   // подхватим файлы для превью, если есть
+//   if (typeof selectedMessage.value.content === 'string' && selectedMessage.value.content.length > 0) {
+//     fileStore.setFiles(selectedMessage.value.content.split(','));
+//   }
+//
+//   isMessageModalActive.value = true;
+// };
 
 const onChangeSearchString = (e) =>
 {
@@ -369,14 +417,15 @@ const onAddNewMessage = () =>
 {
   selectedMessage.value = {
     isEdit: false,
+    id:"",
     name: "",
     group_id: selectedGroup.value.id || 0,
     price: 0,
     free_preview: 0,
     message: "",
     message_time: "",
-    message_list: [],
-    message_exclude_list: [],
+    message_list: "",
+    message_exclude_list: "",
     release_form_tags: "",
     release_user_tags: "",
     content_attached: false,
@@ -851,9 +900,10 @@ onMounted( async() =>
                       <Multiselect
                         v-model="selectedMessage.message_list"
                         :options="messageListOptions"
+                        mode="single"
+                        :object="false"
                         :can-clear="true"
                         :searchable="true"
-                        mode="tags"
                         placeholder="(separate with commas)"
                       />
                     </FormField>
@@ -872,10 +922,13 @@ onMounted( async() =>
                         <Multiselect
                           v-model="selectedMessage.message_exclude_list"
                           :options="messageEcludeOptions"
+                          mode="single"
+                          :object="false"
                           :can-clear="true"
-                          :searchable="true"
-                          mode="tags"
-                        placeholder="Select or type" />
+                          :searchable="false"
+                          :allow-empty="true"
+                          placeholder="Select or type"
+                        />
                     </FormField>
 
                   </div>
@@ -928,10 +981,10 @@ onMounted( async() =>
             <div class="flex flex-col mt-5">
               <div class="flex flex-wrap">
                 <ImageVideoUpload
-                  v-if="selectedModel && selectedGroup && selectedMessage"
-                  :message-id="String(selectedMessage?.id ?? '')"
-                  :group-id="String(selectedGroup?.id ?? '')"
-                  :model-name="selectedModel?.name ?? ''"
+                  v-if="selectedModel && selectedGroup?.id && selectedMessage?.id"
+                  :message-id="String(selectedMessage.id)"
+                  :group-id="String(selectedGroup.id)"
+                  :model-name="selectedModel.name"
                   :info="{ entity: 'messages' }"
                 />
 <!--                -->
