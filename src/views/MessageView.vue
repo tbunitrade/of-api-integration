@@ -584,20 +584,20 @@ const messageListOptions = [
 ];
 
 
-// const freePreviewOptions = [
-//   { label: '0', value: 0 },
-//   { label: '1', value: 1 },
-//   { label: '2', value: 2 },
-//   { label: '3', value: 3 },
-// ];
+const freePreviewOptions = [
+  { label: '0', value: 0 },
+  { label: '1', value: 1 },
+  { label: '2', value: 2 },
+  { label: '3', value: 3 },
+];
 
-const messageTimeOptions = [
-  { label:'8:00 am', value:'08:00'},
-  { label:'12:00 pm', value:'12:00'},
-  { label:'4:00 pm', value:'16:00'},
-  { label:'7:00 pm', value:'19:00'},
-  { label:'10:00 pm', value:'22:00'},
-]
+// const messageTimeOptions = [
+//   { label:'8:00 am', value:'08:00'},
+//   { label:'12:00 pm', value:'12:00'},
+//   { label:'4:00 pm', value:'16:00'},
+//   { label:'7:00 pm', value:'19:00'},
+//   { label:'10:00 pm', value:'22:00'},
+// ]
 
 watch(isMessageModalActive, () =>
 {

@@ -4,10 +4,12 @@ import * as path from 'path';
 import * as fs from 'fs-extra';
 
 // База хранения: .env → UPLOAD_FOLDER_URL, иначе ./uploads
+// ===== base uploads dir =====
 export const uploadDirectory: string =
   process.env.UPLOAD_FOLDER_URL ? process.env.UPLOAD_FOLDER_URL : path.resolve(process.cwd(), 'uploads');
 
 /// utils for save slug for name folder of model
+// ===== helpers =====
 export function getModelDirname(name: string) {
   const base = (name || 'unknown-model').toString();
   return base
@@ -18,28 +20,41 @@ export function getModelDirname(name: string) {
     .toLowerCase();
 }
 
-// Абсолютный путь к папке uploads/{model}{id}/files
-// СОВМЕСТИМОСТЬ: id опциональный, старые вызовы без id не ломаем
-export function resolveModelFolder(
+/**
+ * ВНУТРЕННИЙ помощник: собирает абсолютный путь.
+ * ensure = true -> создаёт папку.
+ */
+function buildModelFolderPath(
   modelName?: string,
   id?: string | number,
   subdir?: string,
-  entityPrefix: string = 'post' // default
+  entityPrefix: string = 'post',
+  ensure: boolean = false
 ) {
   const dir = getModelDirname(modelName || 'unknown-model');
   const idPart =
     id !== undefined && id !== null && String(id).trim() !== '' ? String(id).trim() : '';
-  // новая иерархия: uploads/{modelname}{id}/files
-
-  if (idPart === null && entityPrefix === 'messages') {
-    throw new Error(`[resolveModelFolder] Skip creating folder: empty message_id`);
-  }
 
   // files / files/image / files/video
-  const leaf = subdir && subdir.trim() ? subdir : getTypeSubDir(); // ← тут используем subdir
+  const leaf = subdir && subdir.trim() ? subdir : getTypeSubDir();
+
+  // uploads/<model>/<entityPrefix><id>/leaf
   const full = path.resolve(uploadDirectory, dir, `${entityPrefix}${idPart}`, leaf);
-  fs.ensureDirSync(full);
+  if (ensure) fs.ensureDirSync(full);
   return full;
+}
+
+/**
+ * Публичная функция: возвращает путь и ГАРАНТИРОВАННО создаёт папку.
+ * Используем для upload/записи.
+ */
+export function resolveModelFolder(
+  modelName?: string,
+  id?: string | number,
+  subdir?: string,
+  entityPrefix: string = 'post'
+) {
+  return buildModelFolderPath(modelName, id, subdir, entityPrefix, true);
 }
 
 // Абсолютный путь → публичный URL (/uploads/…)
@@ -196,24 +211,37 @@ export async function listPublicFiles(
   groupId?: string,
   messageId?: string
 ) {
-  let root: string;
-  let subdir = 'files';
+  let root: string | null = null;
+
   // для messages строим group{ID}/messages{ID}/files
-  if (entity === 'messages' && groupId && messageId) {
-      // /uploads/<model_slug>/group{gid}/messages{mid}/files
-      subdir = `group${String(groupId).trim()}/messages${String(messageId).trim()}/files`;
-      root = resolveModelFolder(modelName, '', subdir, ''); // ← важное изменение
-  } else if ( entity === 'post' && String(modelId)) {
-      // /uploads/<model_slug>/post{id}/files
-      root = resolveModelFolder(modelName, modelId, subdir, 'post'); // ← важное изменениеroot = resolveModelFolder(modelName, '', subdir, ''); // ← важное изменение
+  if (entity === 'messages' ) {
+
+    const gid = String(groupId ?? '').trim();
+    const mid = String(messageId ?? '').trim();
+    const isNum = (s: string) => /^\d+$/.test(s);
+
+    // нет нормальных id → ничего не делаем и ничего не создаём
+    if (!gid || !mid || !isNum(gid) || !isNum(mid)) {
+      console.warn('[listPublicFiles] skip (no valid ids)', { entity, modelName, gid, mid });
+      return [];
+    }
+
+    // валидно → собираем путь
+    const subdir = `group${gid}/messages${mid}/files`;
+    root = buildModelFolderPath(modelName, '', subdir, '', false);
+  } else if ( entity === 'post' && String(modelId ?? '').trim() !== '') {
+    root = buildModelFolderPath(modelName, modelId, 'files', 'post', false);
   } else {
     // безопасный fallback (старый формат)
-      root = resolveModelFolder(modelName, modelId, 'files', entity);
+    root = buildModelFolderPath(modelName, modelId, 'files', entity, false);
   }
 
+  // ВАЖНО: не создаём папку, если её нет
+  if (!root || !(await fs.pathExists(root))) {
+    return [];
+  }
 
   console.log('[listPublicFiles] entity:', entity, 'root:', root);
-
 
   /// next recursive (рекурсивный обход + toPublicUrl)
   const urls: string[] = [];
