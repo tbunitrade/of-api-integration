@@ -36,7 +36,7 @@ function buildModelFolderPath(
     id !== undefined && id !== null && String(id).trim() !== '' ? String(id).trim() : '';
 
   // files / files/image / files/video
-  const leaf = subdir && subdir.trim() ? subdir : getTypeSubDir();
+  const leaf = subdir && subdir.trim() ? subdir : getTypesubdir();
 
   // uploads/<model>/<entityPrefix><id>/leaf
   const full = path.resolve(uploadDirectory, dir, `${entityPrefix}${idPart}`, leaf);
@@ -115,7 +115,7 @@ export async function unlinkSmart(filePath: string) {
 }
 
 // + NEW: определяем подкаталог по mime
-export function getTypeSubDir(mime?: string) {
+export function getTypesubdir(mime?: string) {
   if (!mime) return 'files';
 
   const top = mime.split('/')[0];
@@ -142,7 +142,11 @@ export const uploadFile = async (
 
         targetDir = path.resolve(file.destination);
       } else {
-        targetDir = resolveModelFolder( modelName, modelId, 'files', 'post');
+        targetDir = resolveModelFolder(
+          modelName,
+          modelId,
+          'files',
+          'post');
       }
 
       await fs.ensureDir(targetDir);

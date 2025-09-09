@@ -14,7 +14,7 @@ import { FileUploadService } from './upload.service';
 import { MessageService } from 'src/message/message.service';
 // import { mkdirSync } from 'fs';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
-import { uploadDirectory, resolveModelFolder, getTypeSubDir, toPublicUrl, getModelDirname } from "../utils/upload";
+import { uploadDirectory, resolveModelFolder, getTypesubdir, toPublicUrl, getModelDirname } from "../utils/upload";
 import * as fs from 'fs-extra';
 import * as path from 'path';
 
@@ -45,7 +45,7 @@ export class FileUploadController {
             'post';
 
             const entity = String(entityRaw).toLowerCase() === 'messages' ? 'messages' : 'post';
-            const baseSubdir = getTypeSubDir(file?.mimetype);
+            const basesubdir = getTypesubdir(file?.mimetype);
 
             // validation POST request END
             // next logic goes
@@ -56,7 +56,7 @@ export class FileUploadController {
                 ( req.query && ( req.query.model_id as string )) ||
                 '';
               // НИЧЕГО из messages здесь не проверяем
-              const subdir = baseSubdir;  // files / files/image / files/video
+              const subdir = basesubdir;  // files / files/image / files/video
               const folder = resolveModelFolder(rawModelName, modelId, subdir, 'post');
               console.log('[upload:post] →', folder);
               cb(null, folder);
@@ -96,7 +96,7 @@ export class FileUploadController {
 
             //// hard mix
 
-            const subdir = `group${gid}/messages${mid}/${baseSubdir}`;
+            const subdir = `group${gid}/messages${mid}/${basesubdir}`;
             const folder = resolveModelFolder(rawModelName, '', subdir, '');
 
             console.log('[upload:messages] →', folder);
