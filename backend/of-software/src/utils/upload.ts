@@ -31,6 +31,10 @@ export function resolveModelFolder(
     id !== undefined && id !== null && String(id).trim() !== '' ? String(id).trim() : '';
   // новая иерархия: uploads/{modelname}{id}/files
 
+  if (idPart === null && entityPrefix === 'messages') {
+    throw new Error(`[resolveModelFolder] Skip creating folder: empty message_id`);
+  }
+
   // files / files/image / files/video
   const leaf = subdir && subdir.trim() ? subdir : getTypeSubDir(); // ← тут используем subdir
   const full = path.resolve(uploadDirectory, dir, `${entityPrefix}${idPart}`, leaf);
