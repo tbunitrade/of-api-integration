@@ -332,7 +332,7 @@ const onRefreshFiles = async () => {
     <progress v-if="uploadProgress > 0 " :value="uploadProgress" max="100" class="w-full"></progress>
     <p v-if="uploadProgress > 0 && uploadProgress < 100">{{ uploadProgress }}% uploaded</p>
     <p v-else-if="uploadProgress === 100">
-      Finalizing upload progress, please click on blue button "Save"
+      Finalizing upload progress, please click on blue button "Update/Save"
     </p>
 
     <div class="w-full border border-gray-300 p-3 rounded mt-2 flex min-h-32 flex-wrap gap-3 max-h-64 overflow-scroll">
