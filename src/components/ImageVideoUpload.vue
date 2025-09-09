@@ -194,7 +194,7 @@ const processFiles = async (selectedFiles) => {
 
     // 🔁 Сразу обновляем список из реальной папки:
     await fileStore.refreshFiles(
-entity === 'messages'
+      resolvedEntity.value === 'messages'
         ? {
               entity: 'messages',
               model_name: props.modelName || selectedModel.value?.name,
@@ -260,27 +260,21 @@ onMounted(async () => {
 
 // watch([selectedModel, () => props.messageId], async ([model]) => {
 //   if (!model?.name ) return;
-watch([resolvedEntity, resolvedModelName, resolvedGroupId, resolvedMessageId, resolvedModelId],
-  async () => {
-
+watch([resolvedEntity, resolvedModelName, resolvedGroupId, resolvedMessageId, resolvedModelId], async () => {
         if (!canQueryFiles.value) return;
-        await fileStore.refreshFiles(
-  resolvedEntity.value === 'messages'
-          ? { entity: 'messages', model_name: resolvedModelName.value, group_id: resolvedGroupId.value, message_id: resolvedMessageId.value }
-          : { entity: 'post',     model_name: resolvedModelName.value, model_id: resolvedModelId.value }
-        );
-
         isRefreshing.value = true;
-  try {
-    await fileStore.refreshFiles({
-      entity: 'messages',
-      model_name: resolvedModelName.value,
-      group_id: resolvedGroupId.value,
-      message_id: resolvedMessageId.value,
-    });
-  } finally {
-    isRefreshing.value = false;
-  }
+        try {
+          await fileStore.refreshFiles(
+            resolvedEntity.value === 'messages'
+              ? { entity: 'messages', model_name: resolvedModelName.value, group_id: resolvedGroupId.value, message_id: resolvedMessageId.value }
+              : { entity: 'post',     model_name: resolvedModelName.value, model_id: resolvedModelId.value }
+          );
+        } finally {
+          isRefreshing.value = false;
+        }
+
+
+
 });
 
 const onRefreshFiles = async () => {
@@ -338,7 +332,7 @@ const onRefreshFiles = async () => {
     <progress v-if="uploadProgress > 0 " :value="uploadProgress" max="100" class="w-full"></progress>
     <p v-if="uploadProgress > 0 && uploadProgress < 100">{{ uploadProgress }}% uploaded</p>
     <p v-else-if="uploadProgress === 100">
-      Finalizing upload...
+      Finalizing upload progress, please click on blue button "Save"
     </p>
 
     <div class="w-full border border-gray-300 p-3 rounded mt-2 flex min-h-32 flex-wrap gap-3 max-h-64 overflow-scroll">

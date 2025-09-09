@@ -26,6 +26,8 @@ import { colorsText } from "@/colors";
 import ImageVideoUpload from "@/components/ImageVideoUpload.vue";
 import Multiselect from '@vueform/multiselect';
 import '@vueform/multiselect/themes/default.css';
+import TimeField from "@/components/TimeField.vue"
+
 
 const tabs = ref([
   { id: 1, title: 'Schedule' },
@@ -70,10 +72,8 @@ const isRealMessageId = computed(() =>
 )
 
 if (!selectedMessage.value.id) {
-  selectedMessage.value.id = Date.now(); // временный уникальный ID
+  selectedMessage.value.id = null // временный уникальный ID
 }
-
-
 
 const spinnerColor = '#3B82F6' // или любой твой бренд-цвет
 const isGroupModalActive = ref(false);
@@ -202,8 +202,8 @@ const onSubmitGroup = async () =>
 
 };
 
-// const onSubmitMessage = async () =>
-async function onSubmitMessage()
+// const onFinalSubmitMessage = async () =>
+async function onFinalSubmitMessage()
 {
   const onSubmitMessage = async () => {
     const payload = { ...selectedMessage.value }
@@ -584,12 +584,12 @@ const messageListOptions = [
 ];
 
 
-const freePreviewOptions = [
-  { label: '0', value: 0 },
-  { label: '1', value: 1 },
-  { label: '2', value: 2 },
-  { label: '3', value: 3 },
-];
+// const freePreviewOptions = [
+//   { label: '0', value: 0 },
+//   { label: '1', value: 1 },
+//   { label: '2', value: 2 },
+//   { label: '3', value: 3 },
+// ];
 
 const messageTimeOptions = [
   { label:'8:00 am', value:'08:00'},
@@ -597,7 +597,6 @@ const messageTimeOptions = [
   { label:'4:00 pm', value:'16:00'},
   { label:'7:00 pm', value:'19:00'},
   { label:'10:00 pm', value:'22:00'},
-
 ]
 
 watch(isMessageModalActive, () =>
@@ -802,7 +801,7 @@ onMounted( async() =>
 
       <CardBoxModal v-model="isMessageModalActive" title="Message"
         size="xxl:!w-11/12 xl:!w-11/12 md:w-4/5 lg:w-4/5 w-4/5"
-        :buttonLabel="selectedMessage.isEdit ? 'Update' : 'Save'" :hasCancel="true" @confirm="onSubmitMessage">
+        :buttonLabel="selectedMessage.isEdit ? 'Update' : 'Save'" :hasCancel="true" @confirm="onFinalSubmitMessage">
 
         <CardBox is-form>
           <div class="flex flex-col">
@@ -851,18 +850,25 @@ onMounted( async() =>
                 <div class="flex gap-5 md:flex-row flex-col">
                   <div class="flex-1">
                     <FormField label="Message Time" help="Required. Message Time">
-                      <Multiselect
+
+                      <TimeField
                         v-model="selectedMessage.message_time"
-                        :options="messageTimeOptions"
-                        value-prop="value"
-                        label="label"
-                        track-by="value"
-                        :can-clear="true"
-                        :searchable="true"
-                        placeholder="Select Time"
+                        label="Message Time"
+                        :presets="['08:00','10:00','12:00','14:00','16:00','18:00']"
                       />
-<!--                      <FormControl v-model="selectedMessage.message_time" name="message_time" required type="time"-->
-<!--                        autocomplete="message_time" />-->
+
+<!--&lt;!&ndash;                      <FormControl v-model="selectedMessage.message_time" name="message_time" required type="time"&ndash;&gt;-->
+<!--&lt;!&ndash;                        autocomplete="message_time" />&ndash;&gt;-->
+                      <!--                      <Multiselect-->
+                      <!--                        v-model="selectedMessage.message_time"-->
+                      <!--                        :options="messageTimeOptions"-->
+                      <!--                        value-prop="value"-->
+                      <!--                        label="label"-->
+                      <!--                        track-by="value"-->
+                      <!--                        :can-clear="true"-->
+                      <!--                        :searchable="true"-->
+                      <!--                        placeholder="Select Time"-->
+                      <!--                      />-->
                     </FormField>
                     <div class="mb-3" v-for="error of $mv.message_time.$errors " :key="error.$uid">
                       <div :class="[colorsText['danger'], 'text-sm']">{{ error.$message }}</div>

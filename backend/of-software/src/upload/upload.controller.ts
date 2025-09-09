@@ -78,7 +78,25 @@ export class FileUploadController {
               throw new Error('[upload] Both group_id and message_id are required for entity=messages');
             }
 
-            const subdir = `group${String(groupId).trim()}/messages${String(messageId).trim()}/${baseSubdir}`;
+
+
+            ////fix folder issue
+
+            const gid = String(groupId ?? '').trim();
+            const mid = String(messageId ?? '').trim();
+
+            if (!gid || !mid) {
+              throw new Error('[upload] Both group_id and message_id are required for entity=messages');
+            }
+// ← добавляем ЖЕСТКУЮ проверку на ЦИФРЫ, чтобы не создавать папки под временные id
+            if (!/^\d+$/.test(mid)) {
+              throw new Error('[upload] message_id must be a numeric id (real DB id)');
+            }
+
+
+            //// hard mix
+
+            const subdir = `group${gid}/messages${mid}/${baseSubdir}`;
             const folder = resolveModelFolder(rawModelName, '', subdir, '');
 
             console.log('[upload:messages] →', folder);
@@ -87,8 +105,10 @@ export class FileUploadController {
           } catch (e) {
             console.error('[upload] destination error:', e);
             // fallback в корень uploads
-            fs.ensureDirSync(uploadDirectory);
-            cb(null, path.resolve(uploadDirectory));
+            // fs.ensureDirSync(uploadDirectory);
+            // cb(null, path.resolve(uploadDirectory));
+
+            return cb(e as Error, undefined as any);
           }
         },
         filename: ( req, file, cb ) => {
