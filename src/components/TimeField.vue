@@ -20,7 +20,7 @@ const setPreset = (t) => emit('update:modelValue', t)
 
 <template>
   <div class="space-y-2">
-    <label class="block text-sm font-medium"> {{ label }}}</label>
+    <label class="block text-sm font-medium"> {{ label }}</label>
 
     <input
       v-model="value"
