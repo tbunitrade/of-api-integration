@@ -51,8 +51,8 @@ function buildModelFolderPath(
 export function resolveModelFolder(
   modelName?: string,
   id?: string | number,
-  subdir?: string,
-  entityPrefix: string = 'post'
+  subdir: string = 'files',          // ← по умолчанию 'files'
+  entityPrefix: string = 'post'      // ← по умолчанию 'post'
 ) {
   return buildModelFolderPath(modelName, id, subdir, entityPrefix, true);
 }
@@ -135,17 +135,14 @@ export const uploadFile = async (
 ): Promise<string> => {
   return new Promise(async (resolve, reject) => {
     try {
-      // Куда сохраняем:
-      // 1) Если Multer уже положил временный файл и дал destination — используем подкаталог.
-      // 2) Иначе создаём по нашей схеме.
+
       let targetDir: string;
 
       if (file?.destination) {
-        // diskStorage уже выбрал папку (в контроллере через resolveModelFolder)
+
         targetDir = path.resolve(file.destination);
       } else {
-        // поток/буфер — выбираем сами
-        targetDir = resolveModelFolder(modelName, modelId);
+        targetDir = resolveModelFolder( modelName, modelId, 'files', 'post');
       }
 
       await fs.ensureDir(targetDir);
