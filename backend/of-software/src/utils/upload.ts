@@ -142,11 +142,7 @@ export const uploadFile = async (
 
         targetDir = path.resolve(file.destination);
       } else {
-        targetDir = resolveModelFolder(
-          modelName,
-          modelId,
-          'files',
-          'post');
+        targetDir = resolveModelFolder( modelName, modelId, 'files', 'post');
       }
 
       await fs.ensureDir(targetDir);
