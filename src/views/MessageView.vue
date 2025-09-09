@@ -850,25 +850,11 @@ onMounted( async() =>
                 <div class="flex gap-5 md:flex-row flex-col">
                   <div class="flex-1">
                     <FormField label="Message Time" help="Required. Message Time">
-
                       <TimeField
                         v-model="selectedMessage.message_time"
                         label="Message Time"
                         :presets="['08:00','10:00','12:00','14:00','16:00','18:00']"
                       />
-
-<!--&lt;!&ndash;                      <FormControl v-model="selectedMessage.message_time" name="message_time" required type="time"&ndash;&gt;-->
-<!--&lt;!&ndash;                        autocomplete="message_time" />&ndash;&gt;-->
-                      <!--                      <Multiselect-->
-                      <!--                        v-model="selectedMessage.message_time"-->
-                      <!--                        :options="messageTimeOptions"-->
-                      <!--                        value-prop="value"-->
-                      <!--                        label="label"-->
-                      <!--                        track-by="value"-->
-                      <!--                        :can-clear="true"-->
-                      <!--                        :searchable="true"-->
-                      <!--                        placeholder="Select Time"-->
-                      <!--                      />-->
                     </FormField>
                     <div class="mb-3" v-for="error of $mv.message_time.$errors " :key="error.$uid">
                       <div :class="[colorsText['danger'], 'text-sm']">{{ error.$message }}</div>
