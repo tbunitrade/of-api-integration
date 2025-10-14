@@ -43,3 +43,6 @@ restore-db:
 
 backend-logs:
 	docker exec -it nest_backend tail -f /app/startup.log
+
+db:
+	docker-compose up -d db pgadmin
