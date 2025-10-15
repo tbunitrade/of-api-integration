@@ -40,6 +40,26 @@ const useCronStore = defineStore({
         throw error
       }
     },
+    async triggerPostCronJobManuallyWithSafari( waitForManualLogin = false) {
+      console.log('🔥 triggerPostCronJobManuallyWithSafari action called with waitForManualLogin =', waitForManualLogin);
+      try {
+        const params = new URLSearchParams();
+
+        params.append('isPost', 'true')
+        if(waitForManualLogin) {
+         params.append('waitForManualLogin', 'true');
+        }
+
+        await  axios.get(`${import.meta.env.VITE_APP_ROOT_API}/cron/manual-start-safari?${params.toString()}`);
+        console.log('🔥 Axios for safari request sent');
+        return true;
+
+      }
+      catch (error){
+        console.error('CronjobSafari start failed:', error)
+        throw error
+      }
+    }
   }
 })
 export { useCronStore }
