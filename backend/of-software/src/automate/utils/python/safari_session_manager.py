@@ -1,6 +1,7 @@
 from selenium import webdriver
 from selenium.webdriver.safari.options import Options
 from selenium.common.exceptions import InvalidSessionIdException, NoSuchWindowException
+import atexit
 
 _sessions = {}
 
