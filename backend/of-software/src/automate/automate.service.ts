@@ -7,6 +7,7 @@ import { ModelPlatform } from 'src/modelPlatform/model_platform.entity';
 import { PostFile } from 'src/postFile/post_file.entity';
 import { Post } from 'src/post/post.entity';
 import { acceptCookie, loadCookiesFromFile } from "./utils/_functions/cookies-utils";
+import { startPostSafari } from "./utils/python/startPostSafari";
 
 /* Logic of login_captcha
 The OnlyFans website has 2 captcha google recaptcha v2 and v3. (v2 enterprise, v3 enterprise)
@@ -34,9 +35,15 @@ const checkIfExpired = (
 export class AutomateService {
   constructor() {}
 
-  async startMessage(data: any = {},
-                     manualStart = false,
-                     waitForManualLogin = false ) {
+  async startPostSafari(data:any) {
+    console.log('[AutomateService] startPostSafari()')
+    return await startPostSafari(data);
+  }
+
+  async startMessage(
+    data: any = {},
+    manualStart = false,
+    waitForManualLogin = false ) {
     console.log(`[startMessage] start for modelPlatform id=${data.model_id}`);
     console.log('[startMessage] started startMessage');
     let scheduledCount = 0;
@@ -218,6 +225,8 @@ export class AutomateService {
     }
   }
 
+
+
   async startPost(
     allData: {
       modelPlatform: ModelPlatform;
@@ -306,7 +315,7 @@ export class AutomateService {
             _config.login.passwordValue = _config.login.passwordValue.replace('$value', modelPlatform.password);
 
             //console.log('03 [startMessage] ⚠️ Login required → вызываем login() с:', data.username, data.password, cookieFileName);
-            console.log('03 [startPost] ⚠️ Login required → вызываем login() с:', modelPlatform.username, modelPlatform.password, cookieFileName);
+            console.log('03 [startPost] ⚠️ Login required → вызываем login() с:', modelPlatform.username, modelPlatform.password ? '***' : '', cookieFileName);
 
             if (prokey) {
               _config.login_captcha_extension.proKey =
@@ -417,7 +426,7 @@ export class AutomateService {
                     passwordValue: modelPlatform.password,
                   };
 
-                  console.log('[startPost] msgData:', msgData);
+                  //console.log('[startPost] msgData:', msgData);
 
                   if (!msgData.message_date || typeof msgData.message_date !== 'string') {
                     console.warn('[startPost] msgData[message_date] не строка или отсутствует:', msgData.message_date);
