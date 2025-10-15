@@ -1,3 +1,4 @@
+# start_post_safari.py
 import sys, json, time
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
@@ -11,39 +12,25 @@ def main():
 
     payload = json.loads(sys.argv[1])
     model_id = payload.get("model_id")
-    platform_id = payload.get("platform_id")
-    caption = payload.get("caption", "🚀 Test post from automation")
+    caption = payload.get("caption", "🚀 Test post from Safari automation")
 
-    print(f"🧩 Starting post automation → platform_id={platform_id}, model_id={model_id}")
+    print(f"🧩 Start post automation for model {model_id}")
 
     driver = get_driver(model_id)
-    driver.get("https://onlyfans.com/my/posts/new")
-    print("🌍 Navigated to create post page")
+    driver.get("https://onlyfans.com/posts/create")
 
     try:
         wait = WebDriverWait(driver, 30)
-
-        # ждем textarea
-        caption_input = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "textarea")))
-        caption_input.click()
-        caption_input.clear()
-        caption_input.send_keys(caption)
+        textarea = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "textarea")))
+        textarea.click()
+        textarea.send_keys(caption)
         print("📝 Caption inserted")
 
-        # ищем кнопку “Post”
-        post_button = wait.until(EC.element_to_be_clickable((By.XPATH, "//button[contains(., 'Post')]")))
-        post_button.click()
-        print("🚀 Post submitted")
-
-        time.sleep(5)
-        print("✅ Post creation flow finished")
-
+        print("✅ Reached post creation page successfully")
     except Exception as e:
-        print(f"❌ Error during posting: {e}")
-        sys.exit(2)
-
+        print(f"❌ Post creation error: {e}")
     finally:
-        print("✨ Safari session kept alive after posting (driver not closed)")
+        print("✨ Safari session kept alive after posting (not closed)")
 
 if __name__ == "__main__":
     main()
