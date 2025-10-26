@@ -68,4 +68,30 @@ export class CronController {
       console.log(error);
     }
   }
+
+  @Get('manual-start-safari')
+  @ApiBearerAuth('jwt')
+  @UseGuards(JwtAuthGuard)
+  async manualStartSafari(
+    @Request() req,
+    @Query() {isPost = true }: ManualStartDto
+
+  ) {
+    console.log(`[CRON] manualStartSafari called`);
+    try {
+      const id = req.user.id;
+      const user = await this.userService.findById(id)
+
+      setTimeout( ()=> {
+        this.cronService.manualStartSafari(!!isPost, true, user);
+      }, 0);
+
+      return {
+        success: true,
+        message: `Safari job started`
+      }
+    } catch (error){
+      console.log('cron Failed', error)
+    }
+  }
 }

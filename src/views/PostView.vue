@@ -367,14 +367,14 @@ const onManualClick = () =>{
 
 
 
-// const onStartCronSuper = async () => {
-//   await cronStore.triggerSuperManually();
-//   notify({
-//     title: "Success",
-//     type: "success",
-//     text: "Cron job started!",
-//   });
-// };
+const onStartCronJobManuallyWithSafari = async (wait) => {
+  await cronStore.triggerPostCronJobManuallyWithSafari();
+  notify({
+    title: "Success",
+    type: "success",
+    text: "Cron job started!",
+  });
+};
 
 const openFileInput = () => {
   fileInputRef.value.click();
@@ -506,7 +506,7 @@ onMounted(() => {
           rounded small
           @click="onManualClick"
         />
-        <!--        <BaseButton label="Super Mode" color="info" rounded small @click="onStartCronSuper" />-->
+        <BaseButton label="Safari Mode" color="info" rounded small @click="onStartCronJobManuallyWithSafari(false);" />
       </SectionTitleLineWithButton>
 
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">

@@ -45,46 +45,48 @@ services:
     volumes:
       - pgadmin-data:/var/lib/pgadmin
 
-  backend:
-    build: .
-    env_file:
-      - .env
-    container_name: nest_backend
-    restart: always
-    depends_on:
-      db:
-        condition: service_healthy
-    ports:
-      - '3000:3000'
-      - '5900:5900'
-    environment:
-      - ENV=dev
-      - DISPLAY=:10
-      - PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
-    volumes:
-      - .:/app
-      - /tmp/.X11-unix:/tmp/.X11-unix
-      #- /Users/oleksandrsonich/sites/joefans/backend/of-software/uploads:/app/uploads
-      #- /Volumes/KINGSTON/docker-uploads:/app/uploads
-      - ${HOST_UPLOADS_DIR:-./backend/of-software/uploads}:/app/uploads
-
-    networks:
-      - of-software-net
-    command: >
-      sh -c "echo '🚀 VNC доступен по адресу: http://localhost:5901/vnc.html?autoconnect=true&resize=scale' && /entrypoint.sh"
-
-  novnc-proxy:
-    image: pgmystery/proxy_vnc:latest
-    container_name: vnc-viewer-proxy
-    restart: always
-    ports:
-      - "5901:6081"
-    environment:
-      - NOVNC_REMOTE_SERVER=nest_backend:5900
-    depends_on:
-      - backend
-    networks:
-      - of-software-net
+#  backend:
+#    build: .
+#    env_file:
+#      - .env
+#    container_name: nest_backend
+#    restart: always
+#    depends_on:
+#      db:
+#        condition: service_healthy
+#    ports:
+#      - '3000:3000'
+#      - '5900:5900'
+#    environment:
+#      - ENV=dev
+#      - DISPLAY=:10
+#      - PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
+#    volumes:
+#      - .:/app
+#      - /tmp/.X11-unix:/tmp/.X11-unix
+#      #- /Users/oleksandrsonich/sites/joefans/backend/of-software/uploads:/app/uploads
+#      #- /Volumes/KINGSTON/docker-uploads:/app/uploads
+#      - ${HOST_UPLOADS_DIR:-./backend/of-software/uploads}:/app/uploads
+#      - /Users/oleksandrsonich/sites/joefans/backend/of-software/src/automate/utils/python:/host-python
+#
+#    networks:
+#      - of-software-net
+#    command: >
+#      sh -c "echo '🚀 VNC доступен по адресу: http://localhost:5901/vnc.html?autoconnect=true&resize=scale' && /entrypoint.sh"
+#    network_mode: "host"
+#
+#  novnc-proxy:
+#    image: pgmystery/proxy_vnc:latest
+#    container_name: vnc-viewer-proxy
+#    restart: always
+#    ports:
+#      - "5901:6081"
+#    environment:
+#      - NOVNC_REMOTE_SERVER=nest_backend:5900
+#    depends_on:
+#      - backend
+#    networks:
+#      - of-software-net
 
 
 

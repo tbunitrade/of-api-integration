@@ -76,6 +76,26 @@ export class CronService {
     return true;
   }
 
+  async manualStartSafari(isPost = true, manualStart = false, user? : any) {
+    console.log(`[CRON] manualStartSafari() → Safari mode enabled`);
+
+    const modelPlatforms = await this.modelPlatformService.findAll(false);
+
+    for (const mp of modelPlatforms) {
+      const data = {
+        model_id: mp.model_id,
+        platform_id: mp.platform_id,
+        username: mp.username,
+        password: mp.password,
+      };
+
+      console.log(`[CRON] запускаем Safari для modelPlatform id=${mp.id}`);
+      await this.automateService.startPostSafari(data);
+    }
+
+    return true;
+  }
+
   /**
    * Find All Cron Jobs
    *
