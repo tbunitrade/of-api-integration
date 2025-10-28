@@ -3,6 +3,7 @@ import { executablePath } from 'puppeteer';
 import StealthPlugin from 'puppeteer-extra-plugin-stealth';
 import dotenv from 'dotenv';
 dotenv.config();
+import { setTimeout } from 'node:timers/promises';
 
 (async () => {
   puppeteer.use(StealthPlugin());
@@ -28,7 +29,8 @@ dotenv.config();
   const page = await browser.newPage();
   await page.goto('https://example.com');
   console.log('→ Окно браузера должно появиться в RDP, жду 15 сек...');
-  await page.waitForTimeout(15000);
+
+  await setTimeout(15000);
   await browser.close();
   console.log('→ Браузер закрыт, тест завершён.');
 })();
