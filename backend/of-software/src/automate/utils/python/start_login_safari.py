@@ -5,6 +5,8 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from safari_session_manager import get_driver, load_cookies_before_login, save_cookies_after_login
+from python_anticaptcha import AnticaptchaClient
+from python_anticaptcha.tasks import NoCaptchaTaskProxylessTask
 
 
 # 1.	driver.get("https://onlyfans.com")
@@ -16,6 +18,10 @@ from safari_session_manager import get_driver, load_cookies_before_login, save_c
 # 6.1 здесь с задержкой может сработать еще раз капча второго типа где надо просто кликнуть по центру
 # 7.	Подставляем g-recaptcha-response в DOM
 # 8.	Ждём дашборд или ловим ошибку
+
+api_key = '5cdaa49b8672f47316a458d137fcc4'
+site_key = 'test'  # grab from site
+url = 'https://onlyfans.com'
 
 def main():
     if len(sys.argv) < 2:
@@ -65,7 +71,15 @@ def main():
                 EC.presence_of_element_located((By.CSS_SELECTOR, 'iframe[src*="recaptcha"]'))
             )
             print("Google reCaptcha detected")
-            print("Anticaptcha for Google  reCaptcha not implemented yet")
+            #print("Anticaptcha for Google  reCaptcha not implemented yet")
+
+            client = AnticaptchaClient(api_key)
+            task = NoCaptchaTaskProxylessTask(url, site_key)
+            job = client.createTask(task)
+            job.join()
+
+            print(job.get_solution_response())
+
         except:
             print("Google reCaptcha not detected")
 
