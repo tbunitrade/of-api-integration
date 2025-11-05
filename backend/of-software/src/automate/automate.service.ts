@@ -8,6 +8,8 @@ import { PostFile } from 'src/postFile/post_file.entity';
 import { Post } from 'src/post/post.entity';
 import { acceptCookie, loadCookiesFromFile } from "./utils/_functions/cookies-utils";
 import { startPostSafari } from "./utils/python/startPostSafari";
+import {ModelLimitService} from "./utils/model-limit.service";
+import {AutomateLoggerService} from "./utils/automate-logger.service";
 
 /* Logic of login_captcha
 The OnlyFans website has 2 captcha google recaptcha v2 and v3. (v2 enterprise, v3 enterprise)
@@ -33,11 +35,49 @@ const checkIfExpired = (
 
 @Injectable()
 export class AutomateService {
-  constructor() {}
+  constructor(
+    private readonly modelLimitService: ModelLimitService,
+    private readonly automateLoggerService: AutomateLoggerService,
+  ) {}
 
-  async startPostSafari(data:any) {
-    console.log('[AutomateService] startPostSafari()')
-    return await startPostSafari(data);
+  async startPostSafari(data: any) {
+    console.log('[AutomateService] startPostSafari()');
+
+    try {
+      // 🟡 Логируем старт задачи
+      await this.automateLoggerService.log({
+        modelPlatformId: data.model_id,
+        type: 'post',
+        step: 'login',
+        status: 'started',
+        message: 'Safari automation started',
+      });
+
+      // 🧩 Запускаем Selenium‑скрипт
+      const result = await startPostSafari(data);
+
+      // ✅ Логируем успешное завершение
+      await this.automateLoggerService.log({
+        modelPlatformId: data.model_id,
+        type: 'post',
+        step: 'posting',
+        status: 'success',
+        message: 'Safari automation completed successfully',
+      });
+
+      return result;
+    } catch (error) {
+      // 🔴 Логируем ошибку
+      await this.automateLoggerService.log({
+        modelPlatformId: data.model_id,
+        type: 'post',
+        step: 'posting',
+        status: 'fail',
+        message: error.message || 'Unknown error in startPostSafari',
+      });
+
+      throw error;
+    }
   }
 
   async startMessage(

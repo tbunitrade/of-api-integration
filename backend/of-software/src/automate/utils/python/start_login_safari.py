@@ -6,6 +6,17 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from safari_session_manager import get_driver, load_cookies_before_login, save_cookies_after_login
 
+
+# 1.	driver.get("https://onlyfans.com")
+# 2.	Заполняем email
+# 3.	Заполняем password
+# 4.	Нажимаем кнопку Login
+# 5.	🛑 И вот тут может появиться капча
+# 6.	Если капча есть — решаем через AntiCaptcha
+# 6.1 здесь с задержкой может сработать еще раз капча второго типа где надо просто кликнуть по центру
+# 7.	Подставляем g-recaptcha-response в DOM
+# 8.	Ждём дашборд или ловим ошибку
+
 def main():
     if len(sys.argv) < 2:
         print("No payload received")
@@ -39,12 +50,51 @@ def main():
         email_input.click()
         email_input.clear()
         email_input.send_keys(email)
+
         password_input = wait.until(EC.element_to_be_clickable((By.NAME, "password")))
         password_input.click()
         password_input.clear()
         password_input.send_keys(password)
         password_input.send_keys(Keys.RETURN)
-        print("🧩 Credentials sent, waiting for dashboard...")
+
+        print("🧩 Credentials sent, waiting for captcha checks...")
+
+        # check reCAPTCHA
+        try:
+            recaptcha_iframe = WebDriverWait(driver, 10).until(
+                EC.presence_of_element_located((By.CSS_SELECTOR, 'iframe[src*="recaptcha"]'))
+            )
+            print("Google reCaptcha detected")
+            print("Anticaptcha for Google  reCaptcha not implemented yet")
+        except:
+            print("Google reCaptcha not detected")
+
+        # check Cloudflare Turnstile
+        try:
+            turnstile_iframe = WebDriverWait(driver, 15).until(
+                EC.presence_of_element_located((By.CSS_SELECTOR, 'iframe[src*="challenges.cloudflare.com"]'))
+            )
+            print("Cloudflare Tunrstile detected")
+            driver.switch_to.frame(turnstile_iframe)
+
+            try:
+                body = WebDriverWait(driver, 10).until(
+                    EC.element_to_be_clickable((By.TAG_NAME, 'body'))
+                )
+
+                body.click()
+                print("Clicked inside Turnstile iframe body")
+            except:
+                print("Body inside Tunstile iframe not clickable")
+
+            driver.switch_to.default_content()
+
+            WebDriverWait(driver, 30).until_not(
+                EC.presence_of_element_located((By.CSS_SELECTOR, 'iframe[src*="challenges.cloudflare.com"]'))
+            )
+            print("Tunrstile challenge solded")
+        except:
+            print("✅ No Turnstile challenge detected or already solved")
 
         # Проверяем, загрузился ли header
         time.sleep(5)
