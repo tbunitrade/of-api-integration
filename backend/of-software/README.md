@@ -45,6 +45,9 @@ chmod o+x /Users/oleksandrsonich/sites/joefans/backend/of-software/src/automate
 chmod o+x /Users/oleksandrsonich/sites/joefans/backend/of-software/src/automate/utils
 chmod o+x /Users/oleksandrsonich/sites/joefans/backend/of-software/src/automate/utils/python
 
+# 11. Установи недостающие Python-зависимости в .venv botuser
+sudo -u botuser /Users/oleksandrsonich/sites/joefans/backend/of-software/src/automate/utils/python/.venv/bin/pip install setuptools
+
 # Дай execute/read на саму .venv
 chmod -R o+rx /Users/oleksandrsonich/sites/joefans/backend/of-software/src/automate/utils/python/.venv
 chmod -R g+rx /Users/oleksandrsonich/sites/joefans/backend/of-software/src/automate/utils/python/.venv
