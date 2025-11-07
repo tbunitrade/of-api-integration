@@ -34,6 +34,21 @@ ls -l /Users/oleksandrsonich/sites/joefans/testfile-from-*
 # ✅ Ожидаемое: -rw-rw---- botuser/ofshared и oleksandrsonich/ofshared
 
 
+# 10. Дай права на выполнение родительских директорий
+chmod o+x /Users/oleksandrsonich
+chmod o+x /Users/oleksandrsonich/sites
+chmod o+x /Users/oleksandrsonich/sites/joefans
+chmod o+x /Users/oleksandrsonich/sites/joefans/backend
+chmod o+x /Users/oleksandrsonich/sites/joefans/backend/of-software
+chmod o+x /Users/oleksandrsonich/sites/joefans/backend/of-software/src
+chmod o+x /Users/oleksandrsonich/sites/joefans/backend/of-software/src/automate
+chmod o+x /Users/oleksandrsonich/sites/joefans/backend/of-software/src/automate/utils
+chmod o+x /Users/oleksandrsonich/sites/joefans/backend/of-software/src/automate/utils/python
+
+# Дай execute/read на саму .venv
+chmod -R o+rx /Users/oleksandrsonich/sites/joefans/backend/of-software/src/automate/utils/python/.venv
+chmod -R g+rx /Users/oleksandrsonich/sites/joefans/backend/of-software/src/automate/utils/python/.venv
+
 ### 📦 Установка зависимостей
 
 ## engines
