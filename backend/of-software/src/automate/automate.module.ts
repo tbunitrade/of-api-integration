@@ -15,6 +15,6 @@ import {AutomateLoggerService} from "./utils/automate-logger.service";
   ])], // Assuming you're using TypeORM and have a User
   controllers: [AutomateController, TestController],
   providers: [AutomateService, AutomateLoggerService, ModelLimitService],
-  exports: [AutomateService], // Export the service if needed in other modules
+  exports: [AutomateService, AutomateLoggerService, ModelLimitService], // Export the service if needed in other modules
 })
 export class AutomateModule {}

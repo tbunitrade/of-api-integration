@@ -18,6 +18,7 @@ import { PostTimeService } from 'src/postTime/post_time.service';
 import { PostTime } from 'src/postTime/post_time.entity';
 import { UserService } from 'src/user/user.service';
 import { User } from 'src/user/user.entity';
+import {AutomateModule} from "../automate/automate.module";
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { User } from 'src/user/user.entity';
       PlatformGroup,
       Post,
     ]),
+    AutomateModule
   ],
   controllers: [CronController],
   providers: [
