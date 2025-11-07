@@ -1,5 +1,39 @@
 ### 🧠 OF Software – Backend Automation Platform
 
+# 1. Создай группу
+sudo dseditgroup -o create ofshared
+
+# 2. Добавь обоих пользователей
+sudo dseditgroup -o edit -a oleksandrsonich -t user ofshared
+sudo dseditgroup -o edit -a botuser -t user ofshared
+
+# 3. Назначь группу на проект
+sudo chgrp -R ofshared /Users/oleksandrsonich/sites/joefans
+
+# 4. Выдай права (⚠️ аккуратно — chmod 770 для ВСЕХ файлов приведёт к ошибкам Git!)
+# поэтому отдельно для папок и файлов:
+find /Users/oleksandrsonich/sites/joefans -type d -exec chmod 770 {} \;
+find /Users/oleksandrsonich/sites/joefans -type f -exec chmod 660 {} \;
+
+# 5. Установи SetGID на все папки (чтобы новые файлы получали ту же группу)
+find /Users/oleksandrsonich/sites/joefans -type d -exec chmod g+s {} \;
+
+# 6. Пропиши umask 007 в ~/.zshrc (для текущего пользователя)
+echo "umask 007" >> ~/.zshrc
+
+# 7. Повтори для botuser (через sudo -u botuser или вручную)
+sudo -u botuser sh -c 'echo "umask 007" >> ~/.zshrc'
+
+# 8. Активируй
+source ~/.zshrc
+
+# 9. Проверка
+touch /Users/oleksandrsonich/sites/joefans/testfile-from-olex
+sudo -u botuser touch /Users/oleksandrsonich/sites/joefans/testfile-from-botuser
+ls -l /Users/oleksandrsonich/sites/joefans/testfile-from-*
+# ✅ Ожидаемое: -rw-rw---- botuser/ofshared и oleksandrsonich/ofshared
+
+
 ### 📦 Установка зависимостей
 
 ## engines
