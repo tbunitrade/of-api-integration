@@ -5,8 +5,8 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from safari_session_manager import get_driver, load_cookies_before_login, save_cookies_after_login
-from python_anticaptcha import AnticaptchaClient
-from python_anticaptcha.tasks import NoCaptchaTaskProxylessTask
+from solve_recaptcha_and_cloudflare import solve_recaptcha_and_insert_token
+
 
 
 # 1.	driver.get("https://onlyfans.com")
@@ -19,9 +19,7 @@ from python_anticaptcha.tasks import NoCaptchaTaskProxylessTask
 # 7.	Подставляем g-recaptcha-response в DOM
 # 8.	Ждём дашборд или ловим ошибку
 
-api_key = '5cdaa49b8672f47316a458d137fcc4'
-site_key = 'test'  # grab from site
-url = 'https://onlyfans.com'
+
 
 def main():
     if len(sys.argv) < 2:
@@ -61,6 +59,8 @@ def main():
         password_input.click()
         password_input.clear()
         password_input.send_keys(password)
+
+        login_btn = wait.until(EC.element_to_be_clickable((By.NAME, "submit")))
         password_input.send_keys(Keys.RETURN)
 
         print("🧩 Credentials sent, waiting for captcha checks...")
@@ -73,12 +73,11 @@ def main():
             print("Google reCaptcha detected")
             #print("Anticaptcha for Google  reCaptcha not implemented yet")
 
-            client = AnticaptchaClient(api_key)
-            task = NoCaptchaTaskProxylessTask(url, site_key)
-            job = client.createTask(task)
-            job.join()
+            solve_recaptcha_and_insert_token(driver)
 
-            print(job.get_solution_response())
+
+            submit_btn = driver.find_element(By.CSS_SELECTOR, 'button[type="submit"]')
+            submit_btn.click()
 
         except:
             print("Google reCaptcha not detected")
@@ -124,6 +123,8 @@ def main():
             f.write(driver.page_source)
     finally:
         print("✨ Safari session kept alive after login (not closed)")
+
+
 
 if __name__ == "__main__":
     main()
