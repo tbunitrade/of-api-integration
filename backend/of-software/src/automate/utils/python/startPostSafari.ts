@@ -34,7 +34,7 @@ export async function startPostSafari(data: any) {
     });
 
 
-    const pythonBin = 'sudo -u botuser /Users/oleksandrsonich/sites/joefans/backend/of-software/.venv/bin/python';
+    const pythonBin = 'sudo -u botuser /Users/oleksandrsonich/sites/joefans/backend/of-software/src/automate/utils/python/.venv/bin/python';
     const basePath =
       '/Users/oleksandrsonich/sites/joefans/backend/of-software/src/automate/utils/python';
     const cookiePath = path.resolve(

@@ -2,15 +2,17 @@
 <script setup>
 import { computed, ref, watch } from 'vue';
 import BaseButton from './BaseButton.vue';
-import { useModelStore, usePostFileStore } from '@/stores';
+import {useModelStore, usePostFileStore, usePostStore} from '@/stores';
 import { notify } from '@kyvg/vue3-notification';
 //import { ClipLoader } from 'vue3-spinner';
 import { mdiClose } from '@mdi/js';
 import throttle from 'lodash/throttle';
 const modelStore = useModelStore();
 const selectedModel = computed(() => modelStore.selectedModel);
+const postStore = usePostStore()
+const effectiveId = computed(() => props.id ?? postStore.post?.id ?? 0);
 
-const props = defineProps({ id: { type: Number, default: 0 } });
+const props = defineProps({ id: { type: Number, default: null } });
 const fileInputRef = ref(null);
 const fileStore = usePostFileStore();
 const filesInStore = computed(() => fileStore.post_files);
@@ -116,7 +118,7 @@ const processFiles = async (selectedFiles) => {
   if (selectedModel?.value?.name) {
     formData.append('model_name', selectedModel.value.name)
   }
-  formData.append('model_id', String(props.id || 0));
+  formData.append('model_id', String(effectiveId.value));
   formData.append('entity', 'post'); // <-- ВАЖНО
 
   console.log('[post-upload] meta', { model_name: 'post', model_id: String(props.id || 0) });
