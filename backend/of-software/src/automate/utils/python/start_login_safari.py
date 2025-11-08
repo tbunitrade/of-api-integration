@@ -65,17 +65,18 @@ def main():
 
     # 2️⃣ Ввод логина/пароля
     try:
-        wait = WebDriverWait(driver, 30)
+        wait = WebDriverWait(driver, 600)
         email_input = wait.until(EC.element_to_be_clickable((By.NAME, "email")))
         email_input.click()
-        email_input.clear()
         email_input.send_keys(email)
+        email_input.send_keys(Keys.RETURN)
         print("Email entered")
 
         password_input = wait.until(EC.element_to_be_clickable((By.NAME, "password")))
         password_input.click()
-        password_input.clear()
         password_input.send_keys(password)
+        password_input.send_keys(Keys.RETURN)
+
         print("Password entered")
 
         try:
