@@ -290,16 +290,12 @@ export class AutomateService {
       prokey,
     } = allData;
     try {
-
       console.log('[startPost] started startPost');
       const puppeteerUtil = new PuppeteerUtil();
       puppeteerUtil.initialize();
       puppeteerUtil.setConfig();
 
       console.log('>>> [startPost] ENV.HEADLESS_MODE =', process.env.HEADLESS_MODE);
-      // console.log('>>> [startPost] ENV.DISPLAY      =', process.env.DISPLAY);
-      // console.log('>>> [startPost] ENV.PUPPETEER_EXECUTABLE_PATH =', process.env.PUPPETEER_EXECUTABLE_PATH);
-      //const headless = !manualStart;
 
       try {
         await puppeteerUtil.openBrowser();
@@ -392,18 +388,6 @@ export class AutomateService {
               : new Date(); // текущая дата
 
             for (let i = 0; i < numberOfDays; i++) {
-              // const scheduledDt = new Date(baseDate); // создаём копию
-              //
-              // let scheduledDt = new Date();
-              // if (scheduledDate && manualStart)
-              //   scheduledDt =
-              //     manualStart && new Date(scheduledDate) > new Date()
-              //       ? new Date(scheduledDate)
-              //       : new Date();
-              // else {
-              //   scheduledDt = new Date();
-              // }
-              // scheduledDt.setDate(scheduledDt.getDate() + i + 1);
 
               // каждый день — отдельная копия baseDate
               const scheduledDt = new Date(baseDate);
@@ -477,28 +461,6 @@ export class AutomateService {
                   if (!msgData.release_form_tags || typeof msgData.release_form_tags !== 'string') {
                     console.warn('[startPost] value не строка для key "release_form_tags":', msgData.release_form_tags);
                   }
-
-                  // const config = _config.post.map((c) => {
-                  //   if (c['key']) {
-                  //     c.value = c.value.replace('$value', msgData[c['key']]);
-                  //   }
-                  //   return { ...c };
-                  // });
-
-
-                  // const config = _config.post.map((c) => {
-                  //   if (c['key']) {
-                  //     //c.value = c.value.replace('$value', msgData[c['key']]);
-                  //     const val = msgData[c.key];
-                  //     if (typeof val === 'string') {
-                  //       console.log('[startPost] postCaptions:', postCaptions);
-                  //       c.value = c.value.replace('$value', val);
-                  //     } else {
-                  //       console.warn(`[startPost] Значение по key "${c.key}" не строка или отсутствует:`, val);
-                  //     }
-                  //   }
-                  //   return { ...c };
-                  // });
 
                   const config = _config.post.map((c) => {
                     const stepCopy = { ...c };
