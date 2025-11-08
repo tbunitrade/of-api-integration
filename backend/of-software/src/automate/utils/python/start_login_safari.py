@@ -76,7 +76,6 @@ def main():
         password_input.click()
         password_input.send_keys(password)
         password_input.send_keys(Keys.RETURN)
-
         print("Password entered")
 
         try:
