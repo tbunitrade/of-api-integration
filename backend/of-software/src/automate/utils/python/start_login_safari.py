@@ -55,9 +55,85 @@ def main():
     password = payload.get("password")
     model_id = payload.get("model_id")
     platform_id = payload.get("platform_id")
-
-    print(f"🔐 Login flow → platform_id={platform_id}, model_id={model_id}")
+    use_fingerprint = payload.get("fingerprint_username") is not None
+    fingerprint_username = payload.get("fingerprint_username")
     driver = get_driver(model_id)
+
+    is_fingerprint_login = False
+
+    print("status", use_fingerprint, "user-> ", fingerprint_username)
+
+    if use_fingerprint:
+        is_fingerprint_login = True
+        driver.get("https://onlyfans.com")
+
+        try:
+            # Находим ВСЕ кнопки и проверяем длину
+            buttons = WebDriverWait(driver, 15).until(
+                EC.presence_of_all_elements_located((By.CSS_SELECTOR, 'button.g-btn.m-rounded.m-md.m-block'))
+            )
+
+            if len(buttons) > 1:
+                fingerprint_btn = buttons[1]
+                print("🟢 Found fingerprint button")
+
+                # Проверим, что действительно нужная — содержит fingerprint
+                inner_html = fingerprint_btn.get_attribute("innerHTML")
+                if '#icon-fingerprint' not in inner_html:
+                    print("❌ Button[1] doesn't contain fingerprint icon!")
+                    raise Exception("Wrong button selected")
+
+                driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", fingerprint_btn)
+                driver.execute_script("arguments[0].click();", fingerprint_btn)
+                print("🟢 Fingerprint button clicked")
+            else:
+                print("❌ Not enough buttons found")
+                sys.exit(1)
+
+        except Exception as e:
+            print(f"❌ Fingerprint login error: {e}")
+            with open(f"fingerprint_debug_{model_id}.html", "w", encoding="utf-8") as f:
+                f.write(driver.page_source)
+            sys.exit(1)
+
+        try:
+            username_input = WebDriverWait(driver, 15).until(
+                EC.presence_of_element_located((By.NAME, "username"))
+            )
+            username_input.click()
+            username_input.send_keys(fingerprint_username)
+            print("🟢 Fingerprint username inserted")
+        except:
+            print("❌ Could not insert fingerprint username")
+            sys.exit(1)
+
+        print("🟢 Waiting for user to complete FaceID/TouchID")
+        time.sleep(120)
+        return
+
+    # if use_fingerprint:
+    #     is_fingerprint_login = True
+    #     driver.get("https://onlyfans.com")
+    #     try:
+    #         fingerprint_btn = WebDriverWait(driver, 15).until(
+    #             EC.presence_of_element_located((By.CSS_SELECTOR, 'button.m-social-btn svg use[href="#icon-fingerprint"]'))
+    #         )
+    #         WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, "//button[.//*[contains(@xlink:href, '#icon-fingerprint')]]"))).click()
+    #         print("🟢 Fingerprint button clicked")
+    #     except:
+    #         print("❌ Fingerprint button not found or not clickable")
+    #         sys.exit(1)
+    #
+    #     WebDriverWait(driver, 10).until(
+    #         EC.presence_of_element_located((By.NAME, "username"))
+    #     ).send_keys(fingerprint_username)
+    #
+    #     print("🟢 Fingerprint login initiated. Waiting for user to complete authentication.")
+    #     time.sleep(120)  # пауза, чтобы успели пройти FaceID/TouchID
+    #     return
+    #
+    # print(f"🔐 Login flow → platform_id={platform_id}, model_id={model_id}")
+
 
     # 1️⃣ Пытаемся загрузить cookies
     cookies_loaded = load_cookies_before_login(driver, model_id, platform_id)
@@ -96,6 +172,7 @@ def main():
 
         # check reCAPTCHA
         print("Start try catch  WebDriverWait(driver")
+
         try:
             #recaptcha_iframe = WebDriverWait(driver, 10).until(
             WebDriverWait(driver, 10).until(
@@ -160,6 +237,10 @@ def main():
             f.write(driver.page_source)
         sys.exit(1) # ← триггер для JS что логин не сработал
     finally:
+        if is_fingerprint_login:
+            print("✨ Skipping post-steps, fingerprint login only")
+            return  # 🛑 Никакого post() вызова здесь
+
         print("✨ Safari session kept alive after login (not closed)")
 
         # 3️⃣ Сохраняем cookies
