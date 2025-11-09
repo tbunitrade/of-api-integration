@@ -37,6 +37,9 @@ export class ModelPlatform {
   @Column({ nullable: true })
   password: string;
 
+  @Column( {nullable:true})
+  fingerprint_username: string
+
   @Column({ nullable: true })
   site_url: string;
 

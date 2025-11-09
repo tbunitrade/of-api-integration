@@ -376,6 +376,15 @@ const onStartCronJobManuallyWithSafari = async (wait) => {
   });
 };
 
+const onStartCronJobManuallyWithSafariFingerPrint = async (wait) => {
+  await cronStore.triggerPostCronJobManuallyWithSafariFingerPrint();
+  notify({
+    title: "Success",
+    type: "success",
+    text: "Cron job started!",
+  });
+};
+
 const openFileInput = () => {
   fileInputRef.value.click();
 };
@@ -507,6 +516,7 @@ onMounted(() => {
           @click="onManualClick"
         />
         <BaseButton label="Safari Mode" color="info" rounded small @click="onStartCronJobManuallyWithSafari(false);" />
+        <BaseButton label="Safari FingerPrint" color="info" rounded small @click="onStartCronJobManuallyWithSafariFingerPrint(false);" />
       </SectionTitleLineWithButton>
 
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">

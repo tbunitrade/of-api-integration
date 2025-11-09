@@ -7,9 +7,11 @@ import { ModelPlatform } from 'src/modelPlatform/model_platform.entity';
 import { PostFile } from 'src/postFile/post_file.entity';
 import { Post } from 'src/post/post.entity';
 import { acceptCookie, loadCookiesFromFile } from "./utils/_functions/cookies-utils";
-import { startPostSafari } from "./utils/python/startPostSafari";
 import {ModelLimitService} from "./utils/model-limit.service";
 import {AutomateLoggerService} from "./utils/automate-logger.service";
+import { exec } from 'child_process';
+import * as fs from 'fs';
+import * as path from 'path';
 
 /* Logic of login_captcha
 The OnlyFans website has 2 captcha google recaptcha v2 and v3. (v2 enterprise, v3 enterprise)
@@ -22,6 +24,46 @@ Next we have to resolve v2 and replace the ec-recaptcha-response field with the 
 
 And with these keys click login button.
 */
+
+function execPy(cmd: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    exec(cmd, { maxBuffer: 1024 * 1024 * 20 }, (error, stdout, stderr) => {
+      if (error) {
+        console.log('[execPy] Error:', error.message);
+        return reject(error);
+      }
+      if (stderr?.trim()) {
+        console.log('[execPy] stderr:', stderr);
+      }
+      resolve(stdout || '');
+    });
+  });
+}
+
+function buildSafariPayload(data: any, useFingerPrint = false): string {
+  const payload: Record<string, any> = {
+    platform_id: data.platform_id,
+    model_id: data.model_id,
+    caption: data.caption || 'Auto-post from Safari',
+  };
+  if (useFingerPrint) {
+    payload.fingerprint_username = data.username;
+  } else {
+    payload.email = data.username || 'test@example.com';
+    payload.password = data.password || '';
+  }
+  return JSON.stringify(payload);
+}
+
+function getSafariPaths(modelId: any, platformId: any) {
+  const basePath = path.resolve(__dirname, '../../../src/automate/utils/python');
+  const pythonBin = `sudo -u botuser ${basePath}/.venv/bin/python`;
+  const cookiePath = path.resolve(
+    basePath,
+    `cookies/user_${modelId}_${platformId}_cookies.json`
+  );
+  return { basePath, pythonBin, cookiePath };
+}
 
 const checkIfExpired = (
   numberOfDays: number,
@@ -44,7 +86,6 @@ export class AutomateService {
     console.log('[AutomateService] startPostSafari()');
 
     try {
-      // 🟡 Логируем старт задачи
       await this.automateLoggerService.log({
         modelPlatformId: data.model_id,
         type: 'post',
@@ -53,10 +94,29 @@ export class AutomateService {
         message: 'Safari automation started',
       });
 
-      // 🧩 Запускаем Selenium‑скрипт
-      const result = await startPostSafari(data);
+      const { basePath, pythonBin, cookiePath } = getSafariPaths(data.model_id, data.platform_id);
+      const payload = buildSafariPayload(data);
+      const loginCmd = `${pythonBin} ${basePath}/start_login_safari.py '${payload}'`;
 
-      // ✅ Логируем успешное завершение
+      let skipLogin = false;
+
+      if (fs.existsSync(cookiePath)) {
+        const stats = fs.statSync(cookiePath);
+        const ageHours = (Date.now() - stats.mtimeMs) / 1000 / 60 / 60;
+        if (ageHours < 48) {
+          console.log(`[startPostSafari] 🍪 Cookies found (age: ${ageHours.toFixed(1)}h) — skip login`);
+          skipLogin = true;
+        } else {
+          console.log('[startPostSafari] ⚠️ Cookies expired — will relogin');
+        }
+      }
+
+      if (!skipLogin) {
+        const loginOut = await execPy(loginCmd);
+        console.log('[startPostSafari] login stdout:', loginOut.trim());
+        await new Promise(r => setTimeout(r, 1500));
+      }
+
       await this.automateLoggerService.log({
         modelPlatformId: data.model_id,
         type: 'post',
@@ -65,9 +125,8 @@ export class AutomateService {
         message: 'Safari automation completed successfully',
       });
 
-      return result;
+      return { ok: true };
     } catch (error) {
-      // 🔴 Логируем ошибку
       await this.automateLoggerService.log({
         modelPlatformId: data.model_id,
         type: 'post',
@@ -76,6 +135,40 @@ export class AutomateService {
         message: error.message || 'Unknown error in startPostSafari',
       });
 
+      throw error;
+    }
+  }
+
+  async startPostSafariFingerPrint(data: any) {
+    console.log('[AutomateService] startPostSafariFingerPrint()');
+
+    try {
+      const { basePath, pythonBin, cookiePath } = getSafariPaths(data.model_id, data.platform_id);
+      const payload = buildSafariPayload(data, true);
+      const loginCmd = `${pythonBin} ${basePath}/start_login_safari.py '${payload}'`;
+
+      let skipLogin = false;
+
+      if (fs.existsSync(cookiePath)) {
+        const stats = fs.statSync(cookiePath);
+        const ageHours = (Date.now() - stats.mtimeMs) / 1000 / 60 / 60;
+        if (ageHours < 48) {
+          console.log(`[startPostSafariFingerPrint] 🍪 Cookies found (age: ${ageHours.toFixed(1)}h) — skip login`);
+          skipLogin = true;
+        } else {
+          console.log('[startPostSafariFingerPrint] ⚠️ Cookies expired — will relogin');
+        }
+      }
+
+      if (!skipLogin) {
+        const loginOut = await execPy(loginCmd);
+        console.log('[startPostSafariFingerPrint] login stdout:', loginOut.trim());
+        await new Promise(r => setTimeout(r, 1500));
+      }
+
+      return { ok: true };
+    } catch (error) {
+      console.log('[startPostSafariFingerPrint] Exception', error);
       throw error;
     }
   }

@@ -33,8 +33,8 @@ const selectedModelPlatform = ref({
   model_id: null,
   platform_id: null,
   username: '',
+  fingerprint_username: '',
   password: ''
-
 });
 
 const isModalActive = ref(false);
@@ -52,6 +52,7 @@ const modelPlatfromRules = computed(() => (
     model_id: { required },
     platform_id: { required },
     username: { required, minLength: minLength(2) },
+    fingerprint_username: { required, minLength: minLength(2) },
     password: { required, minLength: minLength(2) },
   }));
 const $v = useVuelidate(rules, selectedModel);
@@ -291,7 +292,7 @@ const onChangePlatform = (value) => {
 
         <CardBox is-form>
           <div>
-            <FormField label="Full Name" help="Required. Model name">
+            <FormField label="Full Name" help="Required. Model name">Required. Model name
               <FormControl v-model="selectedModel.name" name="name" required autocomplete="name" />
             </FormField>
             <div class="mb-3" v-for="error of  $v.name.$errors " :key="error.$uid">
@@ -330,6 +331,13 @@ const onChangePlatform = (value) => {
                 placeholder="Enter Username" />
             </FormField>
             <div class="mb-3" v-for="error of  $mpv.username.$errors " :key="error.$uid">
+              <div :class="[colorsText['danger'], 'text-sm']">{{ error.$message }}</div>
+            </div>
+            <FormField label="Fingerprint Username" help="Required. UsernameFingerPrint">
+              <FormControl v-model="selectedModelPlatform.fingerprint_username" name="username Finger Print" required autocomplete="username"
+                           placeholder="Enter Username for FingerPrint" />
+            </FormField>
+            <div class="mb-3" v-for="error of  $mpv.fingerprint_username.$errors " :key="error.$uid">
               <div :class="[colorsText['danger'], 'text-sm']">{{ error.$message }}</div>
             </div>
             <FormField label="Password" help="Required. Password">

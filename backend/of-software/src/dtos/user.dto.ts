@@ -18,6 +18,12 @@ export class UserDto {
 
   @ApiProperty({
     type: 'string',
+    required: false,
+  })
+  fingerprint_username?: string;
+
+  @ApiProperty({
+    type: 'string',
   })
   @IsOptional()
   firstName: string;

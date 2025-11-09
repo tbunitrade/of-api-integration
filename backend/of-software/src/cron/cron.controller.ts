@@ -6,6 +6,7 @@ import { CreateCronDto } from 'src/dtos/create-cron.dto';
 import { ManualStartDto } from 'src/dtos/manual-start.dto';
 import { UserService } from 'src/user/user.service';
 import {query} from "express";
+import {AutomateService} from "../automate/automate.service";
 
 @Controller('cron')
 @ApiTags('cron')
@@ -13,6 +14,7 @@ export class CronController {
   constructor(
     private readonly cronService: CronService,
     private readonly userService: UserService,
+    private readonly automateService: AutomateService,
   ) {}
 
   @Get('start')
@@ -93,5 +95,11 @@ export class CronController {
     } catch (error){
       console.log('cron Failed', error)
     }
+  }
+
+  @Get('manual-start-safari-finger-print')
+  async manualStartSafariFingerPrint(@Query('waitForManualLogin') wait = false) {
+    await this.automateService.startPostSafariFingerPrint({ waitForManualLogin: wait });
+    return { ok: true};
   }
 }
