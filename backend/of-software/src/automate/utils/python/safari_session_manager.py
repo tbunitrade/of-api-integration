@@ -45,11 +45,13 @@ def get_driver(model_id):
     """Возвращает активную Safari-сессию для модели"""
     if model_id in _sessions:
         try:
-            _ = _sessions[model_id].current_url
+            #_ = _sessions[model_id].current_url
+            _ = _sessions[model_id].title
+
             print(f"♻️ Reusing existing Safari session for model {model_id}")
             return _sessions[model_id]
-        except (InvalidSessionIdException, NoSuchWindowException):
-            print(f"⚠️ Session for model {model_id} is dead, restarting…")
+        except (InvalidSessionIdException, NoSuchWindowException, Exception) as e:
+            print(f"⚠️ Session for model {model_id} is dead, restarting… and crashed: {e}")
             try:
                 _sessions[model_id].quit()
             except Exception:

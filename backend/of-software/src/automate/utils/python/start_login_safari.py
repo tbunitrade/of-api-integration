@@ -61,6 +61,10 @@ def main():
 
     # 1️⃣ Пытаемся загрузить cookies
     cookies_loaded = load_cookies_before_login(driver, model_id, platform_id)
+    print("⚙️  Launching new Safari session…")
+    print("📎 session_id =", driver.session_id)
+    print("📎 capabilities =", driver.capabilities)
+
     driver.get("https://onlyfans.com")
 
     # 2️⃣ Ввод логина/пароля
@@ -91,6 +95,7 @@ def main():
             print("🧩 Login BTN blocked")
 
         # check reCAPTCHA
+        print("Start try catch  WebDriverWait(driver")
         try:
             #recaptcha_iframe = WebDriverWait(driver, 10).until(
             WebDriverWait(driver, 10).until(

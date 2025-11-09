@@ -11,4 +11,9 @@ def create_post(driver, model_id):
     work(driver, POST_STEPS)
 
 if __name__ == "__main__":
-    create_post(9)
+    import json, sys
+    payload = json.loads(sys.argv[1])
+    model_id = payload["model_id"]
+    driver = get_driver(model_id)
+    create_post(driver,model_id)
+    print("✅ CLI payload received:", payload)
