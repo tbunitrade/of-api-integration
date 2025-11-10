@@ -64,20 +64,14 @@ const useCronStore = defineStore({
       console.log('🔥 triggerPostCronJobManuallyWithSafari action called with waitForManualLogin =', waitForManualLogin);
       try {
         const params = new URLSearchParams();
-
-        params.append('isPost', 'true')
-        if(waitForManualLogin) {
+        if (waitForManualLogin) {
           params.append('waitForManualLogin', 'true');
         }
 
-        await  axios.get(`${import.meta.env.VITE_APP_ROOT_API}/cron/manual-start-safari-finger-print?${params.toString()}`);
-        console.log('🔥 Axios for safari request sent');
-        return true;
-
-      }
-      catch (error){
-        console.error('CronjobSafari start failed:', error)
-        throw error
+        await axios.get(`${import.meta.env.VITE_APP_ROOT_API}/cron/manual-start-safari-finger-print?${params.toString()}`);
+        console.log('✅ Safari fingerprint job triggered');
+      } catch (error) {
+        console.error('❌ triggerPostCronJobManuallyWithSafariFingerPrint failed:', error);
       }
     }
   }

@@ -47,8 +47,16 @@ function buildSafariPayload(data: any, useFingerPrint = false): string {
     caption: data.caption || 'Auto-post from Safari',
   };
   if (useFingerPrint) {
-    payload.fingerprint_username = data.username;
+    if (!data.fingerprint_username) {
+      console.warn('⚠️ fingerprint_username is missing in data');
+    } else {
+      payload.fingerprint_username = data.fingerprint_username;
+    }
+
   } else {
+    if (!data.username || !data.password) {
+      console.warn('⚠️ Missing email or password in data');
+    }
     payload.email = data.username || 'test@example.com';
     payload.password = data.password || '';
   }
@@ -58,7 +66,7 @@ function buildSafariPayload(data: any, useFingerPrint = false): string {
 function getSafariPaths(modelId: any, platformId: any) {
   const basePath = path.resolve(__dirname, '../../../src/automate/utils/python');
   // ✅ Настоящий путь до python, без .venv
-  const pythonBin = `sudo -u botuser /usr/local/bin/python3`;
+  const pythonBin = `sudo -u botuser ${basePath}/.venv/bin/python`;
 
   const cookiePath = path.resolve(
     basePath,
@@ -151,10 +159,14 @@ export class AutomateService {
     try {
       const { basePath, pythonBin, cookiePath } = getSafariPaths(data.model_id, data.platform_id);
       const payload = buildSafariPayload(data, true);
+
+      const logPath = path.join(basePath, `debug_safari_login_${Date.now()}.log`);
+      const loginCmd = `${pythonBin} ${basePath}/start_login_safari.py '${payload}' >> ${logPath} 2>&1`;
+
       console.log(`[pythonBin] ${pythonBin}`);
       console.log(`[basePath] ${basePath}`);
-
-      const loginCmd = `${pythonBin} ${basePath}/start_login_safari.py '${payload}'`;
+      console.log(`[loginCmd] ${loginCmd}`);
+      console.log(`[logPath] ${logPath}`);
 
       let skipLogin = false;
 
@@ -170,9 +182,24 @@ export class AutomateService {
       }
 
       if (!skipLogin) {
-        const loginOut = await execPy(loginCmd);
-        console.log('[startPostSafariFingerPrint] login stdout:', loginOut.trim());
-        await new Promise(r => setTimeout(r, 1500));
+        try {
+          await execPy(loginCmd);
+          console.log('[startPostSafariFingerPrint] ✅ Python script executed');
+        } catch (err) {
+          console.error('[startPostSafariFingerPrint] ❌ Python script failed');
+        }
+
+        await new Promise(r => setTimeout(r, 1000)); // Пауза, чтобы лог успел записаться
+
+        if (fs.existsSync(logPath)) {
+          const safariLog = fs.readFileSync(logPath, 'utf-8');
+          console.log('📄 [Safari Log Output]');
+          console.log('----------------------------');
+          console.log(safariLog);
+          console.log('----------------------------');
+        } else {
+          console.warn('⚠️ Log file not found after script execution');
+        }
       }
 
       return { ok: true };

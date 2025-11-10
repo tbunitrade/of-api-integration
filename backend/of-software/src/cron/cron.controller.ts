@@ -99,7 +99,7 @@ export class CronController {
 
   @Get('manual-start-safari-finger-print')
   async manualStartSafariFingerPrint(@Query('waitForManualLogin') wait = false) {
-    await this.automateService.startPostSafariFingerPrint({ waitForManualLogin: wait });
+    await this.cronService.manualStartSafariFingerPrint();
     return { ok: true};
   }
 }

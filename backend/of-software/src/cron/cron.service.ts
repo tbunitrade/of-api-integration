@@ -96,6 +96,27 @@ export class CronService {
     return true;
   }
 
+  async manualStartSafariFingerPrint() {
+    console.log(`[CRON] manualStartSafariFingerPrint() called`);
+
+    const modelPlatforms = await this.modelPlatformService.findAll(false);
+
+    for (const mp of modelPlatforms) {
+      const data = {
+        model_id: mp.model_id,
+        platform_id: mp.platform_id,
+        username: mp.username,
+        fingerprint_username: mp.username, // ⚠️ Критично!
+        caption: 'Test caption from Safari', // можно убрать
+      };
+
+      console.log(`[CRON] запускаем Safari FingerPrint login для modelPlatform id=${mp.id}`);
+      await this.automateService.startPostSafariFingerPrint(data);
+    }
+
+    return true;
+  }
+
   /**
    * Find All Cron Jobs
    *
