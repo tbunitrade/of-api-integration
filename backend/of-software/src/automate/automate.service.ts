@@ -57,12 +57,18 @@ function buildSafariPayload(data: any, useFingerPrint = false): string {
 
 function getSafariPaths(modelId: any, platformId: any) {
   const basePath = path.resolve(__dirname, '../../../src/automate/utils/python');
-  const pythonBin = `sudo -u botuser ${basePath}/.venv/bin/python`;
+  // ✅ Настоящий путь до python, без .venv
+  const pythonBin = `sudo -u botuser /usr/local/bin/python3`;
+
   const cookiePath = path.resolve(
     basePath,
     `cookies/user_${modelId}_${platformId}_cookies.json`
   );
-  return { basePath, pythonBin, cookiePath };
+  return {
+    basePath,
+    pythonBin,
+    cookiePath,
+  };
 }
 
 const checkIfExpired = (
@@ -145,6 +151,9 @@ export class AutomateService {
     try {
       const { basePath, pythonBin, cookiePath } = getSafariPaths(data.model_id, data.platform_id);
       const payload = buildSafariPayload(data, true);
+      console.log(`[pythonBin] ${pythonBin}`);
+      console.log(`[basePath] ${basePath}`);
+
       const loginCmd = `${pythonBin} ${basePath}/start_login_safari.py '${payload}'`;
 
       let skipLogin = false;
