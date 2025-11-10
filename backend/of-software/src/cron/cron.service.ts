@@ -106,7 +106,7 @@ export class CronService {
         model_id: mp.model_id,
         platform_id: mp.platform_id,
         username: mp.username,
-        fingerprint_username: mp.username, // ⚠️ Критично!
+        fingerprint_username: mp.fingerprint_username, // ⚠️ Критично!
         caption: 'Test caption from Safari', // можно убрать
       };
 

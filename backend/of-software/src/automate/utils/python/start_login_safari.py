@@ -1,6 +1,7 @@
 # start_login_safari.py
 import os
 from os import mkdir
+import logging
 from pathlib import Path
 from dotenv import load_dotenv
 import sys, json, time
@@ -12,6 +13,10 @@ from safari_session_manager import get_driver, load_cookies_before_login, save_c
 from solve_recaptcha_and_cloudflare import solve_recaptcha_and_insert_token
 from post_safari import create_post
 from safari_session_manager import get_driver
+
+print("🔥 ARGV:", sys.argv)
+payload = json.loads(sys.argv[1])
+print("🧩 Payload:", payload)
 
 #1.	startPostSafari() (в TS) вызывает:
 #2.	→ start_login_safari.py с payload
@@ -43,10 +48,23 @@ custom_cache_path = Path(os.getenv("SELENIUM_CACHE_PATH", "./.selenium-cache")).
 custom_cache_path.mkdir(parents=True, exist_ok=True)
 os.environ["SE_CACHE_PATH"] = str(custom_cache_path)
 
+# logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
+logging.getLogger("selenium").setLevel(logging.WARNING)
+logging.getLogger("urllib3").setLevel(logging.WARNING)
+logging.getLogger("selenium.webdriver.remote.remote_connection").setLevel(logging.WARNING)
+print("I started start_login_safari")
 
 def main():
+    print("🔥 ARGV:", sys.argv)
     if len(sys.argv) < 2:
-        print("No payload received")
+        print("❌ No payload received!")
+        sys.exit(1)
+    try:
+        payload = json.loads(sys.argv[1])
+        print("🧩 Payload parsed:", payload)
+    except Exception as e:
+        print("❌ Error parsing payload:", e)
         sys.exit(1)
 
     payload = json.loads(sys.argv[1])
@@ -68,185 +86,140 @@ def main():
         driver.get("https://onlyfans.com")
 
         try:
-            # Находим ВСЕ кнопки и проверяем длину
-            buttons = WebDriverWait(driver, 15).until(
-                EC.presence_of_all_elements_located((By.CSS_SELECTOR, 'button.g-btn.m-rounded.m-md.m-block'))
+            # Ждём появления и кликаем на иконку Fingerprint
+            WebDriverWait(driver, 15).until(
+                EC.presence_of_element_located((By.CSS_SELECTOR, 'button.m-social-btn svg use[href="#icon-fingerprint"]'))
             )
+            fingerprint_button = driver.find_element(By.CSS_SELECTOR, 'button.m-social-btn')
+            fingerprint_button.click()
+            print("🟢 Fingerprint button clicked")
 
-            if len(buttons) > 1:
-                fingerprint_btn = buttons[1]
-                print("🟢 Found fingerprint button")
-
-                # Проверим, что действительно нужная — содержит fingerprint
-                inner_html = fingerprint_btn.get_attribute("innerHTML")
-                if '#icon-fingerprint' not in inner_html:
-                    print("❌ Button[1] doesn't contain fingerprint icon!")
-                    raise Exception("Wrong button selected")
-
-                driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", fingerprint_btn)
-                driver.execute_script("arguments[0].click();", fingerprint_btn)
-                print("🟢 Fingerprint button clicked")
-            else:
-                print("❌ Not enough buttons found")
-                sys.exit(1)
-
-        except Exception as e:
-            print(f"❌ Fingerprint login error: {e}")
-            with open(f"fingerprint_debug_{model_id}.html", "w", encoding="utf-8") as f:
-                f.write(driver.page_source)
-            sys.exit(1)
-
-        try:
-            username_input = WebDriverWait(driver, 15).until(
-                EC.presence_of_element_located((By.NAME, "username"))
-            )
+            # Находим поле username и вставляем fingerprint_username
+            wait = WebDriverWait(driver, 15)
+            username_input = wait.until(EC.element_to_be_clickable((By.NAME, "username")))
             username_input.click()
             username_input.send_keys(fingerprint_username)
+            username_input.send_keys(Keys.RETURN)
             print("🟢 Fingerprint username inserted")
-        except:
-            print("❌ Could not insert fingerprint username")
+
+            # 3️⃣ Сохраняем cookies
+            save_cookies_after_login(driver, model_id, platform_id)
+            print("✨ cookies saved")
+
+        except Exception as e:
+            print(f"❌ Fingerprint flow failed: {e}")
+            with open(f"fingerprint_debug_{model_id}.html", "w", encoding="utf-8") as f:
+                f.write(driver.page_source)
             sys.exit(1)
 
         print("🟢 Waiting for user to complete FaceID/TouchID")
         time.sleep(120)
         return
-
-    # if use_fingerprint:
-    #     is_fingerprint_login = True
-    #     driver.get("https://onlyfans.com")
-    #     try:
-    #         fingerprint_btn = WebDriverWait(driver, 15).until(
-    #             EC.presence_of_element_located((By.CSS_SELECTOR, 'button.m-social-btn svg use[href="#icon-fingerprint"]'))
-    #         )
-    #         WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, "//button[.//*[contains(@xlink:href, '#icon-fingerprint')]]"))).click()
-    #         print("🟢 Fingerprint button clicked")
-    #     except:
-    #         print("❌ Fingerprint button not found or not clickable")
-    #         sys.exit(1)
-    #
-    #     WebDriverWait(driver, 10).until(
-    #         EC.presence_of_element_located((By.NAME, "username"))
-    #     ).send_keys(fingerprint_username)
-    #
-    #     print("🟢 Fingerprint login initiated. Waiting for user to complete authentication.")
-    #     time.sleep(120)  # пауза, чтобы успели пройти FaceID/TouchID
-    #     return
-    #
-    # print(f"🔐 Login flow → platform_id={platform_id}, model_id={model_id}")
-
-
-    # 1️⃣ Пытаемся загрузить cookies
-    cookies_loaded = load_cookies_before_login(driver, model_id, platform_id)
-    print("⚙️  Launching new Safari session…")
-    print("📎 session_id =", driver.session_id)
-    print("📎 capabilities =", driver.capabilities)
-
-    driver.get("https://onlyfans.com")
-
-    # 2️⃣ Ввод логина/пароля
-    try:
-        wait = WebDriverWait(driver, 600)
-        email_input = wait.until(EC.element_to_be_clickable((By.NAME, "email")))
-        email_input.click()
-        email_input.send_keys(email)
-        email_input.send_keys(Keys.RETURN)
-        print("Email entered")
-
-        password_input = wait.until(EC.element_to_be_clickable((By.NAME, "password")))
-        password_input.click()
-        password_input.send_keys(password)
-        password_input.send_keys(Keys.RETURN)
-        print("Password entered")
-
+    else:
+        # 2️⃣ Ввод логина/пароля
         try:
-            WebDriverWait(driver, 10).until(
-                lambda d: d.find_element(By.CSS_SELECTOR, 'button[type="submit"]').is_enabled()
-            )
-            print("🧩 Login BTN can be clicked.")
+            wait = WebDriverWait(driver, 600)
+            email_input = wait.until(EC.element_to_be_clickable((By.NAME, "email")))
+            email_input.click()
+            email_input.send_keys(email)
+            email_input.send_keys(Keys.RETURN)
+            print("Email entered")
 
-            login_btn = wait.until(EC.element_to_be_clickable((By.NAME, "submit")))
-            login_btn.click()
-            print("🧩 Credentials sent, waiting for captcha checks...")
-        except:
-            print("🧩 Login BTN blocked")
-
-        # check reCAPTCHA
-        print("Start try catch  WebDriverWait(driver")
-
-        try:
-            #recaptcha_iframe = WebDriverWait(driver, 10).until(
-            WebDriverWait(driver, 10).until(
-                EC.presence_of_element_located((By.CSS_SELECTOR, 'iframe[src*="recaptcha"]'))
-            )
-            print("Google reCaptcha detected")
-            #print("Anticaptcha for Google  reCaptcha not implemented yet")
-
-            solve_recaptcha_and_insert_token(driver)
-
-            submit_btn = driver.find_element(By.CSS_SELECTOR, 'button[type="submit"]')
-            submit_btn.click()
-
-        except:
-            print("Google reCaptcha not detected")
-
-        # check Cloudflare Turnstile
-        try:
-            turnstile_iframe = WebDriverWait(driver, 15).until(
-                EC.presence_of_element_located((By.CSS_SELECTOR, 'iframe[src*="challenges.cloudflare.com"]'))
-            )
-            print("Cloudflare Tunrstile detected")
-            driver.switch_to.frame(turnstile_iframe)
+            password_input = wait.until(EC.element_to_be_clickable((By.NAME, "password")))
+            password_input.click()
+            password_input.send_keys(password)
+            password_input.send_keys(Keys.RETURN)
+            print("Password entered")
 
             try:
-                body = WebDriverWait(driver, 10).until(
-                    EC.element_to_be_clickable((By.TAG_NAME, 'body'))
+                WebDriverWait(driver, 10).until(
+                    lambda d: d.find_element(By.CSS_SELECTOR, 'button[type="submit"]').is_enabled()
                 )
+                print("🧩 Login BTN can be clicked.")
 
-                body.click()
-                print("Clicked inside Turnstile iframe body")
+                login_btn = wait.until(EC.element_to_be_clickable((By.NAME, "submit")))
+                login_btn.click()
+                print("🧩 Credentials sent, waiting for captcha checks...")
             except:
-                print("Body inside Tunstile iframe not clickable")
+                print("🧩 Login BTN blocked")
 
-            driver.switch_to.default_content()
+            # check reCAPTCHA
+            print("Start try catch  WebDriverWait(driver")
 
-            WebDriverWait(driver, 30).until_not(
-                EC.presence_of_element_located((By.CSS_SELECTOR, 'iframe[src*="challenges.cloudflare.com"]'))
-            )
-            print("Tunrstile challenge solded")
-        except:
-            print("✅ No Turnstile challenge detected or already solved")
+            try:
+                #recaptcha_iframe = WebDriverWait(driver, 10).until(
+                WebDriverWait(driver, 10).until(
+                    EC.presence_of_element_located((By.CSS_SELECTOR, 'iframe[src*="recaptcha"]'))
+                )
+                print("Google reCaptcha detected")
+                #print("Anticaptcha for Google  reCaptcha not implemented yet")
 
-        # Проверяем, загрузился ли header
-        time.sleep(5)
-        # Проверяем, кнопку Логина повторно
-        try:
-            WebDriverWait(driver, 10).until(
-                lambda d: d.find_element(By.CSS_SELECTOR, 'button[type="submit"]').is_enabled()
-            )
-            print("🧩 Login BTN can be clicked.")
+                solve_recaptcha_and_insert_token(driver)
 
-            login_btn = wait.until(EC.element_to_be_clickable((By.NAME, "submit")))
-            login_btn.click()
-            print("🧩 Credentials sent, waiting for captcha checks...")
-        except:
-            print("🧩 Login BTN blocked")
+                submit_btn = driver.find_element(By.CSS_SELECTOR, 'button[type="submit"]')
+                submit_btn.click()
 
-    except Exception as e:
-        print(f"❌ Login error: {e}")
-        with open(f"login_debug_{model_id}.html", "w", encoding="utf-8") as f:
-            f.write(driver.page_source)
-        sys.exit(1) # ← триггер для JS что логин не сработал
-    finally:
-        if is_fingerprint_login:
-            print("✨ Skipping post-steps, fingerprint login only")
-            return  # 🛑 Никакого post() вызова здесь
+            except:
+                print("Google reCaptcha not detected")
 
-        print("✨ Safari session kept alive after login (not closed)")
+            # check Cloudflare Turnstile
+            try:
+                turnstile_iframe = WebDriverWait(driver, 15).until(
+                    EC.presence_of_element_located((By.CSS_SELECTOR, 'iframe[src*="challenges.cloudflare.com"]'))
+                )
+                print("Cloudflare Tunrstile detected")
+                driver.switch_to.frame(turnstile_iframe)
 
-        # 3️⃣ Сохраняем cookies
-        save_cookies_after_login(driver, model_id, platform_id)
-        print("✨ cookies saved")
-        create_post(driver, model_id)  # ← передаём текущий driver
+                try:
+                    body = WebDriverWait(driver, 10).until(
+                        EC.element_to_be_clickable((By.TAG_NAME, 'body'))
+                    )
 
-if __name__ == "__main__":
-    main()
+                    body.click()
+                    print("Clicked inside Turnstile iframe body")
+                except:
+                    print("Body inside Tunstile iframe not clickable")
+
+                driver.switch_to.default_content()
+
+                WebDriverWait(driver, 30).until_not(
+                    EC.presence_of_element_located((By.CSS_SELECTOR, 'iframe[src*="challenges.cloudflare.com"]'))
+                )
+                print("Tunrstile challenge solded")
+            except:
+                print("✅ No Turnstile challenge detected or already solved")
+
+            # Проверяем, загрузился ли header
+            time.sleep(5)
+            # Проверяем, кнопку Логина повторно
+            try:
+                WebDriverWait(driver, 10).until(
+                    lambda d: d.find_element(By.CSS_SELECTOR, 'button[type="submit"]').is_enabled()
+                )
+                print("🧩 Login BTN can be clicked.")
+
+                login_btn = wait.until(EC.element_to_be_clickable((By.NAME, "submit")))
+                login_btn.click()
+                print("🧩 Credentials sent, waiting for captcha checks...")
+            except:
+                print("🧩 Login BTN blocked")
+
+        except Exception as e:
+            print(f"❌ Login error: {e}")
+            with open(f"login_debug_{model_id}.html", "w", encoding="utf-8") as f:
+                f.write(driver.page_source)
+            sys.exit(1) # ← триггер для JS что логин не сработал
+        finally:
+            if is_fingerprint_login:
+                print("✨ Skipping post-steps, fingerprint login only")
+                return  # 🛑 Никакого post() вызова здесь
+
+            print("✨ Safari session kept alive after login (not closed)")
+
+            # 3️⃣ Сохраняем cookies
+            save_cookies_after_login(driver, model_id, platform_id)
+            print("✨ cookies saved")
+            create_post(driver, model_id)  # ← передаём текущий driver
+
+if __name__ == "__main__":main()
+print("✅ start_login_safari.py ENTRYPOINT REACHED")
