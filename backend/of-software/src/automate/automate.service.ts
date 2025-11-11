@@ -41,10 +41,13 @@ function execPy(cmd: string): Promise<string> {
 }
 
 function buildSafariPayload(data: any, useFingerPrint = false): string {
+
+
   const payload: Record<string, any> = {
     platform_id: data.platform_id,
     model_id: data.model_id,
-    caption: data.caption || 'Auto-post from Safari',
+    //caption: data.caption || 'Auto-post from Safari',
+    //postData: msgData, // data for posting
   };
   if (useFingerPrint) {
     if (!data.fingerprint_username) {
@@ -60,6 +63,37 @@ function buildSafariPayload(data: any, useFingerPrint = false): string {
     payload.email = data.username || 'test@example.com';
     payload.password = data.password || '';
   }
+
+  // ⬇️ Добавим msgData (как postData)
+  const postCaptions = data.postWithTimesAndCaptions?.captions || [];
+  const postFiles = data.postFiles || [];
+  const postTimes = data.postWithTimesAndCaptions?.post_times || [];
+
+  const caption = postCaptions[0]?.caption || '';
+  const content = postFiles[0]?.url || '';
+  const postTime = postTimes[0]?.time || '12:00';
+
+  const [_hour, minutes] = postTime.split(':');
+  const hour = parseInt(_hour) % 12 || 12;
+  const suffix = parseInt(_hour) >= 12 ? 'pm' : 'am';
+
+  const now = data.scheduledDate ? new Date(data.scheduledDate) : new Date();
+
+  const msgData = {
+    content,
+    message: caption,
+    message_month: now.toLocaleString('default', { month: 'long' }).toLowerCase(),
+    message_date: now.getDate().toString(),
+    message_hour: hour.toString(),
+    message_minute: minutes.toString(),
+    message_time_suffix: suffix,
+    release_user_tags: data.postWithTimesAndCaptions?.user_tags || '',
+    release_form_tags: data.postWithTimesAndCaptions?.form_tags || '',
+    idValue: data.username,
+    passwordValue: data.password,
+  };
+
+  payload.postData = msgData;
   return JSON.stringify(payload);
 }
 
