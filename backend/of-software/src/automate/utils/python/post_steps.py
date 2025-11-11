@@ -343,7 +343,7 @@ POST_STEPS = [
   },
   {
     "type": "click",
-    "value": ".l-header a[href="/"]",
+    "value": ".l-header a[href=\"/\"]",
     "safeguard": True,
   },
   {

@@ -18,15 +18,17 @@ print("🔥 ARGV:", sys.argv)
 payload = json.loads(sys.argv[1])
 print("🧩 Payload:", payload)
 
-#1.	startPostSafari() (в TS) вызывает:
-#2.	→ start_login_safari.py с payload
+#1.	crom.service.ts -> manualStartSafari or manualStartSafariFingerPrint
+#2.	automate.service.ts() (в TS) вызывает: → startPostSafariFingerPrint or startPostSafari с payload
 #3.	→ внутри main():
-#•	загружаются cookies
-#•	происходит логин
-#•	решаются капчи (recaptcha, turnstile)
+# Готовим Payload  из automate.service.ts -> buildSafariPayload
+#•	загружаются cookies - постоянный баг на данный момент с куками их нужно удалять
+#•	происходит логин 1 вариант
+#•	решаются капчи (recaptcha, turnstile) - не работает enterprise captcha solver
 #•	проверка статуса
-#4.	→ при успехе вызывается create_post(driver, model_id)
-#5.	create_post() открывает /my/posts/new и вызывает work(driver, POST_STEPS)
+#• происходит логин 2 вариант FingerPrint работает
+#4.	→ при успехе вызывается post_safari.py create_post(safari_driver, post_model_id)
+#5.	create_post() открывает /my/posts/new и вызывает work(safari_driver, POST_STEPS)
 #6.	work() выполняет постинг шаг за шагом
 #7.	Сессия не сбивается, потому что всё делается в одном driver
 
@@ -103,7 +105,7 @@ def main():
             print("🟢 Fingerprint username inserted")
 
             # 3️⃣ Сохраняем cookies
-            save_cookies_after_login(driver, model_id, platform_id)
+            #save_cookies_after_login(driver, model_id, platform_id)
             print("✨ cookies saved")
 
         except Exception as e:
@@ -113,7 +115,9 @@ def main():
             sys.exit(1)
 
         print("🟢 Waiting for user to complete FaceID/TouchID")
-        time.sleep(120)
+        time.sleep(10)
+
+        create_post(driver, payload)  # ← передаём текущий driver + payload
         return
     else:
         # 2️⃣ Ввод логина/пароля
@@ -217,9 +221,9 @@ def main():
             print("✨ Safari session kept alive after login (not closed)")
 
             # 3️⃣ Сохраняем cookies
-            save_cookies_after_login(driver, model_id, platform_id)
+            #save_cookies_after_login(driver, model_id, platform_id)
             print("✨ cookies saved")
-            create_post(driver, model_id)  # ← передаём текущий driver
+            create_post(driver, payload)  # ← передаём текущий driver + payload
 
-if __name__ == "__main__":main()
-print("✅ start_login_safari.py ENTRYPOINT REACHED")
+if __name__ == "__main__":
+    main()

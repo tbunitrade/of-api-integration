@@ -160,7 +160,7 @@ export class AutomateService {
       const { basePath, pythonBin, cookiePath } = getSafariPaths(data.model_id, data.platform_id);
       const payload = buildSafariPayload(data, true);
 
-      const logPath = path.join(basePath, `debug_safari_login_${Date.now()}.log`);
+      const logPath = path.join(basePath, `debug_log/debug_safari_login_${Date.now()}.log`);
       const loginCmd = `${pythonBin} ${basePath}/start_login_safari.py '${payload}' >> ${logPath} 2>&1`;
 
       console.log(`[pythonBin] ${pythonBin}`);
