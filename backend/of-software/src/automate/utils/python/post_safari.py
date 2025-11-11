@@ -20,11 +20,14 @@ def create_post(safari_driver, cli_payload):
     post_model_id = cli_payload.get("model_id")
     print(f"🧩 Starting post workflow for model {post_model_id}")
 
+    post_data = cli_payload.get("postData", {})
+
     try:
         safari_driver.get("https://onlyfans.com/posts/create")
 
         # Заменяем переменные в POST_STEPS
-        steps = inject_payload_into_steps(POST_STEPS, cli_payload)
+        print("📦 postData = ", post_data)
+        steps = inject_payload_into_steps(POST_STEPS, post_data)
         print(f"🚀 Loaded {len(steps)} steps for post execution.")
 
         # Передаём модифицированный steps в work()
