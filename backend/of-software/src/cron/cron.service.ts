@@ -102,16 +102,35 @@ export class CronService {
     const modelPlatforms = await this.modelPlatformService.findAll(false);
 
     for (const mp of modelPlatforms) {
-      const data = {
-        model_id: mp.model_id,
-        platform_id: mp.platform_id,
-        username: mp.username,
-        fingerprint_username: mp.fingerprint_username, // ⚠️ Критично!
-        caption: 'Test caption from Safari', // можно убрать
-      };
+      try {
+        console.log(`[CRON] запускаем Safari FingerPrint login для modelPlatform id=${mp.id}`);
 
-      console.log(`[CRON] запускаем Safari FingerPrint login для modelPlatform id=${mp.id}`);
-      await this.automateService.startPostSafariFingerPrint(data);
+        // 🔹 1. Загружаем связанные посты
+        const postWithTimesAndCaptions = await this.postService.findById(mp.id);
+        if (!postWithTimesAndCaptions) {
+          console.log(`[CRON] ⚠️ Нет постов для modelPlatform id=${mp.id} — пропуск`);
+          continue;
+        }
+
+        const postFiles = await this.postFileService.findByPostId(postWithTimesAndCaptions.id);
+
+        // 🔹 2. Собираем данные, как в postAPost()
+        const data: any = {
+          modelPlatform: mp,
+          postWithTimesAndCaptions,
+          postFiles,
+          scheduledDate: postWithTimesAndCaptions.scheduled_date,
+          numberOfDays: postWithTimesAndCaptions.number_of_days,
+          fingerprint_username: mp.fingerprint_username,
+          username: mp.username,
+        };
+
+        // 🔹 3. Запускаем Safari
+        await this.automateService.startPostSafariFingerPrint(data);
+
+      } catch (err) {
+        console.error(`[CRON] ❌ Ошибка при запуске Safari FingerPrint для ${mp.id}:`, err);
+      }
     }
 
     return true;
