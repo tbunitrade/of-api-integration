@@ -79,6 +79,11 @@ def main():
     fingerprint_username = payload.get("fingerprint_username")
     driver = get_driver(model_id)
 
+
+
+
+    print('Accepted cookies rules')
+
     is_fingerprint_login = False
 
     print("status", use_fingerprint, "user-> ", fingerprint_username)
@@ -86,6 +91,14 @@ def main():
     if use_fingerprint:
         is_fingerprint_login = True
         driver.get("https://onlyfans.com")
+
+        time.sleep(5)
+
+        cookies_btn = WebDriverWait(driver, 5).until(
+            EC.presence_of_element_located((By.CSS_SELECTOR, '.b-cookies-informer__nav .g-btn[data-v-fe22891a]:not(:first-child)'))
+        )
+
+        cookies_btn.click()
 
         try:
             # Ждём появления и кликаем на иконку Fingerprint

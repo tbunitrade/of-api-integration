@@ -1,18 +1,33 @@
 # post_safari.py
 import json
 import traceback
+import time
 from safari_session_manager import get_driver
 from work_safari import work
 from post_steps import POST_STEPS
+from selenium.webdriver.common.by import By
 
 
 def inject_payload_into_steps(steps, cli_payload):
+    def deep_replace(obj, payload):
+        if isinstance(obj, dict):
+            new_dict = {}
+            for k, v in obj.items():
+                new_dict[k] = deep_replace(v, payload)
+            return new_dict
+        elif isinstance(obj, list):
+            return [deep_replace(x, payload) for x in obj]
+        elif isinstance(obj, str):
+            result = obj
+            for key, value in payload.items():
+                result = result.replace(f"${key}", str(value))
+            return result
+        else:
+            return obj
+
     injected_steps = []
     for step in steps:
-        step_str = json.dumps(step)
-        for key, value in cli_payload.items():
-            step_str = step_str.replace(f"${key}", str(value))
-        injected_steps.append(json.loads(step_str))
+        injected_steps.append(deep_replace(step, cli_payload))
     return injected_steps
 
 
@@ -24,6 +39,18 @@ def create_post(safari_driver, cli_payload):
 
     try:
         safari_driver.get("https://onlyfans.com/posts/create")
+
+        time.sleep(15)
+
+        print("🔎 Checking for .b-feed element...")
+        for _ in range(30):
+            els = safari_driver.find_elements(By.CSS_SELECTOR, ".b-feed")
+            if els:
+                print("✅ .b-feed detected — UI is ready.")
+                break
+            time.sleep(1)
+        else:
+            print("⚠️ .b-feed not found after 30s, continuing anyway...")
 
         # Заменяем переменные в POST_STEPS
         print("📦 postData = ", post_data)
