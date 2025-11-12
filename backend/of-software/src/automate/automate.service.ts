@@ -45,53 +45,74 @@ function buildSafariPayload(data: any, useFingerPrint = false): string {
     platform_id: data.platform_id,
     model_id: data.model_id,
   };
-  // --- Аутентификация ---
+
+  // 🔐 Авторизация
   if (useFingerPrint) {
     if (data.fingerprint_username) {
       payload.fingerprint_username = data.fingerprint_username;
     } else {
-      console.warn('⚠️ fingerprint_username is missing in data');
+      console.warn('⚠️ fingerprint_username missing');
     }
   } else {
-    payload.email = data.username || 'test@example.com';
+    payload.email = data.username || '';
     payload.password = data.password || '';
   }
 
-  // ⬇️ Добавим msgData (как postData)
-  // --- Извлекаем caption / files / times ---
-  const post = data.postWithTimesAndCaptions || {};
-  const postCaptions = post.captions || [];
+  // 🧱 Подготовка данных
+  const postWithTimesAndCaptions = data.postWithTimesAndCaptions || {};
+  const postCaptions = postWithTimesAndCaptions.captions || [];
   const postFiles = data.postFiles || [];
-  const postTimes = data.postWithTimesAndCaptions?.post_times || [];
+  const postTimes = postWithTimesAndCaptions.post_times || [];
+  const numberOfDays = data.numberOfDays || 1;
+  const scheduledDate = data.scheduledDate
+    ? new Date(data.scheduledDate)
+    : new Date();
 
-  // --- Подготавливаем данные ---
-  const caption = postCaptions[0]?.caption || '';
-  const content = postFiles[0]?.url || '';
-  const postTime = postTimes[0]?.time || '12:00';
-  const [_hour, minutes] = postTime.split(':');
+  // 🔁 Индексы для выбора случайных caption / files
+  let captionIndexes = Array.from({ length: postCaptions.length || 0 }, (_, i) => i);
+  let fileIndexes = Array.from({ length: postFiles.length || 0 }, (_, i) => i);
+
+  const randomFrom = (arr: any[]) =>
+    arr.length > 0 ? arr[Math.floor(Math.random() * arr.length)] : undefined;
+
+  // 🧠 Берём первый слот времени (или текущий)
+  const firstPostTime = postTimes[0]?.time || '12:00';
+  const [_hour, minutes = '00'] = firstPostTime.split(':');
   const hour = parseInt(_hour) % 12 || 12;
   const suffix = parseInt(_hour) >= 12 ? 'pm' : 'am';
 
-  const now = data.scheduledDate ? new Date(data.scheduledDate) : new Date();
+  // 🔄 Берём случайный caption и файл
+  if (captionIndexes.length === 0)
+    captionIndexes = Array.from({ length: postCaptions.length || 1 }, (_, i) => i);
+  if (fileIndexes.length === 0)
+    fileIndexes = Array.from({ length: postFiles.length || 1 }, (_, i) => i);
 
+  const randCaptionIndex = randomFrom(captionIndexes) ?? 0;
+  const randFileIndex = randomFrom(fileIndexes) ?? 0;
+  const postCaption = postCaptions[randCaptionIndex]?.caption || '';
+  const postFile = postFiles[randFileIndex]?.url || '';
+
+  // 🧩 Составляем msgData (аналогично startPost)
   const msgData = {
-    content,
-    message: caption,
-    message_month: now.toLocaleString('default', { month: 'long' }).toLowerCase(),
-    message_date: now.getDate().toString(),
+    content: postFile,
+    message: postCaption,
+    message_month: scheduledDate
+      .toLocaleString('default', { month: 'long' })
+      .toLowerCase(),
+    message_date: scheduledDate.getDate().toString(),
     message_hour: hour.toString(),
     message_minute: minutes.toString(),
     message_time_suffix: suffix,
-    release_user_tags: post.user_tags || '',
-    release_form_tags: post.form_tags || '',
-    idValue: data.username,
-    passwordValue: data.password,
+    release_user_tags: postWithTimesAndCaptions.user_tags || '',
+    release_form_tags: postWithTimesAndCaptions.form_tags || '',
+    idValue: data.username || '',
+    passwordValue: data.password || '',
   };
 
   payload.postData = msgData;
 
-  // --- Для отладки ---
-  console.log('[buildSafariPayload] ✅ Final payload:', payload);
+  console.log('🧩 [buildSafariPayload] ✅ Final payload:', JSON.stringify(payload, null, 2));
+
   return JSON.stringify(payload);
 }
 
