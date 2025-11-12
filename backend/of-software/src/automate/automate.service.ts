@@ -41,38 +41,33 @@ function execPy(cmd: string): Promise<string> {
 }
 
 function buildSafariPayload(data: any, useFingerPrint = false): string {
-
-
   const payload: Record<string, any> = {
     platform_id: data.platform_id,
     model_id: data.model_id,
-    //caption: data.caption || 'Auto-post from Safari',
-    //postData: msgData, // data for posting
   };
+  // --- Аутентификация ---
   if (useFingerPrint) {
-    if (!data.fingerprint_username) {
-      console.warn('⚠️ fingerprint_username is missing in data');
-    } else {
+    if (data.fingerprint_username) {
       payload.fingerprint_username = data.fingerprint_username;
+    } else {
+      console.warn('⚠️ fingerprint_username is missing in data');
     }
-
   } else {
-    if (!data.username || !data.password) {
-      console.warn('⚠️ Missing email or password in data');
-    }
     payload.email = data.username || 'test@example.com';
     payload.password = data.password || '';
   }
 
   // ⬇️ Добавим msgData (как postData)
-  const postCaptions = data.postWithTimesAndCaptions?.captions || [];
+  // --- Извлекаем caption / files / times ---
+  const post = data.postWithTimesAndCaptions || {};
+  const postCaptions = post.captions || [];
   const postFiles = data.postFiles || [];
   const postTimes = data.postWithTimesAndCaptions?.post_times || [];
 
+  // --- Подготавливаем данные ---
   const caption = postCaptions[0]?.caption || '';
   const content = postFiles[0]?.url || '';
   const postTime = postTimes[0]?.time || '12:00';
-
   const [_hour, minutes] = postTime.split(':');
   const hour = parseInt(_hour) % 12 || 12;
   const suffix = parseInt(_hour) >= 12 ? 'pm' : 'am';
@@ -87,13 +82,16 @@ function buildSafariPayload(data: any, useFingerPrint = false): string {
     message_hour: hour.toString(),
     message_minute: minutes.toString(),
     message_time_suffix: suffix,
-    release_user_tags: data.postWithTimesAndCaptions?.user_tags || '',
-    release_form_tags: data.postWithTimesAndCaptions?.form_tags || '',
+    release_user_tags: post.user_tags || '',
+    release_form_tags: post.form_tags || '',
     idValue: data.username,
     passwordValue: data.password,
   };
 
   payload.postData = msgData;
+
+  // --- Для отладки ---
+  console.log('[buildSafariPayload] ✅ Final payload:', payload);
   return JSON.stringify(payload);
 }
 
