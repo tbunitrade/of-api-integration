@@ -713,46 +713,4 @@ export class AutomateService {
       return 0;
     }
   }
-
-
-  async testLogin( keepBrowserOpen = true) {
-    const puppeteerUtil = new PuppeteerUtil();
-    puppeteerUtil.initialize();
-    puppeteerUtil.setConfig();
-
-    const username = 'mail@s.com';
-    const password = 'тут_введи_пароль';
-    //const prokey = ''; // если капча нужна — сюда ключ
-
-    console.log('[TEST LOGIN] Стартуем Puppeteer...');
-    await puppeteerUtil.openBrowser(); // показываем браузер (не headless)
-    await puppeteerUtil.openPage('https://onlyfans.com/my/chats/send');
-    await puppeteerUtil.acceptCookie();
-
-    const config = _.cloneDeep(CONFIG);
-    config.login.idValue = config.login.idValue.replace('$value', username);
-    config.login.passwordValue = config.login.passwordValue.replace('$value', password);
-
-    // if (prokey) {
-    //   config.login_captcha_extension.proKey = config.login_captcha_extension.proKey.replace('$value', prokey);
-    // }
-
-    console.log('[TEST LOGIN] Пытаемся войти...');
-    const cookieFileName = 'user_12.1_cookie.json';
-    const isLoggedIn = await puppeteerUtil.login(username,password, cookieFileName, true);
-
-    if (isLoggedIn) {
-      console.log('[✅ LOGIN OK]');
-    } else {
-      console.log('[❌ LOGIN FAILED]');
-    }
-
-    await puppeteerUtil.waitFor(10000); // подождать 10 сек, чтобы успеть увидеть
-    //if ( !waitForManualLogin ) {
-      console.log('🟡 Browser  be closed');
-      await puppeteerUtil.closeBrowser();
-    //} else {
-      console.log('🟡 Browser kept open after startMessage');
-    //}
-  }
 }
