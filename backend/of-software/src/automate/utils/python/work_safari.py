@@ -292,6 +292,7 @@ def _handle_click_for_value(driver, step: Dict[str, Any], state: RuntimeState):
     safeguard = bool(step.get("safeguard"))
     timeout = _timeout_for_step(state, "clickForValue")
     print(f"🖱️ clickForValue: '{val}' in {sel}")
+
     try:
         WebDriverWait(driver, timeout).until(
             EC.presence_of_all_elements_located((By.CSS_SELECTOR, sel))
@@ -302,12 +303,16 @@ def _handle_click_for_value(driver, step: Dict[str, Any], state: RuntimeState):
             return
         raise
 
-    # ищем текстовое совпадение (без учёта регистра/пробелов)
     items = driver.find_elements(By.CSS_SELECTOR, sel)
+    val_norm = val.lstrip("0")
+
     for el in items:
         try:
             text = (el.text or "").strip().lower()
-            if text == val or text.find(val) >= 0:
+            text_norm = text.lstrip("0")
+
+            # нормализованное сравнение
+            if text_norm == val_norm or val_norm in text_norm:
                 _scroll_into_view_js(driver, el)
                 try:
                     el.click()
@@ -315,42 +320,86 @@ def _handle_click_for_value(driver, step: Dict[str, Any], state: RuntimeState):
                     if not _js_click(driver, el):
                         raise
                 return
+
         except StaleElementReferenceException:
             state.mark_retry()
             continue
 
+    # если ничего не нашли
     if safeguard:
         print(f"⚠️ clickForValue safeguard: value '{val}' not found in '{sel}'")
         return
+
     raise TimeoutException(f"clickForValue: value '{val}' not found in '{sel}'")
 
 
-def _handle_click_until(driver, step: Dict[str, Any], state: RuntimeState):
-    desired = str(step.get("value", "")).strip().lower()
-    read_sel = step.get("selector")
-    btn_sel = step.get("btnSelector")
-    retry = int(step.get("retry", 3))
-    print(f"🔁 clickUntil: want '{desired}' @ {read_sel} via {btn_sel} x{retry}")
+# def _handle_click_until(driver, step: Dict[str, Any], state: RuntimeState):
+#     desired = str(step.get("value", "")).strip().lower()
+#     read_sel = step.get("selector")
+#     btn_sel = step.get("btnSelector")
+#     retry = int(step.get("retry", 3))
+#     print(f"🔁 clickUntil: want '{desired}' @ {read_sel} via {btn_sel} x{retry}")
+#
+#     for i in range(retry):
+#         try:
+#             el = _find(driver, read_sel, _timeout_for_step(state, "clickUntil"))
+#             txt = (el.text or "").strip().lower()
+#             if txt == desired or desired in txt:
+#                 print(f"✓ clickUntil matched '{txt}'")
+#                 return
+#         except TimeoutException:
+#             state.mark_retry()
+#
+#         # жмём далее
+#         try:
+#             _safe_click(driver, btn_sel, TIMEOUT_SHORT, state, safeguard=True)
+#             time.sleep(0.4)
+#         except Exception:
+#             state.mark_retry()
+#
+#     raise TimeoutException(f"clickUntil: cannot reach '{desired}' in '{read_sel}'")
 
-    for i in range(retry):
+def _norm(s: str) -> str:
+    return (s or "").strip().lower()
+
+def _handle_click_until(driver, step, state):
+    """
+    Ожидаем, пока текст в readSel (selector) будет содержать желаемое значение.
+    desired берём из:
+      - step["value"] если это не "$value"
+      - иначе из state["post_data"][step["key"]]
+    Сравнение по включению, без учёта регистра. Кол-во кликов — step.retry (или 24).
+    """
+    read_sel = step.get("selector") or step.get("read_sel") or step.get("readSelector")
+    btn_sel  = step.get("btnSelector") or step.get("click_sel") or step.get("clickSelector")
+    retry    = int(step.get("retry") or 24)
+
+    desired = step.get("value")
+    if not desired or desired == "$value":
+        key = step.get("key")
+        if key and state and "post_data" in state:
+            desired = str(state["post_data"].get(key, "")).strip()
+
+    if not (read_sel and btn_sel and desired):
+        raise TimeoutException(f"clickUntil: invalid params. read_sel='{read_sel}', btn_sel='{btn_sel}', desired='{desired}'")
+
+    desired_norm = _norm(desired)
+
+    for _ in range(retry):
         try:
-            el = _find(driver, read_sel, _timeout_for_step(state, "clickUntil"))
-            txt = (el.text or "").strip().lower()
-            if txt == desired or desired in txt:
-                print(f"✓ clickUntil matched '{txt}'")
+            text = _norm(driver.find_element(By.CSS_SELECTOR, read_sel).text)
+            if desired_norm in text:
                 return
-        except TimeoutException:
-            state.mark_retry()
-
-        # жмём далее
-        try:
-            _safe_click(driver, btn_sel, TIMEOUT_SHORT, state, safeguard=True)
-            time.sleep(0.4)
         except Exception:
-            state.mark_retry()
+            pass
+        try:
+            driver.find_element(By.CSS_SELECTOR, btn_sel).click()
+        except Exception:
+            # если не смогли кликнуть — маленькая пауза и ещё попытка
+            time.sleep(0.2)
+        time.sleep(0.2)
 
     raise TimeoutException(f"clickUntil: cannot reach '{desired}' in '{read_sel}'")
-
 
 def _handle_check_value(step: Dict[str, Any], post_data: Dict[str, Any], state: RuntimeState):
     key = step.get("key")
@@ -427,7 +476,11 @@ def _handle_append_medias(driver, step: Dict[str, Any], post_data: Dict[str, Any
             if cand:
                 file_input = cand[-1]
                 driver.execute_script(
-                    "arguments[0].style.display='block'; arguments[0].style.visibility='visible'; arguments[0].removeAttribute('hidden');",
+                    "arguments[0].style.opacity='1';"
+                    "arguments[0].style.pointerEvents='auto';"
+                    "arguments[0].style.display='block'; "
+                    # "arguments[0].style.visibility='visible'; "
+                    "arguments[0].removeAttribute('hidden');",
                     file_input,
                 )
         except Exception:
@@ -533,7 +586,8 @@ def work(driver, steps: List[Dict[str, Any]]):
 
     try:
         for step in steps:
-            _exec_one_step(driver, step, _extract_post_data_from_steps(steps), state)
+            #_exec_one_step(driver, step, _extract_post_data_from_steps(steps), state)
+            _exec_one_step(driver, step, {}, state)
 
     finally:
         elapsed = time.time() - state.started_at
