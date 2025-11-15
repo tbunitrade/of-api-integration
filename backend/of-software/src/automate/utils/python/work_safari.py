@@ -377,7 +377,9 @@ def _handle_click_until(driver, step, state):
     desired = step.get("value")
     if not desired or desired == "$value":
         key = step.get("key")
-        if key and state and "post_data" in state:
+        #if key and state and "post_data" in state:
+        #if key and hasattr(state, "post_data"):
+        if key and state.post_data is not None:
             desired = str(state["post_data"].get(key, "")).strip()
 
     if not (read_sel and btn_sel and desired):
@@ -572,8 +574,10 @@ def _exec_one_step(driver, step: Dict[str, Any], post_data: Dict[str, Any], stat
             print(f"❌ Step {state.step_index}/{state.total_steps} failed ({stype}): {e}\n🛡️ safeguard enabled — continue to next step")
         else:
             state.mark_failed()
-            print(f"🛑 No safeguard — aborting workflow")
-            raise
+            #print(f"🛑 No safeguard — aborting workflow")
+            #raise
+            print("⚠️ No safeguard for clickUntil — skipping this step")
+            return
 
 
 def work(driver, steps: List[Dict[str, Any]]):
