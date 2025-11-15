@@ -1,25 +1,27 @@
-# post_steps.py — актуализировано под DOM (2025-11)
-# ВНИМАНИЕ: схема не менялась, используем ключ "type"
+# post_steps.py — актуально под DOM от 2025-11
 
 POST_STEPS = [
-    # 0) Страховочный клик модального алерта (если его нет — safeguard защитит)
+    # ----------------------------------------------------------
+    # 0) Safety
+    # ----------------------------------------------------------
     { "type": "waitForTime", "value": "800" },
     { "type": "click", "value": "#ModalAlert button", "safeguard": True },
 
-    # 1) Ожидаем форму поста
+    # ----------------------------------------------------------
+    # 1) Ожидаем и открываем форму
+    # ----------------------------------------------------------
     { "type": "waitForSelector", "value": "form#make_post_form" },
-    { "type": "waitForTime", "value": "700" },
+    { "type": "waitForTime", "value": "600" },
 
-    # 2) Фокус в редактор, печатаем caption
+    # Caption
     { "type": "click", "value": "form#make_post_form .js-text-editor", "safeguard": True },
     { "type": "keyboardType", "key": "message", "value": "$value" },
     { "type": "waitForTime", "value": "600" },
 
-    # 3) Прикрепить медиа (если путь локальный; если URL — твой обработчик просто скипнет)
-    {
-        "type": "waitForSelector",
-        "value": ".b-make-post__actions button#attach_file_photo"
-    },
+    # ----------------------------------------------------------
+    # 2) Медиа
+    # ----------------------------------------------------------
+    { "type": "waitForSelector", "value": ".b-make-post__actions button#attach_file_photo" },
     {
         "type": "appendMedias",
         "key": "content",
@@ -27,17 +29,25 @@ POST_STEPS = [
         "selector": ".b-make-post__actions button#attach_file_photo",
         "fallback": True
     },
-    { "type": "waitForTime", "value": "1200" },
-
-    # 4) Планировщик: открыть попап
-    { "type": "click", "value": 'form#make_post_form button[at-attr="scheduled_msg"]', "safeguard": True },
-    { "type": "waitForTime", "value": "400" },
-    { "type": "waitForSelector", "value": ".vdatetime-popup" },
     { "type": "waitForTime", "value": "1000" },
-    { "type": "waitForSelector", "value": ".vdatetime-popup__tab.date" },
-    { "type": "click", "value": ".vdatetime-popup__tab.date" },
 
-    # 5) Месяц (фикс clickUntil: читаем key=message_month, нормализуем регистр/включение)
+    # ----------------------------------------------------------
+    # 3) Schedule post — POPUP
+    # ----------------------------------------------------------
+
+    # ⛔ Важно — открывать ТОЛЬКО sticky panel кнопку
+    { "type": "click", "value": ".b-make-post__sticky-panel button[at-attr='scheduled_msg']", "safeguard": True },
+    { "type": "waitForTime", "value": "900" },
+    { "type": "waitForSelector", "value": ".vdatetime-popup" },
+
+    # Tabs
+    { "type": "waitForSelector", "value": ".vdatetime-popup__tab.date, .vdatetime-popup__tab--date" },
+    { "type": "click", "value": ".vdatetime-popup__tab.date, .vdatetime-popup__tab--date", "safeguard": True },
+    { "type": "waitForTime", "value": "500" },
+
+    # ----------------------------------------------------------
+    # 4) Month — replaced clickUntil (Safari-friendly)
+    # ----------------------------------------------------------
     {
         "type": "clickUntil",
         "key": "message_month",
@@ -46,22 +56,29 @@ POST_STEPS = [
         "btnSelector": ".vdatetime-calendar__navigation--next",
         "retry": 24
     },
+
     { "type": "waitForTime", "value": "500" },
 
-    # 6) День
+    # ----------------------------------------------------------
+    # 5) День — Safari DOM → need span/span
+    # ----------------------------------------------------------
     {
         "type": "clickForValue",
         "key": "message_date",
-        "selector": ".vdatetime-calendar__month__day",
+        "selector": ".vdatetime-calendar__month__day span span",
         "value": "$value",
         "safeguard": True
     },
 
-    # 7) Вкладка «время»
+    { "type": "waitForTime", "value": "500" },
+
+    # ----------------------------------------------------------
+    # 6) Время — переключение таба
+    # ----------------------------------------------------------
     { "type": "click", "value": ".vdatetime-popup__tab.time", "safeguard": True },
     { "type": "waitForTime", "value": "400" },
 
-    # 8) AM/PM
+    # AM / PM
     {
         "type": "clickForValue",
         "key": "message_time_suffix",
@@ -69,9 +86,8 @@ POST_STEPS = [
         "value": "$value",
         "safeguard": True
     },
-    { "type": "waitForTime", "value": "600" },
 
-    # 9) Часы / минуты
+    # Hour
     {
         "type": "clickForValue",
         "key": "message_hour",
@@ -79,6 +95,8 @@ POST_STEPS = [
         "value": "$value",
         "safeguard": True
     },
+
+    # Minute
     {
         "type": "clickForValue",
         "key": "message_minute",
@@ -87,16 +105,29 @@ POST_STEPS = [
         "safeguard": True
     },
 
-    # 10) Подтвердить дату/время
+    # ----------------------------------------------------------
+    # 7) NEXT button
+    # ----------------------------------------------------------
     { "type": "waitForTime", "value": "500" },
-    { "type": "click", "value": ".vdatetime-popup__actions__button.vdatetime-popup__actions__button--confirm", "safeguard": True },
-    { "type": "waitForTime", "value": "700" },
+    {
+        "type": "click",
+        "value": ".vdatetime-popup__actions__button--confirm button",
+        "safeguard": True
+    },
 
-    # 11) Release forms (tag creators) — как и раньше, только селекторы свежие
-    { "type": "click", "value": 'form#make_post_form button[at-attr="release_forms_btn"]', "safeguard": True },
-    { "type": "waitForTime", "value": "600" },
+    { "type": "waitForTime", "value": "900" },
 
-    # Поиск по user_tags (loop — если есть значения, берём из "release_user_tags")
+    # ----------------------------------------------------------
+    # 8) RELEASE FORMS / TAGGING
+    # ----------------------------------------------------------
+    {
+        "type": "click",
+        "value": "form#make_post_form button[at-attr='release_forms_btn']",
+        "safeguard": True
+    },
+    { "type": "waitForTime", "value": "500" },
+
+    # LOOP user tags
     {
         "type": "loop",
         "key": "release_user_tags",
@@ -108,85 +139,50 @@ POST_STEPS = [
                 {
                     "type": "type",
                     "value": "$value",
-                    "selector": "#ReleaseFormsModal___BV_modal_content_ .b-release-form--items .b-search-form .b-search-form__input"
+                    "selector": "#ReleaseFormsModal___BV_modal_content_ .b-search-form__input"
                 },
                 {
                     "type": "click",
-                    "value": "#ReleaseFormsModal___BV_modal_content_ .b-release-form--items .b-search-form button[type=\"submit\"]"
+                    "value": "#ReleaseFormsModal___BV_modal_content_ .b-search-form button[type='submit']"
                 },
-                { "type": "waitForTime", "value": "1200" },
+                { "type": "waitForTime", "value": "900" },
                 {
-                    "type": "waitForSelector",
-                    "value": "#ReleaseFormsModal___BV_modal_content_ .b-release-form__docs .b-rows-lists .b-rows-lists__item"
-                },
-                { "type": "click", "value": "#ReleaseFormsModal___BV_modal_content_ .b-release-form__docs .b-rows-lists .b-rows-lists__item" },
-                { "type": "waitForTime", "value": "400" },
-                { "type": "click", "value": "#ReleaseFormsModal___BV_modal_content_ .b-row-selected__controls .g-btn" }
-            ]
-        }
-    },
-
-    # Переключение на вкладку release forms (если нужны form_tags)
-    { "type": "waitForTime", "value": "300" },
-    { "type": "checkValue", "key": "release_form_tags" },
-    {
-        "type": "condition",
-        "childs": {
-            "yes": [
-                { "type": "waitForSelector", "value": "#ReleaseFormsModal___BV_modal_content_ .b-tabs__nav .b-tabs__nav__item:nth-child(2) button" },
-                { "type": "click", "value": "#ReleaseFormsModal___BV_modal_content_ .b-tabs__nav .b-tabs__nav__item:nth-child(2) button" },
-                {
-                    "type": "loop",
-                    "key": "release_form_tags",
-                    "value": "$value",
-                    "childs": {
-                        "yes": [
-                            { "type": "waitForTime", "value": "300" },
-                            {
-                                "type": "type",
-                                "value": "$value",
-                                "selector": "#ReleaseFormsModal___BV_modal_content_ .b-release-form--items .b-search-form .b-search-form__input"
-                            },
-                            {
-                                "type": "click",
-                                "value": "#ReleaseFormsModal___BV_modal_content_ .b-release-form--items .b-search-form button[type=\"submit\"]"
-                            },
-                            { "type": "waitForTime", "value": "1000" },
-                            {
-                                "type": "clickForValue",
-                                "value": "$value",
-                                "selector": "#ReleaseFormsModal___BV_modal_content_ .b-release-form__docs .b-rows-lists .b-rows-lists__item__label"
-                            }
-                        ]
-                    }
+                    "type": "click",
+                    "value": "#ReleaseFormsModal___BV_modal_content_ .b-rows-lists__item"
                 }
             ]
         }
     },
 
-    # Применить/закрыть модалку
     { "type": "waitForTime", "value": "400" },
+
+    # CLOSE MODAL
     {
         "type": "click",
-        "value": "#ReleaseFormsModal___BV_modal_content_ .b-placeholder-item-selected .b-wrapper-selected .b-row-selected__controls button",
+        "value": "#ReleaseFormsModal___BV_modal_content_ .b-row-selected__controls button",
         "safeguard": True
     },
     {
         "type": "click",
-        "value": "#ReleaseFormsModal___BV_modal_content_ #ReleaseFormsModal___BV_modal_footer_ button[type=\"button\"]",
+        "value": "#ReleaseFormsModal___BV_modal_footer_ button[type='button']",
         "safeguard": True
     },
 
-    # 12) Labels (по кнопке Add labels — опционально, шаг не критичный)
+    # ----------------------------------------------------------
+    # 9) Add to list
+    # ----------------------------------------------------------
     { "type": "waitForTime", "value": "300" },
-    { "type": "click", "value": 'form#make_post_form button[at-attr="add_to_list"]', "safeguard": False },
-    { "type": "waitForTime", "value": "300" },
+    { "type": "click", "value": "form#make_post_form button[at-attr='add_to_list']", "safeguard": False },
+    { "type": "waitForTime", "value": "400" },
 
-    # 13) Публикация
-    { "type": "click", "value": 'form#make_post_form button[at-attr="submit_post"]', "safeguard": True },
+    # ----------------------------------------------------------
+    # 10) Publish
+    # ----------------------------------------------------------
+    { "type": "click", "value": "form#make_post_form button[at-attr='submit_post']", "safeguard": True },
     { "type": "waitForTime", "value": "1500" },
-
-    # 14) Возврат на главную (не критично; safeguard)
+    # ----------------------------------------------------------
+    # 11) Back to the main page
+    # ----------------------------------------------------------
     { "type": "click", "value": '.l-header a[href="/"]', "safeguard": True },
     { "type": "waitForTime", "value": "800" },
 ]
