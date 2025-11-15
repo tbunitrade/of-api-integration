@@ -33,6 +33,7 @@ POST_STEPS = [
     { "type": "click", "value": 'form#make_post_form button[at-attr="scheduled_msg"]', "safeguard": True },
     { "type": "waitForTime", "value": "400" },
     { "type": "waitForSelector", "value": ".vdatetime-popup" },
+    { "type": "waitForTime", "value": "1000" },
     { "type": "waitForSelector", "value": ".vdatetime-popup__tab.date" },
     { "type": "click", "value": ".vdatetime-popup__tab.date" },
 
