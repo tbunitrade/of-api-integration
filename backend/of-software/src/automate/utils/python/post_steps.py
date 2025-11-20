@@ -8,14 +8,15 @@ POST_STEPS = [
     { "type": "click", "value": "#ModalAlert button", "safeguard": True },
 
     # ----------------------------------------------------------
-    # 1) Ожидаем и открываем форму
+    # 1) Ожидаем и наводим фокус для ввода caption text
     # ----------------------------------------------------------
     { "type": "waitForSelector", "value": "form#make_post_form" },
     { "type": "waitForTime", "value": "600" },
 
     # Caption
     { "type": "click", "value": "form#make_post_form .js-text-editor", "safeguard": True },
-    { "type": "keyboardType", "key": "message", "value": "$value" },
+    { "type" : "runScript", "value": "document.querySelector('.js-text-editor').focus();" },
+    { "type": "type", "selector" : ".js-text-editor", "value": "$value" },
     { "type": "waitForTime", "value": "600" },
 
     # ----------------------------------------------------------

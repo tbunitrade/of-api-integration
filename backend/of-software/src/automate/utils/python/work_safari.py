@@ -42,6 +42,7 @@ class RuntimeState:
         self.failed = 0
         self.started_at = time.time()
         self._last_check_value = False
+        self.post_data = {}
 
     def mark_retry(self):
         self.retried += 1
@@ -271,14 +272,7 @@ def _handle_click(driver, step: Dict[str, Any], state: RuntimeState):
     _safe_click(driver, sel, timeout, state, safeguard)
 
 
-def _handle_keyboard_type(driver, step: Dict[str, Any], state: RuntimeState):
-    val = str(step.get("value", ""))
-    print(f"⌨️ keyboardType: {len(val)} chars -> activeElement")
-    timeout = _timeout_for_step(state, "keyboardType")
-    _type_text(driver, None, val, timeout, state, active=True)
-
-
-def _handle_type(driver, step: Dict[str, Any], state: RuntimeState):
+def _handle_type(driver, step, post_data, state):
     val = str(step.get("value", ""))
     sel = step.get("selector")
     print(f"⌨️ type: {len(val)} chars -> {sel}")
@@ -563,6 +557,22 @@ def _exec_one_step(driver, step: Dict[str, Any], post_data: Dict[str, Any], stat
         elif stype == "appendMedias":
             _handle_append_medias(driver, step, post_data, state)
 
+        elif stype == "runScript":
+            script = step.get("value", "")
+            key = step.get("key")
+
+            # Берём текст из post_data по ключу
+            arg = None
+            if key and key in post_data:
+                arg = post_data[key]
+
+            print(f"🧠 runScript → {script}, arg = {arg}")
+
+            try:
+                driver.execute_script(script, arg)
+            except Exception as e:
+                print(f"❌ runScript failed: {e}")
+
         else:
             print(f"ℹ️ unknown step type: {stype} — skip")
             state.mark_skipped()
@@ -580,18 +590,19 @@ def _exec_one_step(driver, step: Dict[str, Any], post_data: Dict[str, Any], stat
             return
 
 
-def work(driver, steps: List[Dict[str, Any]]):
+def work(driver, steps: List[Dict[str, Any]], post_data: Dict[str, Any]):
     """
     Главный исполнятель шагов.
     """
     state = RuntimeState()
     state.total_steps = len(steps)
+    state.post_data = post_data
     print(f"🚀 work(): starting {state.total_steps} steps")
 
     try:
         for step in steps:
             #_exec_one_step(driver, step, _extract_post_data_from_steps(steps), state)
-            _exec_one_step(driver, step, {}, state)
+            _exec_one_step(driver, step, post_data, state)
 
     finally:
         elapsed = time.time() - state.started_at

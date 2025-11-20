@@ -58,7 +58,7 @@ def create_post(safari_driver, cli_payload):
         print(f"🚀 Loaded {len(steps)} steps for post execution.")
 
         # Передаём модифицированный steps в work()
-        work(safari_driver, steps)
+        work(safari_driver, steps, post_data)
 
         print("✅ Post workflow finished successfully.")
 
@@ -68,8 +68,10 @@ def create_post(safari_driver, cli_payload):
 
     finally:
         try:
-            safari_driver.quit()
-            print("🧹 Safari driver closed.")
+            print("⏳ Waiting 2 seconds before closing Safari…")
+            time.sleep(10)
+            #safari_driver.quit()
+            print("🧹 Safari driver should be closed.")
         except Exception:
             pass
 
