@@ -182,6 +182,7 @@ def _type_text(driver, selector: Optional[str], text: str, timeout: int, state: 
 
     raise TimeoutException(f"cannot type into '{selector or 'activeElement'}': {last_err}")
 
+#мы пропустили
 def _wait_upload_progress(driver, max_wait: int = 60) -> None:
     """
     Универсальный «наблюдатель» загрузки:
@@ -325,33 +326,6 @@ def _handle_click_for_value(driver, step: Dict[str, Any], state: RuntimeState):
         return
 
     raise TimeoutException(f"clickForValue: value '{val}' not found in '{sel}'")
-
-
-# def _handle_click_until(driver, step: Dict[str, Any], state: RuntimeState):
-#     desired = str(step.get("value", "")).strip().lower()
-#     read_sel = step.get("selector")
-#     btn_sel = step.get("btnSelector")
-#     retry = int(step.get("retry", 3))
-#     print(f"🔁 clickUntil: want '{desired}' @ {read_sel} via {btn_sel} x{retry}")
-#
-#     for i in range(retry):
-#         try:
-#             el = _find(driver, read_sel, _timeout_for_step(state, "clickUntil"))
-#             txt = (el.text or "").strip().lower()
-#             if txt == desired or desired in txt:
-#                 print(f"✓ clickUntil matched '{txt}'")
-#                 return
-#         except TimeoutException:
-#             state.mark_retry()
-#
-#         # жмём далее
-#         try:
-#             _safe_click(driver, btn_sel, TIMEOUT_SHORT, state, safeguard=True)
-#             time.sleep(0.4)
-#         except Exception:
-#             state.mark_retry()
-#
-#     raise TimeoutException(f"clickUntil: cannot reach '{desired}' in '{read_sel}'")
 
 def _norm(s: str) -> str:
     return (s or "").strip().lower()
