@@ -131,7 +131,7 @@ const processFiles = async (selectedFiles) => {
   try {
     const result = await fileStore.uploadFiles(
       formData,
-      props.id,
+      effectiveId.value, // ← правильный post_id
       throttledProgress,
       controller.signal,
       () => {

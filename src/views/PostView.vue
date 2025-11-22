@@ -577,8 +577,8 @@ onMounted(() => {
         <CardBox is-form>
           <div class="flex flex-col mt-5">
             <div class="flex flex-wrap">
-<!--              <PostImageVideoUpload :id="postStore.post?.id || 0" />-->
-              <PostImageVideoUpload/>
+              <PostImageVideoUpload :id="postStore.post?.id || 0" />
+<!--              <PostImageVideoUpload/>-->
             </div>
           </div>
         </CardBox>
