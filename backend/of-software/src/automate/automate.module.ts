@@ -8,9 +8,11 @@ import { AutomateService } from './automate.service';
 
 import { ModelStatusLogEntity } from './entities/model-status-log.entity';
 import { ModelDailyLimitEntity } from './entities/model-daily-limit.entity';
+import { PostQueueEntity} from "./entities/post-queue.entity";
 
 import { ModelLimitService } from './utils/model-limit.service';
 import { AutomateLoggerService } from './utils/automate-logger.service';
+import { PostQueueService } from './utils/post-queue.service';
 
 // NEW SERVICES — MUST BE REGISTERED
 import { SafariPostService } from './safari-post.service';
@@ -22,7 +24,8 @@ import { PuppeteerMessageService } from './puppeteer-message.service';
   imports: [
     TypeOrmModule.forFeature([
       ModelStatusLogEntity,
-      ModelDailyLimitEntity
+      ModelDailyLimitEntity,
+      PostQueueEntity,
     ])
   ],
 
@@ -38,6 +41,9 @@ import { PuppeteerMessageService } from './puppeteer-message.service';
     AutomateLoggerService,
     ModelLimitService,
 
+    // Queue
+    PostQueueService,
+
     // NEW SERVICES — REQUIRED BY AutomateService
     SafariPostService,
     SafariMessageService,
@@ -49,6 +55,7 @@ import { PuppeteerMessageService } from './puppeteer-message.service';
     AutomateService,
     AutomateLoggerService,
     ModelLimitService,
+    PostQueueService,
 
     SafariPostService,
     SafariMessageService,
