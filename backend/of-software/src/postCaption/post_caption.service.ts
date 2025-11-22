@@ -34,6 +34,18 @@ export class PostCaptionService {
     }
   }
 
+  async findByPostId(post_id: number): Promise<PostCaption[]> {
+    try {
+      return await this.postCaptionRepository.find({
+        where: { post_id },
+        order: { id: "ASC" }, // важно, чтобы очередь была стабильной
+      });
+    } catch (err) {
+      console.error('PostCaption findByPostId error', err);
+      return [];
+    }
+  }
+
   async create(postCaption: PostCaptionDto): Promise<PostCaption> {
     try {
       const newPostCaption = this.postCaptionRepository.create(postCaption);

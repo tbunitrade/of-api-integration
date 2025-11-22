@@ -3,29 +3,32 @@
 import { Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
-import { PostQueueEntity} from "../entities/post-queue.entity";
 
-//import { PostCaption } from "../../postCaption/post_caption.entity";
-//import { PostFile } from "../../postFile/post_file.entity";
-//import { ModelPlatform} from "../../modelPlatform/model_platform.entity";
+import { PostQueueEntity} from "../entities/post-queue.entity";
+import { PostFileService} from "../../postFile/post_file.service";
+import { PostCaptionService} from "../../postCaption/post_caption.service";
+
 
 @Injectable()
 export class PostQueueService {
   constructor(
     @InjectRepository( PostQueueEntity )
-    private readonly captionRepo: Repository<PostQueueEntity>,
+    private readonly queueRepo: Repository<PostQueueEntity>,
+    private readonly postFileService: PostFileService,
+    private readonly postCaptionService: PostCaptionService
   ) {}
 
   /**
-   * Найти или создать очередь для (model_platform_id + post_id)
+   * Находим очередь по (modelPlatformId, postId)
+   * или создаём новую.
    */
   async getOrCreate(
     modelPlatformId: number,
     postId: number,
-    totalCaptions: number,
-    totalFiles: number,
+    //totalCaptions: number,
+    //totalFiles: number,
   ): Promise<PostQueueEntity> {
-    let queue = await this.captionRepo.findOne({
+    let queue = await this.queueRepo.findOne({
       where: {
         model_platform_id: modelPlatformId,
         post_id: postId,
@@ -33,37 +36,64 @@ export class PostQueueService {
     });
 
     if (!queue) {
-      queue = this.captionRepo.create({
+      queue = this.queueRepo.create({
         model_platform_id: modelPlatformId,
         post_id: postId,
         caption_index: 0,
         file_index: 0,
         used_count: 0,
-        total_captions: totalCaptions,
-        total_files: totalFiles,
+        total_captions: 0,
+        total_files: 0,
       });
 
-      queue = await this.captionRepo.save(queue);
-    } else {
-      // Если вдруг поменялось количество caption/file — обновим
-      let changed = false;
+      queue = await this.queueRepo.save(queue);
 
-      if (queue.total_captions !== totalCaptions) {
-        queue.total_captions = totalCaptions;
-        changed = true;
-      }
-
-      if (queue.total_files !== totalFiles) {
-        queue.total_files = totalFiles;
-        changed = true;
-      }
-
-      if (changed) {
-        queue = await this.captionRepo.save(queue);
-      }
     }
+    // else {
+    //   // Если вдруг поменялось количество caption/file — обновим
+    //   let changed = false;
+    //
+    //   if (queue.total_captions !== totalCaptions) {
+    //     queue.total_captions = totalCaptions;
+    //     changed = true;
+    //   }
+    //
+    //   if (queue.total_files !== totalFiles) {
+    //     queue.total_files = totalFiles;
+    //     changed = true;
+    //   }
+    //
+    //   if (changed) {
+    //     queue = await this.queueRepo.save(queue);
+    //   }
+    // }
 
     return queue;
+  }
+
+  async recalculate( modelPlatformId: number, postId: number ) {
+    const queue = await this.getOrCreate(modelPlatformId, postId);
+
+    const files = await this.postFileService.findByPostId(postId);
+    const captions = await this.postCaptionService.findByPostId(postId);
+
+    queue.total_files = files.length;
+    queue.total_captions = captions.length;
+
+    // мягкий reset
+    // if (queue.file_index >= queue.total_files) queue.file_index = 0;
+    // if (queue.caption_index >= queue.total_captions) queue.caption_index = 0;
+
+    // обновленный мягкий reset
+    if (queue.file_index >= queue.total_files && queue.total_files > 0) {
+      queue.file_index = 0;
+    }
+
+    if (queue.caption_index >= queue.total_captions && queue.total_captions > 0) {
+      queue.caption_index = 0;
+    }
+
+    return this.queueRepo.save(queue);
   }
 
   /**
@@ -74,41 +104,46 @@ export class PostQueueService {
   async getNext(
     modelPlatformId: number,
     postId: number,
-    totalCaptions: number,
-    totalFiles: number,
+    //totalCaptions: number,
+    //totalFiles: number,
   ): Promise<{
     queue: PostQueueEntity;
     captionIndex: number;
     fileIndex: number;
   }> {
-    const safeTotalCaptions = Math.max(totalCaptions, 1);
-    const safeTotalFiles = Math.max(totalFiles, 1);
+    //const safeTotalCaptions = Math.max(totalCaptions, 1);
+    //const safeTotalFiles = Math.max(totalFiles, 1);
 
     let queue = await this.getOrCreate(
       modelPlatformId,
       postId,
-      safeTotalCaptions,
-      safeTotalFiles,
+      //safeTotalCaptions,
+      //safeTotalFiles,
     );
 
-    const captionIndex = queue.caption_index ?? 0;
-    const fileIndex = queue.file_index ?? 0;
+    // защитные значения
+    const totalCaptions = Math.max(queue.total_captions, 1);
+    const totalFiles = Math.max(queue.total_files, 1);
 
-    const nextCaptionIndex =
-      safeTotalCaptions > 0
-        ? (captionIndex + 1) % safeTotalCaptions
-        : 0;
+    const captionIndex = queue.caption_index;
+    const fileIndex = queue.file_index;
 
-    const nextFileIndex =
-      safeTotalFiles > 0
-        ? (fileIndex + 1) % safeTotalFiles
-        : 0;
-
-    queue.caption_index = nextCaptionIndex;
-    queue.file_index = nextFileIndex;
+    // const nextCaptionIndex =
+    //   safeTotalCaptions > 0
+    //     ? (captionIndex + 1) % safeTotalCaptions
+    //     : 0;
+    //
+    // const nextFileIndex =
+    //   safeTotalFiles > 0
+    //     ? (fileIndex + 1) % safeTotalFiles
+    //     : 0;
+    //
+    queue.caption_index = (captionIndex + 1) % totalCaptions;
+    queue.file_index = (fileIndex + 1) % totalFiles;
+    //queue.used_count++;
     queue.used_count = (queue.used_count || 0) + 1;
-
-    queue = await this.captionRepo.save(queue);
+    //await this.queueRepo.save(queue);
+    queue = await this.queueRepo.save(queue);
 
     return {
       queue,
@@ -118,15 +153,25 @@ export class PostQueueService {
   }
 
   /**
+   * Просто вернуть очередь (например для Vue UI)
+   */
+
+  async getProgress(modelPlatformId: number, postId: number) {
+    return this.queueRepo.findOne({
+      where: {
+        model_platform_id: modelPlatformId,
+        post_id: postId,
+      },
+    });
+  }
+
+  /**
    * Теоретический reset, если вдруг нужно обнулить индексы.
    * Сейчас фактически не обязателен (мы и так крутим по модулю),
    * но пусть будет.
    */
-  async resetIfRequired(
-    modelPlatformId: number,
-    postId: number,
-  ): Promise<void> {
-    const queue = await this.captionRepo.findOne({
+  async resetIfRequired(modelPlatformId: number, postId: number) {
+    const queue = await this.queueRepo.findOne({
       where: {
         model_platform_id: modelPlatformId,
         post_id: postId,
@@ -135,8 +180,8 @@ export class PostQueueService {
 
     if (!queue) return;
 
-    const totalCaptions = queue.total_captions || 0;
-    const totalFiles = queue.total_files || 0;
+    const totalCaptions = queue.total_captions;
+    const totalFiles = queue.total_files;
 
     let changed = false;
 
@@ -144,28 +189,14 @@ export class PostQueueService {
       queue.caption_index = 0;
       changed = true;
     }
+
     if (totalFiles > 0 && queue.file_index >= totalFiles) {
       queue.file_index = 0;
       changed = true;
     }
 
     if (changed) {
-      await this.captionRepo.save(queue);
+      await this.queueRepo.save(queue);
     }
-  }
-
-  /**
-   * Для Vue-админки: можно показать прогресс по каждой модели/посту
-   */
-  async getProgress(
-    modelPlatformId: number,
-    postId: number,
-  ): Promise<PostQueueEntity | null> {
-    return this.captionRepo.findOne({
-      where: {
-        model_platform_id: modelPlatformId,
-        post_id: postId,
-      },
-    });
   }
 }

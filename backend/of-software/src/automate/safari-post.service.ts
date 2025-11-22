@@ -2,7 +2,10 @@ import { Injectable } from '@nestjs/common';
 import * as fs from 'fs';
 import * as path from 'path';
 import { AutomateLoggerService } from './utils/automate-logger.service';
+import { ModelLimitService} from "./utils/model-limit.service";
+import { PostQueueService } from "./utils/post-queue.service";
 import { spawn } from 'child_process';
+
 
 function buildSafariPayload(data: any, useFingerPrint = false) {
   const payload: Record<string, any> = {
@@ -32,8 +35,37 @@ function buildSafariPayload(data: any, useFingerPrint = false) {
   const hour = parseInt(_hour) % 12 || 12;
   const suffix = parseInt(_hour) >= 12 ? 'pm' : 'am';
 
-  const caption = captions[0]?.caption || '';
-  const file = files[0]?.url || '';
+  //const caption = captions[0]?.caption || '';
+  //const file = files[0]?.url || '';
+
+  //const caption = captions.find(c => c.status !== 'done');
+  //const file = files.find(f => f.status !== 'done');
+
+  // 👇 инфа от очереди
+  const queueSelection = (data as any).queueSelection as
+    | { captionIndex: number; fileIndex: number }
+    | undefined;
+
+  let captionText = '';
+  let fileUrl = '';
+
+  if (captions && captions.length > 0) {
+    if (queueSelection) {
+      const c = captions[queueSelection.captionIndex] || captions[0];
+      captionText = c?.caption || '';
+    } else {
+      captionText = captions[0]?.caption || '';
+    }
+  }
+
+  if (files && files.length > 0) {
+    if (queueSelection) {
+      const f = files[queueSelection.fileIndex] || files[0];
+      fileUrl = (f as any).url || '';
+    } else {
+      fileUrl = (files[0] as any).url || '';
+    }
+  }
 
   // =====================================================
   // 🟦 Encode file to base64 for Safari drag&drop
@@ -42,12 +74,12 @@ function buildSafariPayload(data: any, useFingerPrint = false) {
   let fileName = "";
   let mime = "image/jpeg";
 
-  if (file) {
+  if (fileUrl) {
     try {
       const absPath = path.join(
         process.cwd(),
         "uploads",
-        file.replace(/^\/uploads\/?/, "")
+        fileUrl.replace(/^\/uploads\/?/, "")
       );
 
       const fileBuf = fs.readFileSync(absPath);
@@ -61,11 +93,11 @@ function buildSafariPayload(data: any, useFingerPrint = false) {
   }
 
   payload.postData = {
-    content: file,
+    content: fileUrl,
     content_base64: contentBase64,
     content_filename: fileName,
     content_mime: mime,
-    message: caption,
+    message: captionText, // ⬅️ ВАЖНО: строка, а не массив captions
     message_month: scheduledDate
       .toLocaleString('default', { month: 'long' })
       .toLowerCase(),
@@ -86,6 +118,7 @@ function buildSafariPayload(data: any, useFingerPrint = false) {
 
   return payload;
 }
+
 
 function getSafariPaths(modelId: any, platformId: any) {
   const basePath = path.resolve(process.cwd(), 'src/automate/utils/python');
@@ -134,7 +167,11 @@ function runPythonAsBotUser(
 
 @Injectable()
 export class SafariPostService {
-  constructor(private readonly automateLogger: AutomateLoggerService) {}
+  constructor(
+    private readonly automateLogger: AutomateLoggerService,
+    private readonly modelLimitService: ModelLimitService,
+    private readonly postQueueService: PostQueueService,
+  ) {}
 
   // ====================================================================================
   // 🟦 1) startPostSafari (email + password login)
@@ -224,6 +261,60 @@ export class SafariPostService {
   async startPostSafariFingerPrint(data: any) {
     console.log('[SafariPostService] startPostSafariFingerPrint()');
 
+    const modelPlatform =
+      (data && data.modelPlatform) ? data.modelPlatform : null;
+
+    const modelPlatformId =
+      (modelPlatform && modelPlatform.id) ||
+      data.model_platform_id ||
+      data.model_id;
+
+    const postWithTimesAndCaptions = data.postWithTimesAndCaptions;
+    const postFiles = data.postFiles || [];
+
+    if (!postWithTimesAndCaptions) {
+      console.log('[SafariPostService] ❌ Нет postWithTimesAndCaptions в data → пропуск');
+      return { ok: false };
+    }
+
+    // 🔹 Лимит 50 постов в сутки
+    const todayCount = await this.modelLimitService.getTodayLimit(modelPlatformId);
+    if (todayCount >= 50) {
+      console.log(
+        `[SafariPostService] ⛔ Daily limit reached for modelPlatform ${modelPlatformId}: ${todayCount} >= 50`,
+      );
+
+      await this.automateLogger.log({
+        modelPlatformId,
+        type: 'post',
+        step: 'scheduling',
+        status: 'fail',
+        message: `Daily limit reached (${todayCount}/50)`,
+      });
+
+      return { ok: false, reason: 'daily-limit' };
+    }
+
+    //const totalCaptions = (postWithTimesAndCaptions.captions || []).length;
+    //const totalFiles = postFiles.length;
+
+    const { captionIndex, fileIndex } = await this.postQueueService.getNext(
+      modelPlatformId,
+      postWithTimesAndCaptions.id,
+      //totalCaptions,
+      //totalFiles,
+    );
+
+    // передаём выбор в buildSafariPayload
+    (data as any).queueSelection = { captionIndex, fileIndex };
+
+    console.log('[SafariPostService] Queue selection →', {
+      modelPlatformId,
+      postId: postWithTimesAndCaptions.id,
+      captionIndex,
+      fileIndex,
+    });
+
     try {
       const { basePath, pythonPath, scriptPath, cookiePath } = getSafariPaths(
         data.model_id,
@@ -271,6 +362,10 @@ export class SafariPostService {
           console.log(out);
           console.log('-----------------------------------');
         }
+      }
+
+      if (modelPlatformId) {
+        await this.modelLimitService.increment(modelPlatformId);
       }
 
       return { ok: true };
