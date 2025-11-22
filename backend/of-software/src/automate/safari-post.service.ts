@@ -35,8 +35,36 @@ function buildSafariPayload(data: any, useFingerPrint = false) {
   const caption = captions[0]?.caption || '';
   const file = files[0]?.url || '';
 
+  // =====================================================
+  // 🟦 Encode file to base64 for Safari drag&drop
+  // =====================================================
+  let contentBase64 = "";
+  let fileName = "";
+  let mime = "image/jpeg";
+
+  if (file) {
+    try {
+      const absPath = path.join(
+        process.cwd(),
+        "uploads",
+        file.replace(/^\/uploads\/?/, "")
+      );
+
+      const fileBuf = fs.readFileSync(absPath);
+      contentBase64 = fileBuf.toString("base64");
+
+      fileName = path.basename(absPath);
+
+    } catch (e) {
+      console.log("❌ Failed to load file for base64:", e);
+    }
+  }
+
   payload.postData = {
     content: file,
+    content_base64: contentBase64,
+    content_filename: fileName,
+    content_mime: mime,
     message: caption,
     message_month: scheduledDate
       .toLocaleString('default', { month: 'long' })

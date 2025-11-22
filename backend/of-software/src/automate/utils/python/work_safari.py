@@ -383,38 +383,8 @@ def _handle_loop(driver, step, post_data, state):
 # ============================================================
 
 def _handle_append_medias(driver, step, post_data, state):
-    trigger_sel = step.get("selector")
-    files = post_data.get(step.get("key", "content"), "")
-
-    if not files:
-        return state.mark_skipped()
-
-    paths = [p.strip() for p in files.split(",")]
-
-    _safe_click(driver, trigger_sel, _timeout_for_step(state, "appendMedias"), state, True)
-
-    inputs = _find_all_visible(driver, "input[type='file']")
-    file_input = inputs[-1] if inputs else None
-
-    if not file_input:
-        try:
-            cand = driver.find_elements(By.CSS_SELECTOR, "input[type='file']")
-            if cand:
-                file_input = cand[-1]
-                driver.execute_script("""
-                    arguments[0].style.display='block';
-                    arguments[0].style.opacity='1';
-                    arguments[0].removeAttribute('hidden');
-                """, file_input)
-        except:
-            pass
-
-    if not file_input:
-        print("appendMedias: no input[type=file] found")
-        return
-
-    file_input.send_keys("\n".join(paths))
-    time.sleep(2)
+    print("appendMedias skipped — drag&drop mode active (Safari)")
+    return state.mark_skipped()
 
 
 # ============================================================
@@ -460,8 +430,8 @@ def _exec_one_step(driver, step, post_data, state):
         elif stype == "loop":
             _handle_loop(driver, step, post_data, state)
 
-        elif stype == "appendMedias":
-            _handle_append_medias(driver, step, post_data, state)
+        # elif stype == "appendMedias":
+        #     _handle_append_medias(driver, step, post_data, state)
         #testme
         elif stype == "runScript":
             script = step.get("value", "")

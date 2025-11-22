@@ -27,10 +27,56 @@ POST_STEPS = [
             new InputEvent('input', { bubbles: true })
         );
     """},
-    #{ "type": "type", "selector" : ".js-text-editor", "value": "$value" },
     { "type": "waitForTime", "value": "600" },
-
-
+    # ----------------------------------------------------------
+    # 2) Медиа
+    # ----------------------------------------------------------
+    {
+        "type": "runScript",
+        "key": "content_base64",
+        "value": """
+        const base64 = arguments[0];
+        if (!base64) {
+            console.log('❌ No base64 in arguments[0]');
+            return;
+        }
+    
+        const filename = "image.jpg";
+        const mime = "image/jpeg";
+    
+        function base64ToFile(b64, filename, mimeType) {
+            const byteString = atob(b64);
+            const uint8Array = new Uint8Array(byteString.length);
+            for (let i = 0; i < byteString.length; i++) {
+                uint8Array[i] = byteString.charCodeAt(i);
+            }
+            const blob = new Blob([uint8Array], { type: mimeType });
+            return new File([blob], filename, { type: mimeType });
+        }
+    
+        const file = base64ToFile(base64, filename, mime);
+        const dt = new DataTransfer();
+        dt.items.add(file);
+    
+        const zone = document.querySelector('.b-make-post__wrapper');
+        if (!zone) {
+            console.log('❌ Drop zone not found');
+            return;
+        }
+    
+        const rect = zone.getBoundingClientRect();
+        const ev = new DragEvent('drop', {
+            bubbles: true,
+            cancelable: true,
+            dataTransfer: dt,
+            clientX: rect.left + 20,
+            clientY: rect.top + 20
+        });
+    
+        zone.dispatchEvent(ev);
+        console.log('📸 Dropped image via base64:', filename);
+    """
+    },
 
     # ----------------------------------------------------------
     # 10) Publish
