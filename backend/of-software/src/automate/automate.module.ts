@@ -13,6 +13,8 @@ import { PostQueueEntity} from "./entities/post-queue.entity";
 import { ModelLimitService } from './utils/model-limit.service';
 import { AutomateLoggerService } from './utils/automate-logger.service';
 import { PostQueueService } from './utils/post-queue.service';
+import { PostFileModule} from "../postFile/post_file.module";
+import { PostCaptionModule} from "../postCaption/post_caption.module";
 
 // NEW SERVICES — MUST BE REGISTERED
 import { SafariPostService } from './safari-post.service';
@@ -26,7 +28,10 @@ import { PuppeteerMessageService } from './puppeteer-message.service';
       ModelStatusLogEntity,
       ModelDailyLimitEntity,
       PostQueueEntity,
-    ])
+
+    ]),
+    PostFileModule,
+    PostCaptionModule
   ],
 
   controllers: [
