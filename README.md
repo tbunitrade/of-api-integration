@@ -1,3 +1,36 @@
+┌──────────────────────────────────────────┐
+│                POST (вирт.)              │
+│   id = 12                                 │
+│   model_platform_id = 4                   │
+└──────────────────────────────────────────┘
+│
+│  связь
+▼
+┌──────────────────────────────────────────┐
+│           POST_QUEUE (одна строка)       │
+│------------------------------------------│
+│ file_index        → 2                    │
+│ caption_index     → 5                    │
+│ total_files       → 10                   │
+│ total_captions    → 14                   │
+└──────────────────────────────────────────┘
+│
+│ getNext()
+▼
+┌──────────────────────────────────────────┐
+│         captions[5]  → текст поста       │
+│         files[2]     → файл для поста    │
+└──────────────────────────────────────────┘
+│
+│  публикация
+▼
+┌──────────────────────────────────────────┐
+│         commit():                        │
+│ file_index = (2 + 1) % 10 = 3            │
+│ caption_index = (5 + 1) % 14 = 6         │
+└──────────────────────────────────────────┘
+
+
 # [Of-Software &mdash; Free Vue 3.x Tailwind 3.x Admin Dashboard with dark mode](https://justboil.me/tailwind-admin-templates/free-vue-dashboard/)
 
 [![version](https://img.shields.io/github/v/release/justboil/admin-one-vue-tailwind)](https://justboil.me/tailwind-admin-templates/free-vue-dashboard/) [![license](https://img.shields.io/badge/license-MIT-blue.svg)](https://justboil.me/tailwind-admin-templates/free-vue-dashboard/)
