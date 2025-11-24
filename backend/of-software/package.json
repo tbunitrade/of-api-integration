@@ -22,8 +22,6 @@
     "backend:start": "npm run build && DISPLAY=:10 pm2 stop backend; DISPLAY=:10 pm2 delete backend; DISPLAY=:10 pm2 start npm --name \"backend\" -- run start:prod && pm2 update && pm2 save",
     "start:serverold": "pm2 stop backend; pm2 delete backend; pm2 start npm --name \"backend\" -- start",
     "start:serverold2": "pm2 stop backend && pm2 delete backend && pm2 start npm --name \"backend\" -- start",
-    "migrate-generate": "ts-node ./node_modules/typeorm/cli.js migration:generate migrations/init -d ./datasource.ts",
-    "migrate-run": "ts-node ./node_modules/typeorm/cli.js migration:run -d ./datasource.ts",
     "puppeteer:dev": "ts-node -r tsconfig-paths/register src/index.ts",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "test": "jest",
@@ -31,7 +29,10 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
-    "test-gui": "ts-node test-puppeteer.ts"
+    "test-gui": "ts-node test-puppeteer.ts",
+    "migration:generate": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:generate -d ./datasource.ts",
+    "migration:run":       "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:run -d ./datasource.ts",
+    "migration:revert":    "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:revert -d ./datasource.ts"
   },
   "dependencies": {
     "@antiadmin/anticaptchaofficial": "^1.0.46",
