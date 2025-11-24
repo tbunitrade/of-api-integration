@@ -13,6 +13,8 @@ export class DatabaseService implements OnModuleInit {
   async onModuleInit() {
     this.logger.log('🔄 Running migrations...');
 
+    console.log('Active connection options:', this.dataSource.options);
+
     try {
       await this.dataSource.runMigrations();
       this.logger.log('✅ Migrations completed!');
