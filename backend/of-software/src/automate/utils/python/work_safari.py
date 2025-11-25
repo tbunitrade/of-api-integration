@@ -383,8 +383,191 @@ def _handle_loop(driver, step, post_data, state):
 # ============================================================
 
 def _handle_append_medias(driver, step, post_data, state):
-    print("appendMedias skipped — drag&drop mode active (Safari)")
-    return state.mark_skipped()
+    import os, time
+    from selenium.webdriver.common.by import By
+    from selenium.webdriver.support.ui import WebDriverWait
+    from selenium.webdriver.support import expected_conditions as EC
+
+    key = step.get("key") or "content_path"
+    file_path = post_data.get(key) or post_data.get("content_path")
+    selector = step.get("selector") or "input[type='file']"
+
+    print(f"📦 appendMedias: key={key}, file_path={file_path}, selector={selector}")
+
+    if not file_path or not os.path.exists(file_path):
+        print(f"⚠️ File does not exist or not provided: {file_path}")
+        return state.mark_skipped()
+
+    # 🔐 ВАЖНО: делаем файл world-readable для SafariDriver
+    try:
+        os.chmod(file_path, 0o644)
+        print(f"🔐 chmod 644 applied to {file_path}")
+    except Exception as e:
+        print(f"⚠️ Failed to chmod file: {e}")
+
+    try:
+        el = None
+
+        # 1️⃣ пробуем найти file input как есть
+        try:
+            print(f"🔎 appendMedias: trying primary selector {selector}")
+            el = WebDriverWait(driver, 5).until(
+                EC.presence_of_element_located((By.CSS_SELECTOR, selector))
+            )
+        except Exception as e_primary:
+            print(f"⚠️ Primary selector '{selector}' not found: {e_primary}")
+            print("⚠️ input[type=file] не найден сразу, пробуем кликнуть кнопку 'Add media' (#attach_file_photo)")
+            try:
+                btn = driver.find_element(By.CSS_SELECTOR, "#attach_file_photo")
+                driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", btn)
+                btn.click()
+                time.sleep(0.8)
+            except Exception as e_btn:
+                print(f"❌ Не удалось кликнуть #attach_file_photo: {e_btn}")
+
+            try:
+                el = WebDriverWait(driver, 5).until(
+                    EC.presence_of_element_located((By.CSS_SELECTOR, selector))
+                )
+                print(f"✅ appendMedias: found file input by selector {selector} after button click")
+            except Exception as e_second:
+                print(f"⚠️ Still no element by '{selector}': {e_second}")
+                el = None
+
+        if el is None:
+            print("🔎 appendMedias: scanning for ANY input[type='file']")
+            file_inputs = driver.find_elements(By.CSS_SELECTOR, "input[type='file']")
+            print(f"🔎 Found {len(file_inputs)} file inputs in DOM")
+
+            for idx, inp in enumerate(file_inputs):
+                try:
+                    attrs = driver.execute_script(
+                        """
+                        const el = arguments[0];
+                        return {
+                          id: el.id || null,
+                          name: el.name || null,
+                          className: el.className || null,
+                          hidden: el.hidden || false,
+                          display: getComputedStyle(el).display,
+                          visibility: getComputedStyle(el).visibility
+                        };
+                        """,
+                        inp,
+                    )
+                    print(f"   🧩 input[{idx}]: {attrs}")
+                except Exception:
+                    pass
+
+            for inp in file_inputs:
+                try:
+                    if inp.is_enabled():
+                        el = inp
+                        print("✅ appendMedias: using first enabled input[type=file]")
+                        break
+                except Exception:
+                    continue
+
+        if el is None:
+            print("❌ appendMedias: NO usable input[type='file'] found → skip")
+            return state.mark_skipped()
+
+        driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", el)
+        print(f"📁 appendMedias: Uploading {file_path} into input[type='file']")
+        el.send_keys(file_path)
+
+        try:
+            WebDriverWait(driver, 20).until_not(
+                EC.presence_of_element_located(
+                    (By.CSS_SELECTOR, "span.b-dropzone__preview__progress")
+                )
+            )
+            print("⏳ Upload progress indicator disappeared (b-dropzone__preview__progress)")
+        except Exception:
+            print("⚠️ No explicit upload progress indicator or wait timeout, continue anyway")
+
+        try:
+            print("🔎 Checking dropzone preview nodes after upload…")
+            preview_info = driver.execute_script(
+                """
+                const sels = [
+                  '.b-dropzone__video',
+                  '.b-dropzone__item',
+                  '.b-dropzone__preview'
+                ];
+                const result = {};
+                for (const sel of sels) {
+                  const els = Array.from(document.querySelectorAll(sel));
+                  result[sel] = els.map(el => ({
+                    tag: el.tagName,
+                    className: el.className,
+                    html: el.outerHTML.slice(0, 180)
+                  }));
+                }
+                return result;
+                """
+            )
+            print("🎯 Dropzone preview snapshot:", preview_info)
+        except Exception as e:
+            print(f"⚠️ Failed to inspect dropzone preview: {e}")
+
+        try:
+            def any_preview(drv):
+                sels = [
+                    ".b-dropzone__video",
+                    ".b-dropzone__item",
+                    ".b-dropzone__preview",
+                ]
+                for sel in sels:
+                    if drv.find_elements(By.CSS_SELECTOR, sel):
+                        return True
+                return False
+
+            WebDriverWait(driver, 10).until(any_preview)
+            print("✅ appendMedias: preview element detected in dropzone before submit.")
+        except Exception as e_wait:
+            print(f"⚠️ appendMedias: no preview detected before timeout: {e_wait}")
+
+        print("✅ File uploaded successfully (appendMedias end)")
+        #state.mark_ok()
+
+    except Exception as e:
+        print(f"❌ appendMedias failed: {e}")
+        state.mark_failed()
+
+# def _handle_append_medias(driver, step, post_data, state):
+#     print("appendMedias skipped — drag&drop mode active (Safari)")
+#     return state.mark_skipped()
+
+# def _handle_append_medias(driver, step, post_data, state):
+#     from selenium.webdriver.common.keys import Keys
+#     import os
+#
+#     file_path = post_data.get("content_path")
+#     selector = step.get("selector")
+#
+#     if not file_path or not os.path.exists(file_path):
+#         print(f"⚠️ File does not exist or not provided: {file_path}")
+#         return state.mark_skipped()
+#
+#     print(f"📁 appendMedias: Uploading {file_path} into {selector}")
+#
+#     try:
+#         el = _find(driver, selector, _timeout_for_step(state, "appendMedias"))
+#         _scroll_into_view_js(driver, el)
+#
+#         el.send_keys(file_path)
+#         time.sleep(0.5)
+#
+#         # Доп. ожидание завершения загрузки — можно адаптировать под Safari
+#         WebDriverWait(driver, 8).until_not(
+#             EC.presence_of_element_located((By.CSS_SELECTOR, 'span.b-dropzone__preview__progress'))
+#         )
+#         print("✅ File uploaded successfully")
+#
+#     except Exception as e:
+#         print(f"❌ appendMedias failed: {e}")
+#         state.mark_failed()
 
 
 # ============================================================
@@ -430,8 +613,8 @@ def _exec_one_step(driver, step, post_data, state):
         elif stype == "loop":
             _handle_loop(driver, step, post_data, state)
 
-        # elif stype == "appendMedias":
-        #     _handle_append_medias(driver, step, post_data, state)
+        elif stype == "appendMedias":
+            _handle_append_medias(driver, step, post_data, state)
         #testme
         elif stype == "runScript":
             script = step.get("value", "")

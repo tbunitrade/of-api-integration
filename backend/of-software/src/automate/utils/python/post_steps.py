@@ -4,8 +4,8 @@ POST_STEPS = [
     # ----------------------------------------------------------
     # 0) Safety
     # ----------------------------------------------------------
-    { "type": "waitForTime", "value": "800" },
-    { "type": "click", "value": "#ModalAlert button", "safeguard": True },
+    # { "type": "waitForTime", "value": "800" },
+    # { "type": "click", "value": "#ModalAlert button", "safeguard": True },
 
     # ----------------------------------------------------------
     # 1) Ожидаем и наводим фокус для ввода caption text
@@ -31,52 +31,64 @@ POST_STEPS = [
     # ----------------------------------------------------------
     # 2) Медиа
     # ----------------------------------------------------------
+
     {
-        "type": "runScript",
-        "key": "content_base64",
-        "value": """
-        const base64 = arguments[0];
-        if (!base64) {
-            console.log('❌ No base64 in arguments[0]');
-            return;
-        }
-    
-        const filename = "image.jpg";
-        const mime = "image/jpeg";
-    
-        function base64ToFile(b64, filename, mimeType) {
-            const byteString = atob(b64);
-            const uint8Array = new Uint8Array(byteString.length);
-            for (let i = 0; i < byteString.length; i++) {
-                uint8Array[i] = byteString.charCodeAt(i);
-            }
-            const blob = new Blob([uint8Array], { type: mimeType });
-            return new File([blob], filename, { type: mimeType });
-        }
-    
-        const file = base64ToFile(base64, filename, mime);
-        const dt = new DataTransfer();
-        dt.items.add(file);
-    
-        const zone = document.querySelector('.b-make-post__wrapper');
-        if (!zone) {
-            console.log('❌ Drop zone not found');
-            return;
-        }
-    
-        const rect = zone.getBoundingClientRect();
-        const ev = new DragEvent('drop', {
-            bubbles: true,
-            cancelable: true,
-            dataTransfer: dt,
-            clientX: rect.left + 20,
-            clientY: rect.top + 20
-        });
-    
-        zone.dispatchEvent(ev);
-        console.log('📸 Dropped image via base64:', filename);
-    """
+        "type": "appendMedias",
+        "selector": "input[type='file']",
+        "key": "content_path",
     },
+    {
+        "type": "waitForSelector",
+        "value": ".b-dropzone__preview, .b-dropzone__item, .b-dropzone__video",
+        "timeout": 15000,
+    },
+
+    # {
+    #     "type": "runScript",
+    #     "key": "content_url",
+    #     "value": """
+    #     const fileUrl = arguments[0];
+    #     if (!fileUrl) {
+    #         console.log('❌ No fileUrl passed to step.');
+    #         return;
+    #     }
+    #
+    #     fetch(fileUrl)
+    #       .then(res => {
+    #         const contentType = res.headers.get("Content-Type") || "application/octet-stream";
+    #         return res.blob().then(blob => ({ blob, contentType }));
+    #       })
+    #       .then(({ blob, contentType }) => {
+    #         const extension = contentType.split("/")[1] || "media";
+    #         const file = new File([blob], `media.${extension}`, { type: contentType });
+    #
+    #         const dt = new DataTransfer();
+    #         dt.items.add(file);
+    #
+    #         const zone = document.querySelector('.b-make-post__wrapper');
+    #         if (!zone) {
+    #             console.log('❌ Drop zone not found');
+    #             return;
+    #         }
+    #
+    #         const rect = zone.getBoundingClientRect();
+    #         const ev = new DragEvent('drop', {
+    #           bubbles: true,
+    #           cancelable: true,
+    #           dataTransfer: dt,
+    #           clientX: rect.left + 20,
+    #           clientY: rect.top + 20
+    #         });
+    #
+    #         zone.dispatchEvent(ev);
+    #         console.log('📸 Dropped media via fetch:', file.name, 'MIME:', contentType);
+    #       })
+    #       .catch(err => {
+    #         console.log('❌ Failed to fetch media:', err);
+    #       });
+    #
+    # """
+    # },
 
     # ----------------------------------------------------------
     # 10) Publish
