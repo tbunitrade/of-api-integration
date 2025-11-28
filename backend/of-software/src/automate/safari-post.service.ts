@@ -1,10 +1,76 @@
 import { Injectable } from '@nestjs/common';
 import * as fs from 'fs';
 import * as path from 'path';
+import * as net from "net";
 import { AutomateLoggerService } from './utils/automate-logger.service';
-import { ModelLimitService} from "./utils/model-limit.service";
+import { ModelLimitService } from "./utils/model-limit.service";
 import { PostQueueService } from "./utils/post-queue.service";
-import { spawn } from 'child_process';
+import { spawn, ChildProcess } from 'child_process';
+
+let uploadsServerProcess: ChildProcess | null = null;
+
+function isPortOpen(port: number, host = "127.0.0.1"): Promise<boolean> {
+  return new Promise((resolve) => {
+    const socket = new net.Socket();
+    socket.setTimeout(500);
+
+    socket.once("error", () => {
+      socket.destroy();
+      resolve(false);
+    });
+
+    socket.once("timeout", () => {
+      socket.destroy();
+      resolve(false);
+    });
+
+    socket.connect(port, host, () => {
+      socket.end();
+      resolve(true);
+    });
+  });
+}
+
+async function ensureUploadsServer() {
+  try {
+    // уже поднят
+    if (uploadsServerProcess && !uploadsServerProcess.killed) {
+      console.log("[uploads_server] already running");
+      return;
+    }
+
+    const busy = await isPortOpen(3001);
+    if (busy) {
+      console.log("[uploads_server] port 3001 already in use");
+      return;
+    }
+
+    const scriptPath = path.join(
+      process.cwd(),
+      "src",
+      "automate",
+      "utils",
+      "python",
+      "uploads_server.py"
+    );
+
+    console.log("[uploads_server] starting python3", scriptPath);
+
+    uploadsServerProcess = spawn("python3", [scriptPath], {
+      cwd: path.dirname(scriptPath),
+      stdio: "inherit", // не трогаем твои логи, просто дописываем новые
+    });
+
+    uploadsServerProcess.on("exit", (code, signal) => {
+      console.log(
+        `[uploads_server] exited with code=${code}, signal=${signal}`
+      );
+      uploadsServerProcess = null;
+    });
+  } catch (err) {
+    console.error("[uploads_server] failed to start:", err);
+  }
+}
 
 
 function buildSafariPayload(data: any, useFingerPrint = false) {
@@ -70,33 +136,60 @@ function buildSafariPayload(data: any, useFingerPrint = false) {
   // =====================================================
   // 🟦 Encode file to base64 for Safari drag&drop
   // =====================================================
-  let contentBase64 = "";
-  let fileName = "";
-  let mime = "image/jpeg";
+  // let contentBase64 = "";
+  // let fileName = "";
+  // let mime = "image/jpeg";
+  //
+  // if (fileUrl) {
+  //   try {
+  //     const absPath = path.join(
+  //       process.cwd(),
+  //       "uploads",
+  //       fileUrl.replace(/^\/uploads\/?/, "")
+  //     );
+  //
+  //     const fileBuf = fs.readFileSync(absPath);
+  //     contentBase64 = fileBuf.toString("base64");
+  //
+  //     fileName = path.basename(absPath);
+  //
+  //   } catch (e) {
+  //     console.log("❌ Failed to load file for base64:", e);
+  //   }
+  // }
+  let contentPath: string | null = null;
+  let publicUrl: string | null = null;
 
-  if (fileUrl) {
-    try {
-      const absPath = path.join(
-        process.cwd(),
-        "uploads",
-        fileUrl.replace(/^\/uploads\/?/, "")
-      );
+  if (!fileUrl) {
+    console.warn("No fileUrl provided. Skipping content_path setup.");
+  } else {
+    // делаем относительный путь без /uploads и без ведущих /
+    const relativePath = fileUrl
+      .replace(/^\/?uploads\/?/, "")  // срежем uploads/ или /uploads/
+      .replace(/^\/+/, "");           // и лишние /
 
-      const fileBuf = fs.readFileSync(absPath);
-      contentBase64 = fileBuf.toString("base64");
+    // абсолютный путь на диске
+    contentPath = path.join(process.cwd(), "uploads", relativePath);
 
-      fileName = path.basename(absPath);
+    // а для URL гарантируем /uploads в начале
+    const urlPath = fileUrl.startsWith("/uploads/")
+      ? fileUrl
+      : "/uploads/" + relativePath;
 
-    } catch (e) {
-      console.log("❌ Failed to load file for base64:", e);
-    }
+    publicUrl = `http://127.0.0.1:3001${urlPath}`;
   }
+
+  //const contentPath = path.join(process.cwd(), 'uploads', fileUrl.replace(/^\/uploads\/?/, ''));
+  //payload.postData.content_path = contentPath;
+
+  console.log("🐍 media paths:", { fileUrl, contentPath, publicUrl });
 
   payload.postData = {
     content: fileUrl,
-    content_base64: contentBase64,
-    content_filename: fileName,
-    content_mime: mime,
+    content_url: publicUrl, // главное поле для Safari
+    content_base64: null,
+    content_path: contentPath,
+    content_mime: null,
     message: captionText, // ⬅️ ВАЖНО: строка, а не массив captions
     message_month: scheduledDate
       .toLocaleString('default', { month: 'long' })
@@ -259,6 +352,11 @@ export class SafariPostService {
   // 🟧 2) startPostSafariFingerPrint (Passwordless / Touch/FaceID)
   // ====================================================================================
   async startPostSafariFingerPrint(data: any) {
+    // 1️⃣ Поднять сервер, если его ещё нет
+    ensureUploadsServer().catch((err) => {
+      console.error("[uploads_server] ensure failed:", err);
+    });
+
     console.log('[SafariPostService] startPostSafariFingerPrint()');
 
     const modelPlatform =
@@ -278,31 +376,30 @@ export class SafariPostService {
     }
 
     // 🔹 Лимит 50 постов в сутки
-    const todayCount = await this.modelLimitService.getTodayLimit(modelPlatformId);
-    if (todayCount >= 50) {
+    const limitCheck =  await this.modelLimitService.canSchedulePost(modelPlatformId);
+
+    if ( !limitCheck.allowed ) {
       console.log(
-        `[SafariPostService] ⛔ Daily limit reached for modelPlatform ${modelPlatformId}: ${todayCount} >= 50`,
+        `[LIMIT] 50 posts/24h exceeded for modelPlatform=${modelPlatform.id}. Reset at ${limitCheck.resetAt.toISOString()}`
       );
+
+      // либо return false / throw / пометить в
 
       await this.automateLogger.log({
         modelPlatformId,
         type: 'post',
         step: 'scheduling',
         status: 'fail',
-        message: `Daily limit reached (${todayCount}/50)`,
+        message: `24h post limit reached (50/50). Reset at ${limitCheck.resetAt.toISOString()}`,
       });
 
       return { ok: false, reason: 'daily-limit' };
     }
 
-    //const totalCaptions = (postWithTimesAndCaptions.captions || []).length;
-    //const totalFiles = postFiles.length;
 
     const { captionIndex, fileIndex } = await this.postQueueService.getNext(
       modelPlatformId,
       postWithTimesAndCaptions.id,
-      //totalCaptions,
-      //totalFiles,
     );
 
     // передаём выбор в buildSafariPayload

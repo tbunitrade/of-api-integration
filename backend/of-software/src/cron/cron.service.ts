@@ -96,41 +96,46 @@ export class CronService {
     return true;
   }
 
-  async manualStartSafariFingerPrint() {
-    console.log(`[CRON] manualStartSafariFingerPrint() called`);
+  async manualStartSafariFingerPrint(modelPlatformId: number) {
+    console.log(`[CRON] manualStartSafariFingerPrint() called modelPlatformId=${modelPlatformId}`);
 
-    const modelPlatforms = await this.modelPlatformService.findAll(false);
+    // 🔹 1. Берём одну конкретную модель по ID (из req.user.id)
+    const mp = await this.modelPlatformService.findById(modelPlatformId);
 
-    for (const mp of modelPlatforms) {
-      try {
-        console.log(`[CRON] запускаем Safari FingerPrint login для modelPlatform id=${mp.id}`);
+    if (!mp)
+    {
+      console.log(`[CRON] ⚠️ ModelPlatform id=${modelPlatformId} не найден — выход`);
+      return false
+    }
 
-        // 🔹 1. Загружаем связанные посты
-        const postWithTimesAndCaptions = await this.postService.findById(mp.id);
-        if (!postWithTimesAndCaptions) {
-          console.log(`[CRON] ⚠️ Нет постов для modelPlatform id=${mp.id} — пропуск`);
-          continue;
-        }
+    try {
+      console.log(`[CRON] запускаем Safari FingerPrint login для modelPlatform id=${mp.id}`);
 
-        const postFiles = await this.postFileService.findByPostId(postWithTimesAndCaptions.id);
-
-        // 🔹 2. Собираем данные, как в postAPost()
-        const data: any = {
-          modelPlatform: mp,
-          postWithTimesAndCaptions,
-          postFiles,
-          scheduledDate: postWithTimesAndCaptions.scheduled_date,
-          numberOfDays: postWithTimesAndCaptions.number_of_days,
-          fingerprint_username: mp.fingerprint_username,
-          username: mp.username,
-        };
-
-        // 🔹 3. Запускаем Safari
-        await this.automateService.startPostSafariFingerPrint(data);
-
-      } catch (err) {
-        console.error(`[CRON] ❌ Ошибка при запуске Safari FingerPrint для ${mp.id}:`, err);
+      // 🔹 2. Загружаем связанные посты
+      const postWithTimesAndCaptions = await this.postService.findById(mp.id);
+      if (!postWithTimesAndCaptions) {
+        console.log(`[CRON] ⚠️ Нет постов для modelPlatform id=${mp.id} — пропуск`);
+        return false;
       }
+
+      const postFiles = await this.postFileService.findByPostId(postWithTimesAndCaptions.id);
+
+      // 🔹 3. Собираем данные, как в postAPost()
+      const data: any = {
+        modelPlatform: mp,
+        postWithTimesAndCaptions,
+        postFiles,
+        scheduledDate: postWithTimesAndCaptions.scheduled_date,
+        numberOfDays: postWithTimesAndCaptions.number_of_days,
+        fingerprint_username: mp.fingerprint_username,
+        username: mp.username,
+      };
+
+      // 🔹 4. Запускаем Safari-постинг для ОДНОЙ модели
+      await this.automateService.startPostSafariFingerPrint(data);
+
+    } catch (err) {
+      console.error(`[CRON] ❌ Ошибка при запуске Safari FingerPrint для ${mp.id}:`, err);
     }
 
     return true;
@@ -196,7 +201,7 @@ export class CronService {
    * @returns
    */
   private createCron = (isPost = false, manualStart = false, user?: any, waitForManualLogin= false) => {
-    //ограничили параллелизм до 1, то есть startPost() сейчас идут строго последовательно. Поэтому всё безопасно.
+    // Ограничили параллелизм до 1, то есть startPost() сейчас идут строго последовательно. Поэтому всё безопасно.
     const MaxOpeningBrowserCount = 1;
     return async () => {
       // ← вот сюда вставляем логи

@@ -21,6 +21,8 @@ import { SafariPostService } from './safari-post.service';
 import { SafariMessageService } from './safari-message.service';
 import { PuppeteerPostService } from './puppeteer-post.service';
 import { PuppeteerMessageService } from './puppeteer-message.service';
+import { Post } from "../post/post.entity";
+import {PostFile} from "../postFile/post_file.entity";
 
 @Module({
   imports: [
@@ -28,6 +30,8 @@ import { PuppeteerMessageService } from './puppeteer-message.service';
       ModelStatusLogEntity,
       ModelDailyLimitEntity,
       PostQueueEntity,
+      Post,
+      PostFile
 
     ]),
     PostFileModule,

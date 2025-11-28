@@ -1,12 +1,11 @@
-import { Controller, Get, Query, Request, UseGuards } from '@nestjs/common';
+import { Controller, Get, Query, Request, UseGuards, BadRequestException } from '@nestjs/common';
 import { CronService } from './cron.service';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { CreateCronDto } from 'src/dtos/create-cron.dto';
 import { ManualStartDto } from 'src/dtos/manual-start.dto';
 import { UserService } from 'src/user/user.service';
-import {query} from "express";
-import {AutomateService} from "../automate/automate.service";
+import { AutomateService } from "../automate/automate.service";
 
 @Controller('cron')
 @ApiTags('cron')
@@ -98,8 +97,29 @@ export class CronController {
   }
 
   @Get('manual-start-safari-finger-print')
-  async manualStartSafariFingerPrint(@Query('waitForManualLogin') wait = false) {
-    await this.cronService.manualStartSafariFingerPrint();
-    return { ok: true};
+  @ApiBearerAuth('jwt')
+  @UseGuards(JwtAuthGuard)
+  async manualStartSafariFingerPrint(
+    //@Query('waitForManualLogin') wait = false) { // this incorrect for Python
+    @Request() req,
+    @Query('modelPlatformId') modelPlatformId: string,
+    ) {
+
+    console.log('[CRON] manualStartSafariFingerPrint() called');
+    //const id = req.user.id; // 🔥 это model_platform_id
+    const id = Number(modelPlatformId);
+    if (!id || Number.isNaN(id)) {
+      console.log('[CRON] ❌ modelPlatformId not provided or invalid:', modelPlatformId);
+      throw new BadRequestException('modelPlatformId is required');
+    }
+
+    const waitForManualLogin = true; // если у тебя фингерпринт-режим
+    console.log('[CRON] запускаем Safari FingerPrint login для modelPlatform id=', id);
+
+    await this.cronService.manualStartSafariFingerPrint(id);
+    return {
+      ok: true,
+      modelPlatformId: id,
+    };
   }
 }
