@@ -12,6 +12,51 @@ export class ModelLimitService {
     private readonly repo: Repository<ModelDailyLimitEntity>,
   ) {}
 
+  async canSchedulePost(modelPlatformId: number) {
+    const WINDOW_MS = 24 * 60 * 60 * 1000; // delay for publishing 24 h
+    const now = new Date();
+
+    let limit = await this.repo.findOne({
+      where: { model_platform_id: modelPlatformId },
+    });
+
+    if ( !limit ) {
+      limit = this.repo.create({
+        model_platform_id : modelPlatformId,
+        windows_start_at : now,
+        used_count: 0
+      });
+    }
+
+    // check 1️⃣ Проверяем, не истекло ли окно
+    if ( !limit.windiw_start_at || now.getTime() - limit.window_start_at.getTime() >= WINDOW_MS ) {
+      //new zone to publishing
+      limit.window_start_at = now;
+      limit.used_count = 0;
+    }
+
+    // check 2️⃣ Уже достигнут лимит?
+    if ( limit.used_count >= 50) {
+      const resetAt = new Date( limit.window_start_at.getTime() + WINDOW_MS );
+      return {
+        allowed : false,
+        remaining : 0,
+        resetAt,
+      };
+    }
+
+    // 3️⃣ Увеличиваем счётчик и сохраняем
+    limit.used_count += 1;
+    await this.repo.save(limit);
+
+    return {
+      allowed : true,
+      remaining = 50 - limit.used_count,
+      resetAt: new Date( limit.window_start_at.getTime() + WINDOW_MS )
+    };
+
+  }
+
   /** Получить лимит постов на сегодня */
   async getTodayLimit(modelPlatformId: number): Promise<number> {
     const today = new Date().toISOString().split('T')[0];
