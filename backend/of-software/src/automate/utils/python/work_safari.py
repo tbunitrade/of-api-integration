@@ -13,9 +13,8 @@
 
 from __future__ import annotations
 
-import time
+import time, os, shutil, tempfile
 from typing import Any, Dict, List, Optional
-
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.action_chains import ActionChains
@@ -26,6 +25,7 @@ from selenium.common.exceptions import (
     StaleElementReferenceException,
     NoSuchElementException,
     JavascriptException,
+    WebDriverException
 )
 
 # ============================================================
@@ -382,12 +382,28 @@ def _handle_loop(driver, step, post_data, state):
 # appendMedias — оставляем, Safari фикс включён
 # ============================================================
 
-def _handle_append_medias(driver, step, post_data, state):
-    import os, time
-    from selenium.webdriver.common.by import By
-    from selenium.webdriver.support.ui import WebDriverWait
-    from selenium.webdriver.support import expected_conditions as EC
+def ensure_world_readable(path: str) -> str:
+    """Гарантирует, что файл world-readable. Если нельзя chmod — делаем копию в /tmp."""
+    try:
+        os.chmod(path, 0o644)
+        print(f"✅ chmod 644 succeeded for {path}")
+        return path
+    except Exception as e:
+        print(f"⚠️ Failed to chmod file: {e}, trying temp copy...")
+        try:
+            tmp_dir = os.path.join(tempfile.gettempdir(), "of_uploads")
+            os.makedirs(tmp_dir, exist_ok=True)
+            filename = os.path.basename(path)
+            tmp_path = os.path.join(tmp_dir, filename)
+            shutil.copy2(path, tmp_path)
+            os.chmod(tmp_path, 0o644)
+            print(f"✅ Copied file to tmp and chmod 644: {tmp_path}")
+            return tmp_path
+        except Exception as e2:
+            print(f"❌ unable to prepare temp file: {e2}")
+            raise
 
+def _handle_append_medias(driver, step, post_data, state):
     key = step.get("key") or "content_path"
     file_path = post_data.get(key) or post_data.get("content_path")
     selector = step.get("selector") or "input[type='file']"
@@ -400,10 +416,13 @@ def _handle_append_medias(driver, step, post_data, state):
 
     # 🔐 ВАЖНО: делаем файл world-readable для SafariDriver
     try:
-        os.chmod(file_path, 0o644)
-        print(f"🔐 chmod 644 applied to {file_path}")
+        #os.chmod(file_path, 0o644)
+        safe_path = ensure_world_readable(file_path)
+        print(f"🔐 chmod 644 applied to {safe_path}")
     except Exception as e:
         print(f"⚠️ Failed to chmod file: {e}")
+        return state.mark_failed()
+
 
     try:
         el = None
@@ -473,8 +492,8 @@ def _handle_append_medias(driver, step, post_data, state):
             return state.mark_skipped()
 
         driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", el)
-        print(f"📁 appendMedias: Uploading {file_path} into input[type='file']")
-        el.send_keys(file_path)
+        print(f"📁 appendMedias: Uploading {safe_path} into input[type='file']")
+        el.send_keys(safe_path)
 
         try:
             WebDriverWait(driver, 20).until_not(
@@ -534,40 +553,6 @@ def _handle_append_medias(driver, step, post_data, state):
     except Exception as e:
         print(f"❌ appendMedias failed: {e}")
         state.mark_failed()
-
-# def _handle_append_medias(driver, step, post_data, state):
-#     print("appendMedias skipped — drag&drop mode active (Safari)")
-#     return state.mark_skipped()
-
-# def _handle_append_medias(driver, step, post_data, state):
-#     from selenium.webdriver.common.keys import Keys
-#     import os
-#
-#     file_path = post_data.get("content_path")
-#     selector = step.get("selector")
-#
-#     if not file_path or not os.path.exists(file_path):
-#         print(f"⚠️ File does not exist or not provided: {file_path}")
-#         return state.mark_skipped()
-#
-#     print(f"📁 appendMedias: Uploading {file_path} into {selector}")
-#
-#     try:
-#         el = _find(driver, selector, _timeout_for_step(state, "appendMedias"))
-#         _scroll_into_view_js(driver, el)
-#
-#         el.send_keys(file_path)
-#         time.sleep(0.5)
-#
-#         # Доп. ожидание завершения загрузки — можно адаптировать под Safari
-#         WebDriverWait(driver, 8).until_not(
-#             EC.presence_of_element_located((By.CSS_SELECTOR, 'span.b-dropzone__preview__progress'))
-#         )
-#         print("✅ File uploaded successfully")
-#
-#     except Exception as e:
-#         print(f"❌ appendMedias failed: {e}")
-#         state.mark_failed()
 
 
 # ============================================================
