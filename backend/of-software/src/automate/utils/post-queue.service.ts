@@ -3,10 +3,12 @@
 import { Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
+import { PostFile} from "../../postFile/post_file.entity";
+import { Post } from "src/post/post.entity";
 
-import { PostQueueEntity} from "../entities/post-queue.entity";
-import { PostFileService} from "../../postFile/post_file.service";
-import { PostCaptionService} from "../../postCaption/post_caption.service";
+import { PostQueueEntity } from "../entities/post-queue.entity";
+//import { PostFileService } from "../../postFile/post_file.service";
+import { PostCaptionService } from "../../postCaption/post_caption.service";
 
 
 @Injectable()
@@ -14,9 +16,15 @@ export class PostQueueService {
   constructor(
     @InjectRepository( PostQueueEntity )
     private readonly queueRepo: Repository<PostQueueEntity>,
-    private readonly postFileService: PostFileService,
-    private readonly postCaptionService: PostCaptionService
+    @InjectRepository(Post)
+    private readonly postRepo: Repository<Post>,
+    @InjectRepository(PostFile)
+    //private readonly postFileService: PostFileService,
+    private readonly postFileRepository: Repository<PostFile>,
+    private readonly postCaptionService: PostCaptionService,
   ) {}
+
+  // post-queue.service.ts
 
   /**
    * Находим очередь по (modelPlatformId, postId)
@@ -49,51 +57,8 @@ export class PostQueueService {
       queue = await this.queueRepo.save(queue);
 
     }
-    // else {
-    //   // Если вдруг поменялось количество caption/file — обновим
-    //   let changed = false;
-    //
-    //   if (queue.total_captions !== totalCaptions) {
-    //     queue.total_captions = totalCaptions;
-    //     changed = true;
-    //   }
-    //
-    //   if (queue.total_files !== totalFiles) {
-    //     queue.total_files = totalFiles;
-    //     changed = true;
-    //   }
-    //
-    //   if (changed) {
-    //     queue = await this.queueRepo.save(queue);
-    //   }
-    // }
 
     return queue;
-  }
-
-  async recalculate( modelPlatformId: number, postId: number ) {
-    const queue = await this.getOrCreate(modelPlatformId, postId);
-
-    const files = await this.postFileService.findByPostId(postId);
-    const captions = await this.postCaptionService.findByPostId(postId);
-
-    queue.total_files = files.length;
-    queue.total_captions = captions.length;
-
-    // мягкий reset
-    // if (queue.file_index >= queue.total_files) queue.file_index = 0;
-    // if (queue.caption_index >= queue.total_captions) queue.caption_index = 0;
-
-    // обновленный мягкий reset
-    if (queue.file_index >= queue.total_files && queue.total_files > 0) {
-      queue.file_index = 0;
-    }
-
-    if (queue.caption_index >= queue.total_captions && queue.total_captions > 0) {
-      queue.caption_index = 0;
-    }
-
-    return this.queueRepo.save(queue);
   }
 
   /**
@@ -104,45 +69,65 @@ export class PostQueueService {
   async getNext(
     modelPlatformId: number,
     postId: number,
-    //totalCaptions: number,
-    //totalFiles: number,
   ): Promise<{
     queue: PostQueueEntity;
     captionIndex: number;
     fileIndex: number;
   }> {
-    //const safeTotalCaptions = Math.max(totalCaptions, 1);
-    //const safeTotalFiles = Math.max(totalFiles, 1);
-
     let queue = await this.getOrCreate(
       modelPlatformId,
       postId,
-      //safeTotalCaptions,
-      //safeTotalFiles,
     );
 
-    // защитные значения
+    const now = new Date();
+    const startOfToday = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+    )
+
+    if ( !queue.updated_at || queue.updated_at < startOfToday ) {
+      // новый день для данной пары (modelPlatformId, postId)
+      queue.used_count = 0;
+    }
+
+    // 2️⃣ Синхронизация total_captions / total_files с реальными данными в БД
+    const [ captions, filesCount ] = await Promise.all([
+      this.postCaptionService.findByPostId(postId),        // <- уже есть в сервисе
+      this.postFileRepository.count({ where: { post_id: postId } }),
+    ]);
+
+    queue.total_captions = captions.length;
+    queue.total_files = filesCount;
+
+    // 3️⃣ Циклическая “по достижению” очистка индексов
+
+    if ( queue.total_captions > 0 && queue.caption_index >= queue.total_captions){
+      queue.caption_index = 0;
+    }
+
+    if ( queue.total_files >0 && queue.file_index >= queue.total_files ){
+      queue.file_index = 0;
+    }
+
+    // Защитные значения на случай отсутствия файлов/капшнов
     const totalCaptions = Math.max(queue.total_captions, 1);
     const totalFiles = Math.max(queue.total_files, 1);
 
+    // Текущие индексы, которые будут использованы СЕЙЧАС
     const captionIndex = queue.caption_index;
     const fileIndex = queue.file_index;
 
-    // const nextCaptionIndex =
-    //   safeTotalCaptions > 0
-    //     ? (captionIndex + 1) % safeTotalCaptions
-    //     : 0;
-    //
-    // const nextFileIndex =
-    //   safeTotalFiles > 0
-    //     ? (fileIndex + 1) % safeTotalFiles
-    //     : 0;
-    //
+    // Сдвигаем по кругу на следующий
     queue.caption_index = (captionIndex + 1) % totalCaptions;
     queue.file_index = (fileIndex + 1) % totalFiles;
-    //queue.used_count++;
+
+    // Увеличиваем счётчик использований за день
     queue.used_count = (queue.used_count || 0) + 1;
-    //await this.queueRepo.save(queue);
+
+    // Обновляем updated_at
+    queue.updated_at = new Date();
+
     queue = await this.queueRepo.save(queue);
 
     return {
@@ -150,19 +135,6 @@ export class PostQueueService {
       captionIndex,
       fileIndex,
     };
-  }
-
-  /**
-   * Просто вернуть очередь (например для Vue UI)
-   */
-
-  async getProgress(modelPlatformId: number, postId: number) {
-    return this.queueRepo.findOne({
-      where: {
-        model_platform_id: modelPlatformId,
-        post_id: postId,
-      },
-    });
   }
 
   /**

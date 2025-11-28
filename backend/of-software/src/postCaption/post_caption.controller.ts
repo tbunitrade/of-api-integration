@@ -12,16 +12,21 @@ import {
   ValidationPipe,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiBody, ApiConsumes, ApiTags } from '@nestjs/swagger';
+import { ParseIntPipe} from "@nestjs/common";
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { PostCaptionService } from './post_caption.service';
 import { PostCaptionDto } from 'src/dtos/post-caption.dto';
 import { PostCaption } from './post_caption.entity';
 import { FilesInterceptor } from '@nestjs/platform-express';
+// import { PostQueueService } from '../automate/utils/post-queue.service';
 
 @Controller('post_caption')
 @ApiTags('post_caption')
 export class PostCaptionController {
-  constructor(private readonly postCaptionService: PostCaptionService) {}
+  constructor(
+    private readonly postCaptionService: PostCaptionService,
+   // private readonly postQueueService: PostQueueService,
+  ) {}
 
   @Get('all')
   @ApiBearerAuth('jwt')
@@ -58,13 +63,13 @@ export class PostCaptionController {
   })
   async uploadFiles(
     @UploadedFiles() uploaded_files: Express.Multer.File[],
-    @Param('post_id') postId: number,
+    @Param('post_id', ParseIntPipe) postId: number,
   ): Promise<any> {
     try {
       if (uploaded_files && uploaded_files.length > 0) {
         const result = await this.postCaptionService.uploadFiles(
-          uploaded_files[0],
           postId,
+          uploaded_files[0],
         );
         return result;
       }

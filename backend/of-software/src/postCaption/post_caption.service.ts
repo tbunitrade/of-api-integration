@@ -3,9 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { FindOneOptions, Repository } from 'typeorm';
 import { PostCaption } from './post_caption.entity';
 import { PostCaptionDto } from 'src/dtos/post-caption.dto';
-import { uploadFile } from 'src/utils/upload';
 import { In } from 'typeorm';
-
 import * as XLSX from 'xlsx';
 
 @Injectable()
@@ -102,21 +100,33 @@ export class PostCaptionService {
   async deleteMany(ids: number[]): Promise<number[]> {
     try {
       console.log('[🗑️ deleteMany] Incoming IDs:', ids);
-      const captionsToDelete = await this.postCaptionRepository.findBy({
-        id: In(ids),
+
+      // 1️⃣ Находим все captions по этим id
+      const captionsToDelete = await this.postCaptionRepository.find({
+        where: { id: In(ids) },
       });
+
       console.log(
         '[🔍 deleteMany] Found captions:',
         captionsToDelete.map((c) => c.id),
       );
+
       if (captionsToDelete.length === 0) {
         console.warn('[⚠️ deleteMany] No matching captions found');
         return [];
       }
 
+      // 2️⃣ Собираем уникальные post_id
+      const postIds = Array.from(
+        new Set(captionsToDelete.map((c) => c.post_id)),
+      );
+
+      // 3️⃣ Удаляем captions
       await this.postCaptionRepository.remove(captionsToDelete);
 
-      console.log(`[✅ deleteMany] Deleted ${captionsToDelete.length} captions`);
+      console.log(`[✅ deleteMany] Deleted ${captionsToDelete.length} captions`, postIds);
+
+      // 5️⃣ Возвращаем ids как и раньше
       return ids;
     } catch (err) {
       console.error('❌ deleteMany error', err);
@@ -124,9 +134,7 @@ export class PostCaptionService {
     }
   }
 
-  async uploadFiles(
-    file: Express.Multer.File,
-    post_id: number,
+  async uploadFiles( post_id: number, file: Express.Multer.File,
   ): Promise<PostCaption[]> {
     try {
       // Create the uploads directory if it doesn't exist

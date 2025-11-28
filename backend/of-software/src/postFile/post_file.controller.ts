@@ -18,7 +18,9 @@ import { DeleteManyDto } from 'src/dtos/delete-many.dto';
 @Controller('post_file')
 @ApiTags('post_file')
 export class PostFileController {
-  constructor(private readonly postFileService: PostFileService) {}
+  constructor(
+    private readonly postFileService: PostFileService
+  ) {}
 
   @Get('all')
   @ApiBearerAuth('jwt')
