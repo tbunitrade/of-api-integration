@@ -556,6 +556,29 @@ def _handle_append_medias(driver, step, post_data, state):
         except Exception as e:
             print(f"⚠️ Failed to inspect dropzone preview: {e}")
 
+            # 🔁 Дождаться, пока OnlyFans закончит обработку медиа
+        try:
+            def upload_settled(drv):
+                # cards типа <div class="post_media m-processing m-uploading-media m-default-bg">
+                cards = drv.find_elements(By.CSS_SELECTOR, ".post_media")
+                if not cards:
+                    # если ни одной карточки нет – пока считаем, что рано
+                    return False
+                for c in cards:
+                    cls = (c.get_attribute("class") or "")
+                    if "m-processing" in cls or "m-uploading-media" in cls:
+                        # всё ещё в процессе
+                        return False
+                # ни одной карточки с флагами загрузки → ок
+                return True
+
+            print("⏳ appendMedias: waiting for post_media to finish processing…")
+            WebDriverWait(driver, 60).until(upload_settled)
+            print("✅ appendMedias: upload finished (no m-processing / m-uploading-media).")
+        except Exception as e:
+            print(f"⚠️ appendMedias: upload still marked as processing after timeout: {e}")
+
+
         try:
             def any_preview(drv):
                 sels = [
