@@ -43,52 +43,94 @@ POST_STEPS = [
         "timeout": 15000,
     },
 
-    # {
-    #     "type": "runScript",
-    #     "key": "content_url",
-    #     "value": """
-    #     const fileUrl = arguments[0];
-    #     if (!fileUrl) {
-    #         console.log('❌ No fileUrl passed to step.');
-    #         return;
-    #     }
-    #
-    #     fetch(fileUrl)
-    #       .then(res => {
-    #         const contentType = res.headers.get("Content-Type") || "application/octet-stream";
-    #         return res.blob().then(blob => ({ blob, contentType }));
-    #       })
-    #       .then(({ blob, contentType }) => {
-    #         const extension = contentType.split("/")[1] || "media";
-    #         const file = new File([blob], `media.${extension}`, { type: contentType });
-    #
-    #         const dt = new DataTransfer();
-    #         dt.items.add(file);
-    #
-    #         const zone = document.querySelector('.b-make-post__wrapper');
-    #         if (!zone) {
-    #             console.log('❌ Drop zone not found');
-    #             return;
-    #         }
-    #
-    #         const rect = zone.getBoundingClientRect();
-    #         const ev = new DragEvent('drop', {
-    #           bubbles: true,
-    #           cancelable: true,
-    #           dataTransfer: dt,
-    #           clientX: rect.left + 20,
-    #           clientY: rect.top + 20
-    #         });
-    #
-    #         zone.dispatchEvent(ev);
-    #         console.log('📸 Dropped media via fetch:', file.name, 'MIME:', contentType);
-    #       })
-    #       .catch(err => {
-    #         console.log('❌ Failed to fetch media:', err);
-    #       });
-    #
-    # """
-    # },
+    # 🔁 Дополнительная пауза, чтобы OnlyFans проглотил видео до конца
+    { "type": "waitForTime", "value": "15000" },
+
+    # ----------------------------------------------------------
+    # 3) Schedule post — POPUP
+    # ----------------------------------------------------------
+
+    # ⛔ Важно — открывать ТОЛЬКО sticky panel кнопку
+    { "type": "click", "value": ".b-make-post__sticky-panel button[at-attr='scheduled_msg']", "safeguard": True },
+    { "type": "waitForTime", "value": "900" },
+    { "type": "waitForSelector", "value": ".vdatetime-popup" },
+
+    # Tabs
+    { "type": "waitForSelector", "value": ".vdatetime-popup__tab.date, .vdatetime-popup__tab--date" },
+    { "type": "click", "value": ".vdatetime-popup__tab.date, .vdatetime-popup__tab--date", "safeguard": True },
+    { "type": "waitForTime", "value": "500" },
+
+    # ----------------------------------------------------------
+    # 3.1) Month — replaced clickUntil (Safari-friendly)
+    # ----------------------------------------------------------
+    {
+        "type": "clickUntil",
+        "key": "message_month",
+        "value": "$value",
+        "selector": ".vdatetime-calendar__current--month",
+        "btnSelector": ".vdatetime-calendar__navigation--next",
+        "retry": 24
+    },
+
+    { "type": "waitForTime", "value": "500" },
+
+    # ----------------------------------------------------------
+    # 3.2) Day — Safari DOM → need span/span
+    # ----------------------------------------------------------
+    {
+        "type": "clickForValue",
+        "key": "message_date",
+        "selector": ".vdatetime-calendar__month__day span span",
+        "value": "$value",
+        "safeguard": True
+    },
+
+    { "type": "waitForTime", "value": "500" },
+
+    # ----------------------------------------------------------
+    # 3.3) Time Время — переключение таба
+    # ----------------------------------------------------------
+    { "type": "click", "value": ".vdatetime-popup__tab.time", "safeguard": True },
+    { "type": "waitForTime", "value": "400" },
+
+    # 3.4 AM / PM
+    {
+        "type": "clickForValue",
+        "key": "message_time_suffix",
+        "selector": ".vdatetime-time-picker__list--suffix .vdatetime-time-picker__item",
+        "value": "$value",
+        "safeguard": True
+    },
+
+    # 3.5 Hour
+    {
+        "type": "clickForValue",
+        "key": "message_hour",
+        "selector": ".vdatetime-time-picker__list--hours .vdatetime-time-picker__item",
+        "value": "$value",
+        "safeguard": True
+    },
+
+    # 3.6 Minute
+    {
+        "type": "clickForValue",
+        "key": "message_minute",
+        "selector": ".vdatetime-time-picker__list--minutes .vdatetime-time-picker__item",
+        "value": "$value",
+        "safeguard": True
+    },
+
+    # ----------------------------------------------------------
+    # 3.7) Done NEXT button
+    # ----------------------------------------------------------
+    { "type": "waitForTime", "value": "500" },
+    {
+        "type": "click",
+        "value": ".vdatetime-popup__actions__button--confirm button",
+        "safeguard": True
+    },
+
+    { "type": "waitForTime", "value": "900" },
 
     # ----------------------------------------------------------
     # 10) Publish
