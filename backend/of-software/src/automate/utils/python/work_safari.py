@@ -423,6 +423,14 @@ def _handle_append_medias(driver, step, post_data, state):
         print(f"⚠️ Failed to chmod file: {e}")
         return state.mark_failed()
 
+    # Немного sanity-check, чтобы видеть что реально существует
+    try:
+        if not os.path.isfile(safe_path):
+            print(f"❌ File not found at safe_path: {safe_path}")
+        if not os.path.isfile(file_path):
+            print(f"❌ File not found at original file_path: {file_path}")
+    except Exception as e:
+        print(f"⚠️ os.path.isfile check failed: {e}")
 
     try:
         el = None
@@ -492,8 +500,26 @@ def _handle_append_medias(driver, step, post_data, state):
             return state.mark_skipped()
 
         driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", el)
-        print(f"📁 appendMedias: Uploading {safe_path} into input[type='file']")
-        el.send_keys(safe_path)
+
+        # 🔁 1) сначала пробуем temp-путь (/tmp/of_uploads/…)
+        try:
+            print(f"📁 appendMedias: Uploading {safe_path} into input[type='file']")
+            el.send_keys(safe_path)
+        except Exception as e1:
+            print(
+                f"❌ appendMedias: Safari rejected temp path {safe_path}: {e1}. "
+                f"Trying original file_path: {file_path}"
+            )
+
+            # 🔁 2) fallback — пробуем прямой путь из /uploads/…
+            try:
+                print(f"📁 appendMedias: Retrying upload with original path {file_path}")
+                el.send_keys(file_path)
+            except Exception as e2:
+                print(
+                    f"❌ appendMedias: Safari rejected original path {file_path} too: {e2}"
+                )
+                return state.mark_failed()
 
         try:
             WebDriverWait(driver, 20).until_not(
