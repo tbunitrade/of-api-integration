@@ -60,10 +60,17 @@ const useCronStore = defineStore({
         throw error
       }
     },
-    async triggerPostCronJobManuallyWithSafariFingerPrint( waitForManualLogin = false) {
-      console.log('🔥 triggerPostCronJobManuallyWithSafari action called with waitForManualLogin =', waitForManualLogin);
+    async triggerPostCronJobManuallyWithSafariFingerPrint( modelPlatformId, waitForManualLogin = false) {
+      console.log('🔥 triggerPostCronJobManuallyWithSafari action called with modelPlatformId = ',
+        modelPlatformId, 'waitForManualLogin =', waitForManualLogin);
       try {
         const params = new URLSearchParams();
+
+        // обязательно отправляем ID выбранной modelPlatform
+        if (modelPlatformId) {
+          params.append('modelPlatformId', String(modelPlatformId));
+        }
+
         if (waitForManualLogin) {
           params.append('waitForManualLogin', 'true');
         }

@@ -7,7 +7,10 @@ const useModelStore = defineStore({
   state: () => ({
     isLoading: false,
     models: [],
-    selectedModel: null
+    selectedModel: {
+     id: null,
+     name : ''
+    }
   }),
   actions: {
     setSelectedModel(model) {

@@ -7,7 +7,10 @@ const usePlatformStore = defineStore({
   state: () => ({
     isLoading: false,
     platforms: [],
-    selectedPlatform: null
+    selectedPlatform: {
+      id: null,
+      name: ''
+    }
   }),
   actions: {
     setSelectedPlatform(selectedPlatform) {

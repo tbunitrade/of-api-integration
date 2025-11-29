@@ -29,12 +29,13 @@ const selectedModel = ref({
 const isModalDangerActive = ref(false);
 const deleteCallback = ref(null);
 
+//# единственное упоминание selectedModelPlatform
 const selectedModelPlatform = ref({
-  model_id: null,
-  platform_id: null,
-  username: '',
-  fingerprint_username: '',
-  password: ''
+  model_id: null, //
+  platform_id: null, //
+  username: '', //
+  fingerprint_username: '', //
+  password: '' //
 });
 
 const isModalActive = ref(false);
@@ -47,16 +48,16 @@ const rules = computed(() => (
     name: { required, minLength: minLength(2) },
 
   }));
-const modelPlatfromRules = computed(() => (
+const modelPlatformRules = computed(() => (
   {
-    model_id: { required },
-    platform_id: { required },
-    username: { required, minLength: minLength(2) },
-    fingerprint_username: { required, minLength: minLength(2) },
-    password: { required, minLength: minLength(2) },
+    model_id: { required }, //
+    platform_id: { required },//
+    username: { required, minLength: minLength(2) },//
+    fingerprint_username: { required, minLength: minLength(2) },//
+    password: { required, minLength: minLength(2) },//
   }));
-const $v = useVuelidate(rules, selectedModel);
-const $mpv = useVuelidate(modelPlatfromRules, selectedModelPlatform);
+const $v = useVuelidate(rules, selectedModel);//
+const $mpv = useVuelidate( modelPlatformRules, selectedModelPlatform );//
 
 
 const fetchData = async () => {
@@ -66,7 +67,6 @@ const fetchData = async () => {
     await modelPlatformStore.getAllModelPlatforms();
   } catch (error) {
     console.error('Error fetching data:', error);
-
   }
 };
 

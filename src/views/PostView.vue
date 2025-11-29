@@ -1,37 +1,117 @@
 <script setup>
-import { mdiMonitorCellphone, mdiTableBorder, mdiTableOff, mdiGithub, mdiPen, mdiTrashCan } from '@mdi/js';
-import SectionMain from '@/components/SectionMain.vue';
-import NotificationBar from '@/components/NotificationBar.vue';
-import TableSampleClients from '@/components/TableSampleClients.vue';
-import CardBox from '@/components/CardBox.vue';
-import FormControl from '@/components/FormControl.vue';
-import FormField from '@/components/FormField.vue';
-import LayoutAuthenticated from '@/layouts/LayoutAuthenticated.vue';
-import SectionTitleLineWithButton from '@/components/SectionTitleLineWithButton.vue';
 import BaseButton from '@/components/BaseButton.vue';
-import CardBoxComponentEmpty from '@/components/CardBoxComponentEmpty.vue';
-import BaseDivider from '@/components/BaseDivider.vue';
 import BaseButtons from '@/components/BaseButtons.vue';
+import BaseDivider from '@/components/BaseDivider.vue';
+import CardBox from '@/components/CardBox.vue';
 import CardBoxModal from '@/components/CardBoxModal.vue';
 import { computed, onMounted, ref } from 'vue';
-import { useModelStore, usePostStore, usePlatformStore, usePostTimeStore, usePostCaptionStore, usePostFileStore, useCronStore } from '@/stores';
+import {
+  useModelStore,
+  usePostStore,
+  usePlatformStore,
+  usePostTimeStore,
+  usePostCaptionStore,
+  usePostFileStore,
+  useCronStore,
+  useModelPlatformStore
+} from '@/stores';
 
 import PostImageVideoUpload from '@/components/PostImageVideoUpload.vue';
 import { useNotification } from '@kyvg/vue3-notification';
 
+const { notify } = useNotification();
+
+import { mdiMonitorCellphone, mdiTableBorder, mdiTableOff, mdiGithub, mdiPen, mdiTrashCan } from '@mdi/js';
+import SectionMain from '@/components/SectionMain.vue';
+import FormControl from '@/components/FormControl.vue';
+import FormField from '@/components/FormField.vue';
+import LayoutAuthenticated from '@/layouts/LayoutAuthenticated.vue';
+import SectionTitleLineWithButton from '@/components/SectionTitleLineWithButton.vue';
+import NotificationBar from '@/components/NotificationBar.vue';
+import TableSampleClients from '@/components/TableSampleClients.vue';
+import CardBoxComponentEmpty from '@/components/CardBoxComponentEmpty.vue';
 
 const postStore = usePostStore();
 const postTimeStore = usePostTimeStore();
 const postFileStore = usePostFileStore();
 const postCaptionStore = usePostCaptionStore();
-const { notify } = useNotification();
+
 const modelStore = useModelStore();
 const platformStore = usePlatformStore();
 const cronStore = useCronStore();
+const modelPlatformStore = useModelPlatformStore();
 
+/**
+ * @typedef {{ id: number|null, name: string }} Model
+ * @typedef {{ id: number|null, name: string }} Platform
+ */
 
+/** @type {import('vue').ComputedRef<Model>} */
 const selectedModel = computed(() => modelStore.selectedModel);
+/** @type {import('vue').ComputedRef<Platform>} */
 const selectedPlatform = computed(() => platformStore.selectedPlatform);
+
+// 🔹 Берём список связок из стора (имя массива подстрой, если у тебя другое)
+const modelPlatforms = computed(() => modelPlatformStore.model_platforms || []);
+
+// 🔹 Ищем связку model_platform по выбранной модели и платформе
+const selectedModelPlatform = computed(() => {
+  if (!selectedModel.value?.id || !selectedPlatform.value?.id ) return null;
+
+    const res =
+        modelPlatforms.value.find((mp) => {
+          // поддерживаем оба варианта: model_id / platform_id ИЛИ вложенные model.id / platform.id
+          //   const mpModelId =
+          //     mp.model_id !== undefined && mp.model_id !== null
+          //       ? mp.model_id
+          //         : mp.model && mp.model.id;
+
+          // const mpPlatformId =
+          //   mp.platform_id !== undefined && mp.platform_id !== null
+          //     ? mp.platform_id
+          //       : mp.platform && mp.platform.id;
+
+          // 1) Определяем model_id (или из поля, или из вложенного объекта)
+          const mpModelId =
+            mp.model_id ??
+            (mp.model && mp.model.id) ??
+            null;
+
+          // 2) Проверяем, привязана ли к этой связке нужная платформа
+          let platformMatch = false;
+
+          if (Array.isArray(mp.platforms) && mp.platforms.length) {
+            // 👉 у тебя именно так: platforms: [ { id: 1, name: 'onlyfans', ... } ]
+            platformMatch = mp.platforms.some(
+              (p) => p.id === selectedPlatform.value.id
+            );
+          } else {
+            // запасной вариант на будущее
+            const mpPlatformId =
+              mp.platform_id ??
+              (mp.platform && mp.platform.id) ??
+              null;
+
+            platformMatch = mpPlatformId === selectedPlatform.value.id;
+          }
+
+          return mpModelId === selectedModel.value.id && platformMatch;
+          //mpPlatformId === selectedPlatform.value.id
+        }) || null;
+
+    console.log('[PostView] selectedModel:', selectedModel.value);
+    console.log('[PostView] selectedPlatform:', selectedPlatform.value);
+    console.log('[PostView] modelPlatforms:', modelPlatforms.value);
+    console.log('[PostView] selectedModelPlatform:', res);
+
+  return res;
+});
+
+// Берём именно ID, который нужен для cron/manual-start-safari-finger-print
+// 🔹 Нам нужен именно ID model_platform, чтобы отправить в cron
+const selectedModelPlatformId = computed(() =>
+  selectedModelPlatform.value ? selectedModelPlatform.value.id : null,
+);
 
 const fileInputRef = ref(null);
 const isContentModalActive = ref(false);
@@ -334,15 +414,27 @@ const clickCaptionRow = (id) => {
 
 const fetchData = async () => {
   try {
+    // 1) Если модель или платформа не выбраны — даже не идём в бекенд
+    if (!selectedModel.value?.id || !selectedPlatform.value?.id) {
+      console.log(
+        '[PostView:fetchData] no selected model/platform yet:',
+        selectedModel.value,
+        selectedPlatform.value
+      );
+      return;
+    }
+
+    // 2) Готовим params для getPost
     const params = {
       model_id: selectedModel.value.id,
       platform_id: selectedPlatform.value.id,
     };
+
     const result = await postStore.getPost(params);
     postTimeStore.post_times = result.post_times;
+
   } catch (error) {
     console.error('Error fetching data:', error);
-
   }
 };
 
@@ -377,11 +469,27 @@ const onStartCronJobManuallyWithSafari = async (wait) => {
 };
 
 const onStartCronJobManuallyWithSafariFingerPrint = async (wait) => {
-  await cronStore.triggerPostCronJobManuallyWithSafariFingerPrint();
+  const mpId = selectedModelPlatformId.value;
+  console.log(
+    '[PostView] onStartCronJobManuallyWithSafariFingerPrint, modelPlatformId =',
+    mpId,
+  );
+
+  if (!mpId) {
+    notify({
+      title: 'Error',
+      type: 'error',
+      text: 'Please select Model and Platform before starting Safari FingerPrint job',
+    });
+    return;
+  }
+
+  await cronStore.triggerPostCronJobManuallyWithSafariFingerPrint(mpId, true);
+
   notify({
-    title: "Success",
-    type: "success",
-    text: "Cron job started!",
+    title: 'Success',
+    type: 'success',
+    text: 'Safari FingerPrint cron job started',
   });
 };
 
@@ -488,8 +596,12 @@ const onRestartServer = async () => {
 }
 
 
-onMounted(() => {
-  if (!selectedModel.value || !selectedPlatform.value) {
+onMounted(async () => {
+  // 1️⃣ Подтягиваем пост + post_times
+  await fetchData();
+
+  // 2️⃣ Проверяем, выбраны ли Model и Platform
+  if (!selectedModel.value?.id || !selectedPlatform.value?.id ) {
     notify({
       title: "Warning",
       type: "error",
@@ -497,7 +609,19 @@ onMounted(() => {
     });
     return;
   }
-  fetchData();
+
+  // подтянем связки, если нужно
+  try {
+    await modelPlatformStore.getAllModelPlatforms();
+  } catch (e) {
+    console.error('[PostView:onMounted] failed to load modelPlatforms:', e);
+  }
+
+
+  // 3️⃣ Просто логируем, что у нас есть в store
+  console.log('[PostView:onMounted] selectedModel:', selectedModel.value);
+  console.log('[PostView:onMounted] selectedPlatform:', selectedPlatform.value);
+  console.log('[PostView:onMounted] modelPlatforms from store:', modelPlatforms.value);
 
 });
 
@@ -516,7 +640,7 @@ onMounted(() => {
           @click="onManualClick"
         />
         <BaseButton label="Safari Mode" color="info" rounded small @click="onStartCronJobManuallyWithSafari(false);" />
-        <BaseButton label="Safari FingerPrint" color="info" rounded small @click="onStartCronJobManuallyWithSafariFingerPrint(false);" />
+        <BaseButton label="Safari FingerPrint" color="info" rounded small @click="onStartCronJobManuallyWithSafariFingerPrint(true);" />
       </SectionTitleLineWithButton>
 
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
