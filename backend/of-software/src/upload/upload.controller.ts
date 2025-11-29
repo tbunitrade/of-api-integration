@@ -123,7 +123,7 @@ export class FileUploadController {
 
             const ext = path.extname(file.originalname);
             const base = path.basename(file.originalname, ext ).replace(/\s+/g, '_');
-            let finalName = `${uniqueSuffix}-${base}${ext}`;
+            let finalName = `${base}-${uniqueSuffix}${ext}`;
 
             // destination уже вычислён раньше; Multer прокидывает его в file.destination
             const dest = ( file as any ).destination || resolveModelFolder('unknown-model');
@@ -131,7 +131,7 @@ export class FileUploadController {
 
             // если такое имя вдруг уже есть — добьём случайный хвост
             if (fs.existsSync(full)) {
-              finalName = `${uniqueSuffix}-${Math.round(Math.random() * 1e9)}-${base}${ext}`;
+              finalName = `${base}-${uniqueSuffix}-${Math.round(Math.random() * 1e9)}${ext}`;
             }
             cb( null, finalName)
 

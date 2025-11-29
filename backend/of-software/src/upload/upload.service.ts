@@ -17,16 +17,25 @@ export class FileUploadService {
   }
 
   async uploadFiles (files: Express.Multer.File[]): Promise<string[]> {
+    return Promise.all(
+      files.map( async (file) => {
+        // Multer с diskStorage кладёт в file.destination + file.filename
+        const full = path.resolve(file.destination, file.filename);
+        console.log(`📂 Saved file: ${full} (${(file.size / (1024 * 1024)).toFixed(2)} MB)`);
 
-    return files.map((file) => {
-      // Multer с diskStorage кладёт в file.destination + file.filename
-      const full = path.resolve(file.destination, file.filename);
-      console.log(`📂 Saved file: ${full} (${(file.size / (1024 * 1024)).toFixed(2)} MB)`);
-      const publicUrl = toPublicUrl(full);
+        // 🟢 Делаем файл world-readable: -rw-rw-r-- (664)
+        try {
+          await fs.promises.chmod(full, 0o664);
+          console.log(`[upload] chmod 664 applied to ${full}`);
+        } catch (err) {
+          console.warn('[upload] chmod 664 failed for', full, err);
+        }
 
-      console.log('[upload] public url:', publicUrl);
-      return publicUrl; // <-- важно
-    });
+        const publicUrl = toPublicUrl(full);
+        console.log('[upload] public url:', publicUrl);
+        return publicUrl; // <-- важно
+      }),
+    );
   }
   async getAllFiles(): Promise<string[]> {
     try {
