@@ -40,7 +40,7 @@ POST_STEPS = [
     {
         "type": "waitForSelector",
         "value": ".b-dropzone__preview, .b-dropzone__item, .b-dropzone__video",
-        "timeout": 15000,
+        "timeout": 5000,
     },
 
     # 🔁 Дополнительная пауза, чтобы OnlyFans проглотил видео до конца

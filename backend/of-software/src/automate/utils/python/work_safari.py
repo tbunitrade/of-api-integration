@@ -559,17 +559,22 @@ def _handle_append_medias(driver, step, post_data, state):
             # 🔁 Дождаться, пока OnlyFans закончит обработку медиа
         try:
             def upload_settled(drv):
-                # cards типа <div class="post_media m-processing m-uploading-media m-default-bg">
-                cards = drv.find_elements(By.CSS_SELECTOR, ".post_media")
-                if not cards:
-                    # если ни одной карточки нет – пока считаем, что рано
+                # 1) Если есть прогресс-бар — всё ещё грузится
+                progress = drv.find_elements(
+                    By.CSS_SELECTOR,
+                    ".b-dropzone__preview__progress"
+                )
+                if progress:
                     return False
+
+                # 2) Проверяем карточки .post_media на флаги "в процессе"
+                cards = drv.find_elements(By.CSS_SELECTOR, ".post_media")
                 for c in cards:
-                    cls = (c.get_attribute("class") or "")
+                    cls = (c.get_attribute("class") or "") or ""
                     if "m-processing" in cls or "m-uploading-media" in cls:
-                        # всё ещё в процессе
                         return False
-                # ни одной карточки с флагами загрузки → ок
+
+                # 3) Нет прогресса и нет processing-флагов → считаем, что всё готово
                 return True
 
             print("⏳ appendMedias: waiting for post_media to finish processing…")
@@ -672,10 +677,10 @@ def _exec_one_step(driver, step, post_data, state):
 
 
 # ============================================================
-# MAIN
+# work — универсальный исполнитель шагов (waitFor, click, appendMedias и т.д.)
 # ============================================================
-
 def work(driver, steps, post_data):
+    """Идёт по steps по очереди и выполняет действия (клики, ввод, загрузку медиа) в Safari."""
     main_handle = driver.current_window_handle
     driver.switch_to.window(main_handle)
     state = RuntimeState()

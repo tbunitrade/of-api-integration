@@ -7,8 +7,12 @@ from work_safari import work
 from post_steps import POST_STEPS
 from selenium.webdriver.common.by import By
 
-
+# ============================================================
+# inject_payload_into_steps — подставляет значения postData
+# в шаги POST_STEPS вместо плейсхолдеров вида $key
+# ============================================================
 def inject_payload_into_steps(steps, cli_payload):
+    """Рекурсивно проходит по steps и заменяет строки с плейсхолдерами $key на значения из cli_payload."""
     def deep_replace(obj, payload):
         if isinstance(obj, dict):
             new_dict = {}
@@ -30,8 +34,11 @@ def inject_payload_into_steps(steps, cli_payload):
         injected_steps.append(deep_replace(step, cli_payload))
     return injected_steps
 
-
+# ============================================================
+# create_post — открывает /posts/create и выполняет POST_STEPS
+# ============================================================
 def create_post(safari_driver, cli_payload):
+    """Открывает страницу создания поста, подставляет postData в шаги и запускает work()."""
     post_model_id = cli_payload.get("model_id")
     print(f"🧩 Starting post workflow for model {post_model_id}")
 

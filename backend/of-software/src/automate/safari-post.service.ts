@@ -93,24 +93,58 @@ function buildSafariPayload(data: any, useFingerPrint = false) {
   const files = data.postFiles || [];
   const times = postWithTimes.post_times || [];
 
-  const scheduledDate = data.scheduledDate
-    ? new Date(data.scheduledDate)
-    : new Date();
-
-  const [_hour, minutes = '00'] = (times[0]?.time || '12:00').split(':');
-  const hour = parseInt(_hour) % 12 || 12;
-  const suffix = parseInt(_hour) >= 12 ? 'pm' : 'am';
-
-  //const caption = captions[0]?.caption || '';
-  //const file = files[0]?.url || '';
-
-  //const caption = captions.find(c => c.status !== 'done');
-  //const file = files.find(f => f.status !== 'done');
-
   // 👇 инфа от очереди
   const queueSelection = (data as any).queueSelection as
     | { captionIndex: number; fileIndex: number }
     | undefined;
+
+  const scheduledDate = data.scheduledDate
+    ? new Date(data.scheduledDate)
+    : new Date();
+
+  // 🔹 Время берём из scheduledDate (истина), а times[0] оставляем как fallback
+  let hour24: number;
+  let minutes: string;
+
+  if (data.scheduledDate) {
+    // если пришёл явный scheduledDate из планировщика — ему верим
+    hour24 = scheduledDate.getHours();
+    minutes = String(scheduledDate.getMinutes()).padStart(2, '0');
+  } else if (times.length > 0) {
+    // ручной запуск: берём время из post_times по fileIndex, если он в диапазоне
+    const timeIndex =
+      queueSelection && typeof queueSelection.fileIndex === 'number'
+        ? Math.min(queueSelection.fileIndex, times.length - 1)
+        : 0;
+
+    const rawTime = times[timeIndex]?.time || '12:00';
+    // '23:18:00' → ['23', '18', '00']
+    const [ _hour, min = '00' ] = String(rawTime).split(':');
+    hour24 = parseInt(_hour, 10) || 12;
+    minutes = (min || '00').padStart(2, '0');
+  } else {
+    // вообще нет инфы → дефолт
+    hour24 = 12;
+    minutes = '00';
+  }
+
+  const hour = hour24 % 12 || 12;
+  const suffix = hour24 >= 12 ? 'pm' : 'am';
+
+  console.log('[buildSafariPayload] time source', {
+    scheduledDate: data.scheduledDate,
+    hour24,
+    minutes,
+    suffix,
+    times,
+    queueSelection,
+  });
+
+  // const [_hour, minutes = '00'] = (times[0]?.time || '12:00').split(':');
+  // const hour = parseInt(_hour) % 12 || 12;
+  // const suffix = parseInt(_hour) >= 12 ? 'pm' : 'am';
+
+
 
   let captionText = '';
   let fileUrl = '';
@@ -133,30 +167,6 @@ function buildSafariPayload(data: any, useFingerPrint = false) {
     }
   }
 
-  // =====================================================
-  // 🟦 Encode file to base64 for Safari drag&drop
-  // =====================================================
-  // let contentBase64 = "";
-  // let fileName = "";
-  // let mime = "image/jpeg";
-  //
-  // if (fileUrl) {
-  //   try {
-  //     const absPath = path.join(
-  //       process.cwd(),
-  //       "uploads",
-  //       fileUrl.replace(/^\/uploads\/?/, "")
-  //     );
-  //
-  //     const fileBuf = fs.readFileSync(absPath);
-  //     contentBase64 = fileBuf.toString("base64");
-  //
-  //     fileName = path.basename(absPath);
-  //
-  //   } catch (e) {
-  //     console.log("❌ Failed to load file for base64:", e);
-  //   }
-  // }
   let contentPath: string | null = null;
   let publicUrl: string | null = null;
 
@@ -211,7 +221,6 @@ function buildSafariPayload(data: any, useFingerPrint = false) {
 
   return payload;
 }
-
 
 function getSafariPaths(modelId: any, platformId: any) {
   const basePath = path.resolve(process.cwd(), 'src/automate/utils/python');
