@@ -74,6 +74,7 @@ async function ensureUploadsServer() {
 
 
 function buildSafariPayload(data: any, useFingerPrint = false) {
+  const numberOfDays = data.numberOfDays ?? 0;
   const payload: Record<string, any> = {
     platform_id: data.platform_id,
     model_id: data.model_id,
@@ -133,6 +134,7 @@ function buildSafariPayload(data: any, useFingerPrint = false) {
 
   console.log('[buildSafariPayload] time source', {
     scheduledDate: data.scheduledDate,
+    numberOfDays,
     hour24,
     minutes,
     suffix,
@@ -201,6 +203,7 @@ function buildSafariPayload(data: any, useFingerPrint = false) {
     content_path: contentPath,
     content_mime: null,
     message: captionText, // ⬅️ ВАЖНО: строка, а не массив captions
+    number_of_days: numberOfDays,
     message_month: scheduledDate
       .toLocaleString('default', { month: 'long' })
       .toLowerCase(),
@@ -360,6 +363,9 @@ export class SafariPostService {
   // ====================================================================================
   // 🟧 2) startPostSafariFingerPrint (Passwordless / Touch/FaceID)
   // ====================================================================================
+  // ====================================================================================
+  // 🟧 2) startPostSafariFingerPrint (Passwordless / Touch/FaceID)
+  // ====================================================================================
   async startPostSafariFingerPrint(data: any) {
     // 1️⃣ Поднять сервер, если его ещё нет
     ensureUploadsServer().catch((err) => {
@@ -384,42 +390,28 @@ export class SafariPostService {
       return { ok: false };
     }
 
-    // 🔹 Лимит 50 постов в сутки
-    const limitCheck =  await this.modelLimitService.canSchedulePost(modelPlatformId);
+    // 📅 Сколько дней и от какой базовой даты считаем
+    const numberOfDays: number = data.numberOfDays || 1;
+    const baseDate: Date =
+      data.scheduledDate ? new Date(data.scheduledDate) : new Date();
 
-    if ( !limitCheck.allowed ) {
-      console.log(
-        `[LIMIT] 50 posts/24h exceeded for modelPlatform=${modelPlatform.id}. Reset at ${limitCheck.resetAt.toISOString()}`
-      );
+    const postTimes = postWithTimesAndCaptions.post_times || [];
+    const totalTimes = postTimes.length || 1;
 
-      // либо return false / throw / пометить в
-
-      await this.automateLogger.log({
-        modelPlatformId,
-        type: 'post',
-        step: 'scheduling',
-        status: 'fail',
-        message: `24h post limit reached (50/50). Reset at ${limitCheck.resetAt.toISOString()}`,
-      });
-
-      return { ok: false, reason: 'daily-limit' };
+    // 🔢 сколько всего запусков Python будет (дни * валидные post_times)
+    let totalRuns = 0;
+    for (let d = 0; d < numberOfDays; d++) {
+      for (const pt of postTimes) {
+        if (pt && pt.time) {
+          totalRuns++;
+        }
+      }
     }
 
-
-    const { captionIndex, fileIndex } = await this.postQueueService.getNext(
-      modelPlatformId,
-      postWithTimesAndCaptions.id,
-    );
-
-    // передаём выбор в buildSafariPayload
-    (data as any).queueSelection = { captionIndex, fileIndex };
-
-    console.log('[SafariPostService] Queue selection →', {
-      modelPlatformId,
-      postId: postWithTimesAndCaptions.id,
-      captionIndex,
-      fileIndex,
-    });
+    if (totalRuns === 0) {
+      console.log('[SafariPostService] ❌ Нет активных post_times → нечего постить');
+      return { ok: false };
+    }
 
     try {
       const { basePath, pythonPath, scriptPath, cookiePath } = getSafariPaths(
@@ -427,54 +419,138 @@ export class SafariPostService {
         data.platform_id
       );
 
-      const payload = buildSafariPayload(data, true);
-
-      const logPath = path.join(
-        basePath,
-        `debug_log/debug_safari_fp_${Date.now()}.log`
-      );
-
-      const dir = path.dirname(logPath);
-      if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir, { recursive: true });
+      const logDir = path.join(basePath, 'debug_log');
+      if (!fs.existsSync(logDir)) {
+        fs.mkdirSync(logDir, { recursive: true });
       }
 
-      let skipLogin = false;
+      let scheduledCount = 0;
+      let runIndex = 0; // сколько запусков Python уже произошло
 
-      if (fs.existsSync(cookiePath)) {
-        const ageH =
-          (Date.now() - fs.statSync(cookiePath).mtimeMs) / 1000 / 60 / 60;
+      // 🔁 Внешний цикл по дням (как в PuppeteerPostService)
+      outerLoop:
+        for (let dayOffset = 0; dayOffset < numberOfDays; dayOffset++) {
+          const dayDate = new Date(baseDate);
+          dayDate.setDate(baseDate.getDate() + dayOffset);
 
-        if (ageH < 48) {
           console.log(
-            `[startPostSafariFingerPrint] 🍪 Cookies age ${ageH.toFixed(
-              1
-            )}h — skip login`
+            `[SafariPostService] Day #${dayOffset} → ${dayDate.toISOString()}`
           );
-          skipLogin = true;
+
+          // 🔁 Внутренний цикл по всем post_times
+          for (let timeIndex = 0; timeIndex < totalTimes; timeIndex++) {
+            // ⛔ Проверка лимита 50 постов/сутки перед КАЖДЫМ постом
+            const limitCheck = await this.modelLimitService.canSchedulePost(modelPlatformId);
+
+            if (!limitCheck.allowed) {
+              console.log(
+                `[LIMIT] 50 posts/24h exceeded for modelPlatform=${modelPlatform?.id}. Reset at ${limitCheck.resetAt.toISOString()}`
+              );
+
+              await this.automateLogger.log({
+                modelPlatformId,
+                type: 'post',
+                step: 'scheduling',
+                status: 'fail',
+                message: `24h post limit reached (50/50). Reset at ${limitCheck.resetAt.toISOString()}`,
+              });
+
+              break outerLoop;
+            }
+
+            const postTime = postTimes[timeIndex];
+            if (!postTime || !postTime.time) continue;
+
+            // ✅ это реальный запуск → увеличиваем счётчик
+            runIndex++;
+            const remainingRuns = totalRuns - runIndex; // сколько запусков останется ПОСЛЕ этого
+            console.log(
+              `[SafariPostService] runIndex=${runIndex}/${totalRuns}, remainingRuns=${remainingRuns}`
+            );
+
+            // time в БД вида "08:22:00"
+            const [hourStr, minuteStr = '00'] = String(postTime.time).split(':');
+            const hour24 = parseInt(hourStr, 10) || 0;
+            const minuteNum = parseInt(minuteStr, 10) || 0;
+
+            const scheduledDt = new Date(dayDate);
+            scheduledDt.setHours(hour24, minuteNum, 0, 0);
+
+            console.log(
+              `[SafariPostService] Scheduling post at ${scheduledDt.toISOString()} (timeIndex=${timeIndex})`
+            );
+
+            // 🎲 Берём следующий caption/file из очереди
+            const { captionIndex, fileIndex } = await this.postQueueService.getNext(
+              modelPlatformId,
+              postWithTimesAndCaptions.id,
+            );
+
+            const loopData: any = {
+              ...data,
+              scheduledDate: scheduledDt.toISOString(),
+              queueSelection: { captionIndex, fileIndex },
+              numberOfDays: remainingRuns,
+            };
+
+            console.log('[SafariPostService] Queue selection →', {
+              modelPlatformId,
+              postId: postWithTimesAndCaptions.id,
+              captionIndex,
+              fileIndex,
+            });
+
+            // 🧩 Собираем payload с учётом scheduledDate + queueSelection
+            const payload = buildSafariPayload(loopData, true);
+
+            const logPath = path.join(
+              basePath,
+              `debug_log/debug_safari_fp_${Date.now()}_${dayOffset}_${timeIndex}.log`
+            );
+
+            let skipLogin = false;
+
+            // 🔐 Поведение с cookie оставляем как у тебя было
+            if (fs.existsSync(cookiePath)) {
+              const ageH =
+                (Date.now() - fs.statSync(cookiePath).mtimeMs) / 1000 / 60 / 60;
+
+              if (ageH < 48) {
+                console.log(
+                  `[startPostSafariFingerPrint] 🍪 Cookies age ${ageH.toFixed(
+                    1
+                  )}h — skip login`
+                );
+                skipLogin = true;
+              }
+            }
+
+            // В fingerprint-режиме у тебя логин + постинг в одном скрипте,
+            // поэтому если реально нужно ВСЕГДА постить — можно убрать это if.
+            if (!skipLogin) {
+              console.log('[Safari FP] Running login as botuser…');
+
+              await runPythonAsBotUser(pythonPath, scriptPath, payload, logPath);
+
+              await new Promise(r => setTimeout(r, 1500));
+
+              if (fs.existsSync(logPath)) {
+                const out = fs.readFileSync(logPath, 'utf8');
+                console.log('----- SAFARI FINGERPRINT LOG -----');
+                console.log(out);
+                console.log('-----------------------------------');
+              }
+            }
+
+            if (modelPlatformId) {
+              await this.modelLimitService.increment(modelPlatformId);
+            }
+
+            scheduledCount++;
+          }
         }
-      }
 
-      if (!skipLogin) {
-        console.log('[Safari FP] Running login as botuser…');
-
-        await runPythonAsBotUser(pythonPath, scriptPath, payload, logPath);
-
-        await new Promise(r => setTimeout(r, 1500));
-
-        if (fs.existsSync(logPath)) {
-          const out = fs.readFileSync(logPath, 'utf8');
-          console.log('----- SAFARI FINGERPRINT LOG -----');
-          console.log(out);
-          console.log('-----------------------------------');
-        }
-      }
-
-      if (modelPlatformId) {
-        await this.modelLimitService.increment(modelPlatformId);
-      }
-
-      return { ok: true };
+      return { ok: scheduledCount > 0, scheduledCount };
     } catch (err) {
       console.log('[startPostSafariFingerPrint] ❌ Exception:', err);
       throw err;
