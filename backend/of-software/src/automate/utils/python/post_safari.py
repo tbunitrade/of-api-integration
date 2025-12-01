@@ -42,9 +42,17 @@ def create_post(safari_driver, cli_payload):
     post_model_id = cli_payload.get("model_id")
     print(f"🧩 Starting post workflow for model {post_model_id}")
 
-    post_data = cli_payload.get("postData", {})
-    number_of_days = int(post_data.get("number_of_days", 0))
-    print(f"📅 number_of_days (remainingRuns) from payload = {number_of_days}")
+    # post_data = cli_payload.get("postData", {})
+    # number_of_days = int(post_data.get("number_of_days", 0))
+    # print(f"📅 number_of_days (remainingRuns) from payload = {number_of_days}")
+
+    post_runs = cli_payload.get("postRuns")
+    single_post_data = cli_payload.get("postData", {})
+
+    if post_runs:
+        print(f"📅 Received {len(post_runs)} postRuns from payload")
+    else:
+        print("📅 No postRuns array, falling back to single postData")
 
     try:
         safari_driver.get("https://onlyfans.com/posts/create")
@@ -60,31 +68,69 @@ def create_post(safari_driver, cli_payload):
             time.sleep(1)
         else:
             print("⚠️ .b-feed not found after 30s, continuing anyway...")
+        if post_runs:
+            total = len(post_runs)
+            for idx, post_data in enumerate(post_runs, start=1):
+                print("\n============================================================")
+                print(f"▶️ Run {idx}/{total}")
+                print("📦 postData = ", post_data)
 
-        # Заменяем переменные в POST_STEPS
-        print("📦 postData = ", post_data)
-        steps = inject_payload_into_steps(POST_STEPS, post_data)
-        print(f"🚀 Loaded {len(steps)} steps for post execution.")
+                steps = inject_payload_into_steps(POST_STEPS, post_data)
+                print(f"🚀 Loaded {len(steps)} steps for post execution.")
 
-        # Передаём модифицированный steps в work()
-        work(safari_driver, steps, post_data)
+                work(safari_driver, steps, post_data)
 
-        print("✅ Post workflow finished successfully.")
+                print("✅ Post workflow finished for this run.")
+                # если нужно — можно добавить паузу:
+                # time.sleep(2)
+
+            print("\n✅ All postRuns processed successfully.")
+        else:
+            post_data = single_post_data
+            print("📦 postData = ", post_data)
+            steps = inject_payload_into_steps(POST_STEPS, post_data)
+            print(f"🚀 Loaded {len(steps)} steps for post execution.")
+
+            work(safari_driver, steps, post_data)
+
+            print("✅ Post workflow finished successfully.")
+
+    #     # Заменяем переменные в POST_STEPS
+    #     print("📦 postData = ", post_data)
+    #     steps = inject_payload_into_steps(POST_STEPS, post_data)
+    #     print(f"🚀 Loaded {len(steps)} steps for post execution.")
+    #
+    #     # Передаём модифицированный steps в work()
+    #     work(safari_driver, steps, post_data)
+    #
+    #     print("✅ Post workflow finished successfully.")
+    #
+    # except Exception as e:
+    #     print("❌ Error during post workflow:")
+    #     traceback.print_exc()
 
     except Exception as e:
         print("❌ Error during post workflow:")
         traceback.print_exc()
 
+    # finally:
+    #     try:
+    #         print("⏳ Waiting 2 seconds before closing Safari…")
+    #         time.sleep(10)
+    #         if number_of_days > 0:
+    #             # ещё будут запуски → оставляем живым
+    #             print(f"🛑 remainingRuns={number_of_days} → Safari driver НЕ закрываем.")
+    #         else:
+    #             print("🧹 Closing Safari driver via quit()…")
+    #             safari_driver.quit()
+    #     except Exception:
+    #         pass
     finally:
         try:
             print("⏳ Waiting 2 seconds before closing Safari…")
             time.sleep(10)
-            if number_of_days > 0:
-                # ещё будут запуски → оставляем живым
-                print(f"🛑 remainingRuns={number_of_days} → Safari driver НЕ закрываем.")
-            else:
-                print("🧹 Closing Safari driver via quit()…")
-                safari_driver.quit()
+            print("🧹 Closing Safari driver via quit()…")
+            safari_driver.quit()
         except Exception:
             pass
 
