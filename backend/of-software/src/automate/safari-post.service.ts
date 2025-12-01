@@ -82,6 +82,7 @@ function buildSafariPayload(data: any, useFingerPrint = false) {
 
   // 🔐 Auth mode
   if (useFingerPrint) {
+    console.log('[useFingerPrint] Auth mode started ', useFingerPrint);
     payload.fingerprint_username = data.fingerprint_username || '';
   } else {
     payload.email = data.username || '';
@@ -217,6 +218,35 @@ function buildSafariPayload(data: any, useFingerPrint = false) {
     passwordValue: data.password || '',
   };
 
+  // 🆔 IDs для Safari / cookies
+  (payload as any).model_id =
+    data.model_id ??
+    data.modelId ??
+    data.model?.id ??
+    data.modelPlatform?.model_id ??
+    data.modelPlatform?.model?.id ??
+    null;
+
+  (payload as any).platform_id =
+    data.platform_id ??
+    data.platformId ??
+    data.platform?.id ??
+    data.modelPlatform?.platform_id ??
+    data.modelPlatform?.platform?.id ??
+    null;
+
+  (payload as any).model_platform_id =
+    data.modelPlatformId ??
+    data.model_platform_id ??
+    data.modelPlatform?.id ??
+    null;
+
+  console.log("[buildSafariPayload] ids for cookies", {
+    model_id: (payload as any).model_id,
+    platform_id: (payload as any).platform_id,
+    model_platform_id: (payload as any).model_platform_id,
+  });
+
   console.log(
     '🧩 [buildSafariPayload] Final payload:',
     JSON.stringify(payload, null, 2)
@@ -230,9 +260,12 @@ function getSafariPaths(modelId: any, platformId: any) {
 
   const pythonPath = path.join(basePath, '.venv/bin/python');
   const scriptPath = path.join(basePath, 'start_login_safari.py');
+
+  // путь к cookies такой же, как в safari_session_manager.py
+  const cookieDir = path.resolve(process.cwd(), 'cookies');
   const cookiePath = path.join(
-    basePath,
-    `cookies/user_${modelId}_${platformId}_cookies.json`
+    cookieDir,
+    `user_${modelId}_${platformId}_cookies.json`
   );
 
   return { basePath, pythonPath, scriptPath, cookiePath };

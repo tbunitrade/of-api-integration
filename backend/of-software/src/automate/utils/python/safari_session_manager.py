@@ -5,40 +5,70 @@ from selenium.common.exceptions import InvalidSessionIdException, NoSuchWindowEx
 import json, os, time
 
 _sessions = {}
-COOKIES_DIR = os.path.join(os.path.dirname(__file__), "cookies")
+
+# БАЗОВАЯ ПАПКА ПРОЕКТА: of-software/
+BASE_DIR = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), "..", "..", "..", "..")
+)
+
+#COOKIES_DIR = os.path.join(os.path.dirname(__file__), "cookies")
+# ЕДИНАЯ ПАПКА ДЛЯ КУКОВ: of-software/cookies
+COOKIES_DIR = os.path.join(BASE_DIR, "cookies")
 os.makedirs(COOKIES_DIR, exist_ok=True)
 
+print(f"[safari_session_manager] COOKIES_DIR = {COOKIES_DIR}")
+
 def _cookies_path(model_id, platform_id):
+    if model_id is None or platform_id is None:
+        print(
+            f"⚠️ _cookies_path called with None: model_id={model_id}, platform_id={platform_id}"
+        )
     return os.path.join(COOKIES_DIR, f"user_{model_id}_{platform_id}_cookies.json")
 
 def _save_cookies(driver, model_id, platform_id):
     try:
         cookies = driver.get_cookies()
-        with open(_cookies_path(model_id, platform_id), "w") as f:
+        path = _cookies_path(model_id, platform_id)
+        with open(path, "w", encoding="utf-8") as f:
             json.dump(cookies, f)
-        print(f"🍪 Cookies saved for model {model_id} / platform {platform_id}")
+        print(f"🍪 Cookies saved for model {model_id} / platform {platform_id} at {path}")
     except Exception as e:
         print(f"⚠️ Failed to save cookies: {e}")
 
 def _load_cookies(driver, model_id, platform_id):
     path = _cookies_path(model_id, platform_id)
     if not os.path.exists(path):
-        print(f"ℹ️ No saved cookies for model {model_id} / platform {platform_id}")
+        print(f"ℹ️ No saved cookies for model {model_id} / platform {platform_id} (path={path})")
         return False
+
     try:
-        with open(path, "r") as f:
+        with open(path, "r", encoding="utf-8") as f:
             cookies = json.load(f)
+    except Exception as e:
+        print(f"⚠️ Failed to read cookies file {path}: {e}")
+        return False
+
+    if not isinstance(cookies, list):
+        print(f"⚠️ Cookies file has invalid format ({type(cookies)}) at {path}")
+        return False
+
+    try:
         driver.get("https://onlyfans.com")
         time.sleep(2)
+
         for cookie in cookies:
-            if "sameSite" in cookie and cookie["sameSite"] not in ["Strict", "Lax", "None"]:
-                cookie["sameSite"] = "Lax"
-            driver.add_cookie(cookie)
+            try:
+                if "sameSite" in cookie and cookie["sameSite"] not in ["Strict", "Lax", "None"]:
+                    cookie["sameSite"] = "Lax"
+                driver.add_cookie(cookie)
+            except Exception as e:
+                print(f"⚠️ Failed to add cookie {cookie.get('name')}: {e}")
+
         print(f"🍪 Cookies loaded for model {model_id} / platform {platform_id}")
         driver.refresh()
         return True
     except Exception as e:
-        print(f"⚠️ Failed to load cookies: {e}")
+        print(f"⚠️ Failed to load cookies into driver: {e}")
         return False
 
 def get_driver(model_id):
@@ -47,7 +77,6 @@ def get_driver(model_id):
         try:
             #_ = _sessions[model_id].current_url
             _ = _sessions[model_id].title
-
             print(f"♻️ Reusing existing Safari session for model {model_id}")
             return _sessions[model_id]
         except (InvalidSessionIdException, NoSuchWindowException, Exception) as e:

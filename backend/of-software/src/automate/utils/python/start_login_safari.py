@@ -4,7 +4,7 @@ from os import mkdir
 import logging
 from pathlib import Path
 from dotenv import load_dotenv
-import sys, json, time
+import sys, json, time, traceback
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
@@ -12,11 +12,11 @@ from selenium.webdriver.support import expected_conditions as EC
 from safari_session_manager import get_driver, load_cookies_before_login, save_cookies_after_login
 from solve_recaptcha_and_cloudflare import solve_recaptcha_and_insert_token
 from post_safari import create_post
-from safari_session_manager import get_driver
+#from safari_session_manager import get_driver
 
 print("🔥 ARGV:", sys.argv)
-payload = json.loads(sys.argv[1])
-print("🧩 Payload:", payload)
+#payload = json.loads(sys.argv[1])
+#print("🧩 Payload:", payload)
 
 #1.	crom.service.ts -> manualStartSafari or manualStartSafariFingerPrint
 #2.	automate.service.ts() (в TS) вызывает: → startPostSafariFingerPrint or startPostSafari с payload
@@ -57,6 +57,21 @@ logging.getLogger("urllib3").setLevel(logging.WARNING)
 logging.getLogger("selenium.webdriver.remote.remote_connection").setLevel(logging.WARNING)
 print("I started start_login_safari")
 
+def is_authorized(driver):
+    """
+    Простая проверка: есть ли .b-feed на текущей странице.
+    Считаем, что если .b-feed есть — пользователь уже авторизован.
+    """
+    try:
+        WebDriverWait(driver, 10).until(
+            EC.presence_of_element_located((By.CSS_SELECTOR, ".b-feed"))
+        )
+        print("✅ is_authorized: .b-feed detected, user is authenticated")
+        return True
+    except Exception as e:
+        print(f"⚠️ is_authorized: user is NOT authenticated ({e})")
+        return False
+
 def main():
     print("🔥 ARGV:", sys.argv)
     if len(sys.argv) < 2:
@@ -65,22 +80,42 @@ def main():
     try:
         payload = json.loads(sys.argv[1])
         print("🧩 Payload parsed:", payload)
+        # 🆔 IDs для Safari-сессии и кук
+        model_id = (
+                payload.get("model_id")
+                or payload.get("modelId")
+                or payload.get("model_platform_id")  # fallback, если вообще ничего нет
+        )
+        platform_id = (
+                payload.get("platform_id")
+                or payload.get("platformId")
+                or payload.get("model_platform_id")  # fallback для случаев "один id на всё"
+        )
+
+        print(f"🧩 Model/platform IDs for cookies: model_id={model_id}, platform_id={platform_id}")
     except Exception as e:
         print("❌ Error parsing payload:", e)
         sys.exit(1)
 
-    payload = json.loads(sys.argv[1])
+    #payload = json.loads(sys.argv[1])
 
+    # payload уже распарсен выше, повторно не парсим
     email = payload.get("email")
     password = payload.get("password")
-    model_id = payload.get("model_id")
-    platform_id = payload.get("platform_id")
+    # model_id и platform_id уже вычислены выше с fallback-логикой
     use_fingerprint = payload.get("fingerprint_username") is not None
     fingerprint_username = payload.get("fingerprint_username")
-    driver = get_driver(model_id)
 
-
-
+    try:
+        print(f"🚀 Creating Safari driver for model_id={model_id}")
+        driver = get_driver(model_id)
+        print(f"🍪 Trying to load cookies for model_id={model_id}, platform_id={platform_id}")
+        #load_cookies_before_login(driver, model_id, platform_id)
+        #print("✅ load_cookies_before_login finished")
+    except Exception as e:
+        print(f"❌ Error in get_driver/load_cookies: {e}")
+        traceback.print_exc()
+        sys.exit(1)
 
     print('Accepted cookies rules')
 
@@ -118,7 +153,7 @@ def main():
             print("🟢 Fingerprint username inserted")
 
             # 3️⃣ Сохраняем cookies
-            #save_cookies_after_login(driver, model_id, platform_id)
+            save_cookies_after_login(driver, model_id, platform_id)
             print("✨ cookies saved")
 
         except Exception as e:
@@ -234,9 +269,16 @@ def main():
             print("✨ Safari session kept alive after login (not closed)")
 
             # 3️⃣ Сохраняем cookies
-            #save_cookies_after_login(driver, model_id, platform_id)
+            save_cookies_after_login(driver, model_id, platform_id)
             print("✨ cookies saved")
             create_post(driver, payload)  # ← передаём текущий driver + payload
 
 if __name__ == "__main__":
-    main()
+    try:
+        print("🚀 start_login_safari.py __main__ entry")
+        main()
+        print("✅ start_login_safari.py finished without unhandled exceptions")
+    except Exception as e:
+        print("❌ Unhandled exception in start_login_safari.py:", e)
+        traceback.print_exc()
+        sys.exit(1)

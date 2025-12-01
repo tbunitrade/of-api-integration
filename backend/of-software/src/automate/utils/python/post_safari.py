@@ -43,6 +43,8 @@ def create_post(safari_driver, cli_payload):
     print(f"🧩 Starting post workflow for model {post_model_id}")
 
     post_data = cli_payload.get("postData", {})
+    number_of_days = int(post_data.get("number_of_days", 0))
+    print(f"📅 number_of_days (remainingRuns) from payload = {number_of_days}")
 
     try:
         safari_driver.get("https://onlyfans.com/posts/create")
@@ -77,8 +79,12 @@ def create_post(safari_driver, cli_payload):
         try:
             print("⏳ Waiting 2 seconds before closing Safari…")
             time.sleep(10)
-            #safari_driver.quit()
-            print("🧹 Safari driver should be closed.")
+            if number_of_days > 0:
+                # ещё будут запуски → оставляем живым
+                print(f"🛑 remainingRuns={number_of_days} → Safari driver НЕ закрываем.")
+            else:
+                print("🧹 Closing Safari driver via quit()…")
+                safari_driver.quit()
         except Exception:
             pass
 
