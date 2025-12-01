@@ -74,7 +74,7 @@ async function ensureUploadsServer() {
 
 
 function buildSafariPayload(data: any, useFingerPrint = false) {
-  const numberOfDays = data.numberOfDays ?? 0;
+  const remainingRuns = data.remainingRuns ?? 0;   // 👈 служебное поле
   const payload: Record<string, any> = {
     platform_id: data.platform_id,
     model_id: data.model_id,
@@ -135,19 +135,14 @@ function buildSafariPayload(data: any, useFingerPrint = false) {
 
   console.log('[buildSafariPayload] time source', {
     scheduledDate: data.scheduledDate,
-    numberOfDays,
+    //numberOfDays,
+    remainingRuns,
     hour24,
     minutes,
     suffix,
     times,
     queueSelection,
   });
-
-  // const [_hour, minutes = '00'] = (times[0]?.time || '12:00').split(':');
-  // const hour = parseInt(_hour) % 12 || 12;
-  // const suffix = parseInt(_hour) >= 12 ? 'pm' : 'am';
-
-
 
   let captionText = '';
   let fileUrl = '';
@@ -197,14 +192,14 @@ function buildSafariPayload(data: any, useFingerPrint = false) {
 
   console.log("🐍 media paths:", { fileUrl, contentPath, publicUrl });
 
-  payload.postData = {
+  const singlePostData = {
     content: fileUrl,
     content_url: publicUrl, // главное поле для Safari
     content_base64: null,
     content_path: contentPath,
     content_mime: null,
-    message: captionText, // ⬅️ ВАЖНО: строка, а не массив captions
-    number_of_days: numberOfDays,
+    message: captionText,
+    number_of_days: remainingRuns, // Это поле идёт в Python как флаг «закрывать ли браузер»
     message_month: scheduledDate
       .toLocaleString('default', { month: 'long' })
       .toLowerCase(),
@@ -217,6 +212,29 @@ function buildSafariPayload(data: any, useFingerPrint = false) {
     idValue: data.username || '',
     passwordValue: data.password || '',
   };
+
+  // payload.postData = {
+  //   content: fileUrl,
+  //   content_url: publicUrl, // главное поле для Safari
+  //   content_base64: null,
+  //   content_path: contentPath,
+  //   content_mime: null,
+  //   message: captionText, // ⬅️ ВАЖНО: строка, а не массив captions
+  //   number_of_days: numberOfDays,
+  //   message_month: scheduledDate
+  //     .toLocaleString('default', { month: 'long' })
+  //     .toLowerCase(),
+  //   message_date: scheduledDate.getDate().toString(),
+  //   message_hour: hour.toString(),
+  //   message_minute: minutes.toString(),
+  //   message_time_suffix: suffix,
+  //   release_user_tags: postWithTimes.user_tags || '',
+  //   release_form_tags: postWithTimes.form_tags || '',
+  //   idValue: data.username || '',
+  //   passwordValue: data.password || '',
+  // };
+
+  payload.postData = singlePostData;
 
   // 🆔 IDs для Safari / cookies
   (payload as any).model_id =
@@ -302,6 +320,7 @@ function runPythonAsBotUser(
     });
   });
 }
+
 
 @Injectable()
 export class SafariPostService {
@@ -435,9 +454,7 @@ export class SafariPostService {
     let totalRuns = 0;
     for (let d = 0; d < numberOfDays; d++) {
       for (const pt of postTimes) {
-        if (pt && pt.time) {
-          totalRuns++;
-        }
+        if (pt && pt.time) totalRuns++;
       }
     }
 
@@ -459,8 +476,10 @@ export class SafariPostService {
 
       let scheduledCount = 0;
       let runIndex = 0; // сколько запусков Python уже произошло
+      const aggregatedRuns: any[] = [];   // 👈 здесь накапливаем ассоциативные объекты постов
 
       // 🔁 Внешний цикл по дням (как в PuppeteerPostService)
+      // 🔁 Цикл по дням и по времени: считаем, проверяем лимиты, очередь и т.д.
       outerLoop:
         for (let dayOffset = 0; dayOffset < numberOfDays; dayOffset++) {
           const dayDate = new Date(baseDate);
@@ -523,7 +542,7 @@ export class SafariPostService {
               ...data,
               scheduledDate: scheduledDt.toISOString(),
               queueSelection: { captionIndex, fileIndex },
-              numberOfDays: remainingRuns,
+              remainingRuns, // 👈 просто для логики в Python, нужно!!
             };
 
             console.log('[SafariPostService] Queue selection →', {
@@ -533,60 +552,149 @@ export class SafariPostService {
               fileIndex,
             });
 
-            // 🧩 Собираем payload с учётом scheduledDate + queueSelection
-            const payload = buildSafariPayload(loopData, true);
-
-            const logPath = path.join(
-              basePath,
-              `debug_log/debug_safari_fp_${Date.now()}_${dayOffset}_${timeIndex}.log`
-            );
-
-            let skipLogin = false;
-
-            // 🔐 Поведение с cookie оставляем как у тебя было
-            if (fs.existsSync(cookiePath)) {
-              const ageH =
-                (Date.now() - fs.statSync(cookiePath).mtimeMs) / 1000 / 60 / 60;
-
-              if (ageH < 48) {
-                console.log(
-                  `[startPostSafariFingerPrint] 🍪 Cookies age ${ageH.toFixed(
-                    1
-                  )}h — skip login`
-                );
-                skipLogin = true;
-              }
-            }
-
-            // В fingerprint-режиме у тебя логин + постинг в одном скрипте,
-            // поэтому если реально нужно ВСЕГДА постить — можно убрать это if.
-            if (!skipLogin) {
-              console.log('[Safari FP] Running login as botuser…');
-
-              await runPythonAsBotUser(pythonPath, scriptPath, payload, logPath);
-
-              await new Promise(r => setTimeout(r, 1500));
-
-              if (fs.existsSync(logPath)) {
-                const out = fs.readFileSync(logPath, 'utf8');
-                console.log('----- SAFARI FINGERPRINT LOG -----');
-                console.log(out);
-                console.log('-----------------------------------');
-              }
+            // 🧩 НЕ запускаем Python здесь!
+            // Только собираем postData для этого запуска:
+            const tmpPayload = buildSafariPayload(loopData, true);
+            if (tmpPayload.postData) {
+              aggregatedRuns.push(tmpPayload.postData);
+              scheduledCount++;
             }
 
             if (modelPlatformId) {
               await this.modelLimitService.increment(modelPlatformId);
             }
-
-            scheduledCount++;
           }
         }
+
+      if (!aggregatedRuns.length) {
+        console.log('[SafariPostService] ❌ aggregatedRuns пустой → ничего не отправляем в Python');
+        return { ok: false, scheduledCount: 0 };
+      }
+
+      // ✅ Теперь один финальный payload, в который кладём МАССИВ постов
+      const finalPayload = buildSafariPayload(
+        {
+          ...data,
+          scheduledDate: baseDate.toISOString(),
+          remainingRuns: 0,   // внутри Python уже не используем как счётчик
+        },
+        true,
+      );
+
+      (finalPayload as any).postRuns = aggregatedRuns;
+
+      const logPath = path.join(
+        basePath,
+        `debug_log/debug_safari_fp_batch_${Date.now()}.log`
+      );
+
+      // let skipLogin = false;
+      //
+      // if (fs.existsSync(cookiePath)) {
+      //   const ageH =
+      //     (Date.now() - fs.statSync(cookiePath).mtimeMs) / 1000 / 60 / 60;
+      //
+      //   if (ageH < 48) {
+      //     console.log(
+      //       `[startPostSafariFingerPrint] 🍪 Cookies age ${ageH.toFixed(
+      //         1
+      //       )}h — skip login`
+      //     );
+      //     skipLogin = true;
+      //   }
+      // }
+      //
+      // // В fingerprint-режиме логин + постинг внутри одного Python-скрипта
+      // if (!skipLogin) {
+      //   console.log('[Safari FP] Running login as botuser (batch)…');
+      //
+      //   await runPythonAsBotUser(pythonPath, scriptPath, finalPayload, logPath);
+      //
+      //   await new Promise(r => setTimeout(r, 1500));
+      //
+      //   if (fs.existsSync(logPath)) {
+      //     const out = fs.readFileSync(logPath, 'utf8');
+      //     console.log('----- SAFARI FINGERPRINT LOG (BATCH) -----');
+      //     console.log(out);
+      //     console.log('------------------------------------------');
+      //   }
+      // }
+
+      // Для fingerprint-режима всегда запускаем Python — он сам разберётся с cookies/FaceID
+      console.log('[startPostSafariFingerPrint] Fingerprint mode → always run Python (batch)');
+
+      console.log('[Safari FP] Running login as botuser (batch)…');
+      await runPythonAsBotUser(pythonPath, scriptPath, finalPayload, logPath);
+
+      await new Promise(r => setTimeout(r, 1500));
+
+      if (fs.existsSync(logPath)) {
+        const out = fs.readFileSync(logPath, 'utf8');
+        console.log('----- SAFARI FINGERPRINT LOG (BATCH) -----');
+        console.log(out);
+        console.log('------------------------------------------');
+      }
 
       return { ok: scheduledCount > 0, scheduledCount };
     } catch (err) {
       console.log('[startPostSafariFingerPrint] ❌ Exception:', err);
       throw err;
     }
+
+
+          // // 🧩 Собираем payload с учётом scheduledDate + queueSelection
+          // const payload = buildSafariPayload(loopData, true);
+          //
+          // const logPath = path.join(
+          //   basePath,
+          //   `debug_log/debug_safari_fp_${Date.now()}_${dayOffset}_${timeIndex}.log`
+          // );
+          //
+          // let skipLogin = false;
+          //
+          // // 🔐 Поведение с cookie оставляем как у тебя было
+          // if (fs.existsSync(cookiePath)) {
+          //   const ageH =
+          //     (Date.now() - fs.statSync(cookiePath).mtimeMs) / 1000 / 60 / 60;
+          //
+          //   if (ageH < 48) {
+          //     console.log(
+          //       `[startPostSafariFingerPrint] 🍪 Cookies age ${ageH.toFixed(
+          //         1
+          //       )}h — skip login`
+          //     );
+          //     skipLogin = true;
+          //   }
+          // }
+          //
+          // // В fingerprint-режиме у тебя логин + постинг в одном скрипте,
+          // // поэтому если реально нужно ВСЕГДА постить — можно убрать это if.
+          // if (!skipLogin) {
+          //   console.log('[Safari FP] Running login as botuser…');
+          //
+          //   await runPythonAsBotUser(pythonPath, scriptPath, payload, logPath);
+          //
+          //   await new Promise(r => setTimeout(r, 1500));
+          //
+          //   if (fs.existsSync(logPath)) {
+          //     const out = fs.readFileSync(logPath, 'utf8');
+          //     console.log('----- SAFARI FINGERPRINT LOG -----');
+          //     console.log(out);
+          //     console.log('-----------------------------------');
+          //   }
+          // }
+          //
+          // if (modelPlatformId) {
+          //   await this.modelLimitService.increment(modelPlatformId);
+          // }
+          //
+          // scheduledCount++;
+
+
+      //return { ok: scheduledCount > 0, scheduledCount };
+    // } catch (err) {
+    //   console.log('[startPostSafariFingerPrint] ❌ Exception:', err);
+    //   throw err;
+    // }
   }
 }
