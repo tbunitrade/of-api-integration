@@ -403,6 +403,128 @@ def ensure_world_readable(path: str) -> str:
             print(f"❌ unable to prepare temp file: {e2}")
             raise
 
+def _find_file_input_near_dropzone(driver, timeout=10):
+    """
+    Ищем input[type="file"], который логически относится к дропзоне:
+    1) Пытаемся найти .b-dropzone__label и ближайший к ней input[type=file].
+    2) Если input'ов нет — ОДИН раз:
+       • пробуем кликнуть .button-add-media (новый UI с медиа-слайдером),
+       • если её нет — пробуем кликнуть #attach_file_photo (старый вариант).
+    """
+    print("🔎 [_find_file_input_near_dropzone] start search near .b-dropzone__label")
+
+    js = """
+    const label = document.querySelector('.b-dropzone__label');
+    if (!label) {
+      return { chosen: null, meta: [], reason: 'no-label' };
+    }
+
+    const labelRect = label.getBoundingClientRect();
+    const labelCx = labelRect.left + labelRect.width / 2;
+    const labelCy = labelRect.top + labelRect.height / 2;
+
+    const inputs = Array.from(document.querySelectorAll('input[type="file"]'));
+    if (!inputs.length) {
+      return { chosen: null, meta: [], reason: 'no-inputs' };
+    }
+
+    let best = null;
+    let bestDist = Infinity;
+    const meta = [];
+
+    for (const inp of inputs) {
+      const style = getComputedStyle(inp);
+      const r = inp.getBoundingClientRect();
+      const cx = r.left + r.width / 2;
+      const cy = r.top + r.height / 2;
+      const dx = cx - labelCx;
+      const dy = cy - labelCy;
+      const dist = Math.sqrt(dx*dx + dy*dy);
+
+      meta.push({
+        id: inp.id || null,
+        name: inp.name || null,
+        className: inp.className || null,
+        display: style.display,
+        visibility: style.visibility,
+        hidden: inp.hidden,
+        top: r.top,
+        left: r.left,
+        width: r.width,
+        height: r.height,
+        dist
+      });
+
+      // Берём ближайший НЕ disabled инпут (даже если он скрыт)
+      if (!inp.disabled && dist < bestDist) {
+        bestDist = dist;
+        best = inp;
+      }
+    }
+
+    return { chosen: best, meta, reason: best ? 'ok' : 'no-visible' };
+    """
+
+    deadline = time.time() + timeout
+    last = None
+    clicked_media_btn = False  # чтобы не долбить кнопку в цикле
+
+    while time.time() < deadline:
+        try:
+            result = driver.execute_script(js)
+            if result is None:
+                print("⚠️ [_find_file_input_near_dropzone] JS returned null")
+                time.sleep(0.5)
+                continue
+
+            reason = result.get("reason")
+            meta = result.get("meta") or []
+            chosen = result.get("chosen")
+
+            print(f"🧩 [_find_file_input_near_dropzone] reason={reason}, inputs={len(meta)}")
+            for idx, m in enumerate(meta):
+                print(f"   input[{idx}]: {m}")
+
+            if chosen:
+                print("✅ [_find_file_input_near_dropzone] found closest input[type=file]")
+                return chosen
+
+            # Fallback: нет инпутов → один раз жмём кнопку Add media
+            if reason == "no-inputs" and not clicked_media_btn:
+                # 1) Новый UI — кнопка .button-add-media
+                try:
+                    btn = driver.find_element(By.CSS_SELECTOR, ".button-add-media")
+                    print("🖱 [_find_file_input_near_dropzone] click .button-add-media to spawn file input")
+                    driver.execute_script("arguments[0].scrollIntoView({block:'center'});", btn)
+                    btn.click()
+                    clicked_media_btn = True
+                    time.sleep(1.0)  # даём странице создать input
+                    continue
+                except Exception as e_btn1:
+                    print(f"⚠️ cannot click .button-add-media: {e_btn1}")
+
+                # 2) Старый UI — кнопка #attach_file_photo
+                try:
+                    btn2 = driver.find_element(By.CSS_SELECTOR, "#attach_file_photo")
+                    print("🖱 [_find_file_input_near_dropzone] click #attach_file_photo to spawn file input")
+                    driver.execute_script("arguments[0].scrollIntoView({block:'center'});", btn2)
+                    btn2.click()
+                    clicked_media_btn = True
+                    time.sleep(1.0)
+                    continue
+                except Exception as e_btn2:
+                    print(f"⚠️ cannot click #attach_file_photo: {e_btn2}")
+
+            last = reason
+        except Exception as e:
+            last = e
+            print(f"⚠️ [_find_file_input_near_dropzone] js error: {e}")
+
+        time.sleep(0.5)
+
+    print(f"❌ [_find_file_input_near_dropzone] not found, last={last}")
+    return None
+
 def _handle_append_medias(driver, step, post_data, state):
     key = step.get("key") or "content_path"
     file_path = post_data.get(key) or post_data.get("content_path")
@@ -416,14 +538,13 @@ def _handle_append_medias(driver, step, post_data, state):
 
     # 🔐 ВАЖНО: делаем файл world-readable для SafariDriver
     try:
-        #os.chmod(file_path, 0o644)
         safe_path = ensure_world_readable(file_path)
         print(f"🔐 chmod 644 applied to {safe_path}")
     except Exception as e:
         print(f"⚠️ Failed to chmod file: {e}")
         return state.mark_failed()
 
-    # Немного sanity-check, чтобы видеть что реально существует
+    # sanity-check
     try:
         if not os.path.isfile(safe_path):
             print(f"❌ File not found at safe_path: {safe_path}")
@@ -433,77 +554,19 @@ def _handle_append_medias(driver, step, post_data, state):
         print(f"⚠️ os.path.isfile check failed: {e}")
 
     try:
-        el = None
-
-        # 1️⃣ пробуем найти file input как есть
-        try:
-            print(f"🔎 appendMedias: trying primary selector {selector}")
-            el = WebDriverWait(driver, 5).until(
-                EC.presence_of_element_located((By.CSS_SELECTOR, selector))
-            )
-        except Exception as e_primary:
-            print(f"⚠️ Primary selector '{selector}' not found: {e_primary}")
-            print("⚠️ input[type=file] не найден сразу, пробуем кликнуть кнопку 'Add media' (#attach_file_photo)")
-            try:
-                btn = driver.find_element(By.CSS_SELECTOR, "#attach_file_photo")
-                driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", btn)
-                btn.click()
-                time.sleep(0.8)
-            except Exception as e_btn:
-                print(f"❌ Не удалось кликнуть #attach_file_photo: {e_btn}")
-
-            try:
-                el = WebDriverWait(driver, 5).until(
-                    EC.presence_of_element_located((By.CSS_SELECTOR, selector))
-                )
-                print(f"✅ appendMedias: found file input by selector {selector} after button click")
-            except Exception as e_second:
-                print(f"⚠️ Still no element by '{selector}': {e_second}")
-                el = None
+        # 🔗 Ищем file input ТОЛЬКО рядом с .b-dropzone__label
+        el = _find_file_input_near_dropzone(driver, timeout=10)
 
         if el is None:
-            print("🔎 appendMedias: scanning for ANY input[type='file']")
-            file_inputs = driver.find_elements(By.CSS_SELECTOR, "input[type='file']")
-            print(f"🔎 Found {len(file_inputs)} file inputs in DOM")
-
-            for idx, inp in enumerate(file_inputs):
-                try:
-                    attrs = driver.execute_script(
-                        """
-                        const el = arguments[0];
-                        return {
-                          id: el.id || null,
-                          name: el.name || null,
-                          className: el.className || null,
-                          hidden: el.hidden || false,
-                          display: getComputedStyle(el).display,
-                          visibility: getComputedStyle(el).visibility
-                        };
-                        """,
-                        inp,
-                    )
-                    print(f"   🧩 input[{idx}]: {attrs}")
-                except Exception:
-                    pass
-
-            for inp in file_inputs:
-                try:
-                    if inp.is_enabled():
-                        el = inp
-                        print("✅ appendMedias: using first enabled input[type=file]")
-                        break
-                except Exception:
-                    continue
-
-        if el is None:
-            print("❌ appendMedias: NO usable input[type='file'] found → skip")
-            return state.mark_skipped()
+            print("❌ appendMedias: NO usable input[type='file'] found near dropzone → FAIL")
+            state.mark_failed()
+            return
 
         driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", el)
 
         # 🔁 1) сначала пробуем temp-путь (/tmp/of_uploads/…)
         try:
-            print(f"📁 appendMedias: Uploading {safe_path} into input[type='file']")
+            print(f"📁 appendMedias: Uploading {safe_path} into dropzone file input")
             el.send_keys(safe_path)
         except Exception as e1:
             print(
@@ -521,6 +584,7 @@ def _handle_append_medias(driver, step, post_data, state):
                 )
                 return state.mark_failed()
 
+        # ⏳ ждём окончания загрузки (оставляю твой код как есть)
         try:
             WebDriverWait(driver, 20).until_not(
                 EC.presence_of_element_located(
@@ -556,10 +620,8 @@ def _handle_append_medias(driver, step, post_data, state):
         except Exception as e:
             print(f"⚠️ Failed to inspect dropzone preview: {e}")
 
-            # 🔁 Дождаться, пока OnlyFans закончит обработку медиа
         try:
             def upload_settled(drv):
-                # 1) Если есть прогресс-бар — всё ещё грузится
                 progress = drv.find_elements(
                     By.CSS_SELECTOR,
                     ".b-dropzone__preview__progress"
@@ -567,14 +629,12 @@ def _handle_append_medias(driver, step, post_data, state):
                 if progress:
                     return False
 
-                # 2) Проверяем карточки .post_media на флаги "в процессе"
                 cards = drv.find_elements(By.CSS_SELECTOR, ".post_media")
                 for c in cards:
                     cls = (c.get_attribute("class") or "") or ""
                     if "m-processing" in cls or "m-uploading-media" in cls:
                         return False
 
-                # 3) Нет прогресса и нет processing-флагов → считаем, что всё готово
                 return True
 
             print("⏳ appendMedias: waiting for post_media to finish processing…")
@@ -582,7 +642,6 @@ def _handle_append_medias(driver, step, post_data, state):
             print("✅ appendMedias: upload finished (no m-processing / m-uploading-media).")
         except Exception as e:
             print(f"⚠️ appendMedias: upload still marked as processing after timeout: {e}")
-
 
         try:
             def any_preview(drv):
@@ -602,11 +661,215 @@ def _handle_append_medias(driver, step, post_data, state):
             print(f"⚠️ appendMedias: no preview detected before timeout: {e_wait}")
 
         print("✅ File uploaded successfully (appendMedias end)")
-        #state.mark_ok()
 
     except Exception as e:
         print(f"❌ appendMedias failed: {e}")
         state.mark_failed()
+
+# def _handle_append_medias(driver, step, post_data, state):
+#     key = step.get("key") or "content_path"
+#     file_path = post_data.get(key) or post_data.get("content_path")
+#     selector = step.get("selector") or "input[type='file']"
+#
+#     print(f"📦 appendMedias: key={key}, file_path={file_path}, selector={selector}")
+#
+#     if not file_path or not os.path.exists(file_path):
+#         print(f"⚠️ File does not exist or not provided: {file_path}")
+#         return state.mark_skipped()
+#
+#     # 🔐 ВАЖНО: делаем файл world-readable для SafariDriver
+#     try:
+#         #os.chmod(file_path, 0o644)
+#         safe_path = ensure_world_readable(file_path)
+#         print(f"🔐 chmod 644 applied to {safe_path}")
+#     except Exception as e:
+#         print(f"⚠️ Failed to chmod file: {e}")
+#         return state.mark_failed()
+#
+#     # Немного sanity-check, чтобы видеть что реально существует
+#     try:
+#         if not os.path.isfile(safe_path):
+#             print(f"❌ File not found at safe_path: {safe_path}")
+#         if not os.path.isfile(file_path):
+#             print(f"❌ File not found at original file_path: {file_path}")
+#     except Exception as e:
+#         print(f"⚠️ os.path.isfile check failed: {e}")
+#
+#     try:
+#         el = None
+#
+#         # 1️⃣ пробуем найти file input как есть
+#         try:
+#             print(f"🔎 appendMedias: trying primary selector {selector}")
+#             el = WebDriverWait(driver, 5).until(
+#                 EC.presence_of_element_located((By.CSS_SELECTOR, selector))
+#             )
+#         except Exception as e_primary:
+#             print(f"⚠️ Primary selector '{selector}' not found: {e_primary}")
+#             print("⚠️ input[type=file] не найден сразу, пробуем кликнуть кнопку 'Add media' (#attach_file_photo)")
+#             try:
+#                 btn = driver.find_element(By.CSS_SELECTOR, "#attach_file_photo")
+#                 driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", btn)
+#                 btn.click()
+#                 time.sleep(0.8)
+#             except Exception as e_btn:
+#                 print(f"❌ Не удалось кликнуть #attach_file_photo: {e_btn}")
+#
+#             try:
+#                 el = WebDriverWait(driver, 5).until(
+#                     EC.presence_of_element_located((By.CSS_SELECTOR, selector))
+#                 )
+#                 print(f"✅ appendMedias: found file input by selector {selector} after button click")
+#             except Exception as e_second:
+#                 print(f"⚠️ Still no element by '{selector}': {e_second}")
+#                 el = None
+#
+#         if el is None:
+#             print("🔎 appendMedias: scanning for ANY input[type='file']")
+#             file_inputs = driver.find_elements(By.CSS_SELECTOR, "input[type='file']")
+#             print(f"🔎 Found {len(file_inputs)} file inputs in DOM")
+#
+#             for idx, inp in enumerate(file_inputs):
+#                 try:
+#                     attrs = driver.execute_script(
+#                         """
+#                         const el = arguments[0];
+#                         return {
+#                           id: el.id || null,
+#                           name: el.name || null,
+#                           className: el.className || null,
+#                           hidden: el.hidden || false,
+#                           display: getComputedStyle(el).display,
+#                           visibility: getComputedStyle(el).visibility
+#                         };
+#                         """,
+#                         inp,
+#                     )
+#                     print(f"   🧩 input[{idx}]: {attrs}")
+#                 except Exception:
+#                     pass
+#
+#             for inp in file_inputs:
+#                 try:
+#                     if inp.is_enabled():
+#                         el = inp
+#                         print("✅ appendMedias: using first enabled input[type=file]")
+#                         break
+#                 except Exception:
+#                     continue
+#
+#         if el is None:
+#             print("❌ appendMedias: NO usable input[type='file'] found → skip")
+#             return state.mark_skipped()
+#
+#         driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", el)
+#
+#         # 🔁 1) сначала пробуем temp-путь (/tmp/of_uploads/…)
+#         try:
+#             print(f"📁 appendMedias: Uploading {safe_path} into input[type='file']")
+#             el.send_keys(safe_path)
+#         except Exception as e1:
+#             print(
+#                 f"❌ appendMedias: Safari rejected temp path {safe_path}: {e1}. "
+#                 f"Trying original file_path: {file_path}"
+#             )
+#
+#             # 🔁 2) fallback — пробуем прямой путь из /uploads/…
+#             try:
+#                 print(f"📁 appendMedias: Retrying upload with original path {file_path}")
+#                 el.send_keys(file_path)
+#             except Exception as e2:
+#                 print(
+#                     f"❌ appendMedias: Safari rejected original path {file_path} too: {e2}"
+#                 )
+#                 return state.mark_failed()
+#
+#         try:
+#             WebDriverWait(driver, 20).until_not(
+#                 EC.presence_of_element_located(
+#                     (By.CSS_SELECTOR, "span.b-dropzone__preview__progress")
+#                 )
+#             )
+#             print("⏳ Upload progress indicator disappeared (b-dropzone__preview__progress)")
+#         except Exception:
+#             print("⚠️ No explicit upload progress indicator or wait timeout, continue anyway")
+#
+#         try:
+#             print("🔎 Checking dropzone preview nodes after upload…")
+#             preview_info = driver.execute_script(
+#                 """
+#                 const sels = [
+#                   '.b-dropzone__video',
+#                   '.b-dropzone__item',
+#                   '.b-dropzone__preview'
+#                 ];
+#                 const result = {};
+#                 for (const sel of sels) {
+#                   const els = Array.from(document.querySelectorAll(sel));
+#                   result[sel] = els.map(el => ({
+#                     tag: el.tagName,
+#                     className: el.className,
+#                     html: el.outerHTML.slice(0, 180)
+#                   }));
+#                 }
+#                 return result;
+#                 """
+#             )
+#             print("🎯 Dropzone preview snapshot:", preview_info)
+#         except Exception as e:
+#             print(f"⚠️ Failed to inspect dropzone preview: {e}")
+#
+#             # 🔁 Дождаться, пока OnlyFans закончит обработку медиа
+#         try:
+#             def upload_settled(drv):
+#                 # 1) Если есть прогресс-бар — всё ещё грузится
+#                 progress = drv.find_elements(
+#                     By.CSS_SELECTOR,
+#                     ".b-dropzone__preview__progress"
+#                 )
+#                 if progress:
+#                     return False
+#
+#                 # 2) Проверяем карточки .post_media на флаги "в процессе"
+#                 cards = drv.find_elements(By.CSS_SELECTOR, ".post_media")
+#                 for c in cards:
+#                     cls = (c.get_attribute("class") or "") or ""
+#                     if "m-processing" in cls or "m-uploading-media" in cls:
+#                         return False
+#
+#                 # 3) Нет прогресса и нет processing-флагов → считаем, что всё готово
+#                 return True
+#
+#             print("⏳ appendMedias: waiting for post_media to finish processing…")
+#             WebDriverWait(driver, 60).until(upload_settled)
+#             print("✅ appendMedias: upload finished (no m-processing / m-uploading-media).")
+#         except Exception as e:
+#             print(f"⚠️ appendMedias: upload still marked as processing after timeout: {e}")
+#
+#
+#         try:
+#             def any_preview(drv):
+#                 sels = [
+#                     ".b-dropzone__video",
+#                     ".b-dropzone__item",
+#                     ".b-dropzone__preview",
+#                 ]
+#                 for sel in sels:
+#                     if drv.find_elements(By.CSS_SELECTOR, sel):
+#                         return True
+#                 return False
+#
+#             WebDriverWait(driver, 10).until(any_preview)
+#             print("✅ appendMedias: preview element detected in dropzone before submit.")
+#         except Exception as e_wait:
+#             print(f"⚠️ appendMedias: no preview detected before timeout: {e_wait}")
+#
+#         print("✅ File uploaded successfully (appendMedias end)")
+#         #state.mark_ok()
+#
+#     except Exception as e:
+#         print(f"❌ appendMedias failed: {e}")
+#         state.mark_failed()
 
 
 # ============================================================
