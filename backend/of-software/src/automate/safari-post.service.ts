@@ -187,9 +187,6 @@ function buildSafariPayload(data: any, useFingerPrint = false) {
     publicUrl = `http://127.0.0.1:3001${urlPath}`;
   }
 
-  //const contentPath = path.join(process.cwd(), 'uploads', fileUrl.replace(/^\/uploads\/?/, ''));
-  //payload.postData.content_path = contentPath;
-
   console.log("🐍 media paths:", { fileUrl, contentPath, publicUrl });
 
   const singlePostData = {
@@ -212,27 +209,6 @@ function buildSafariPayload(data: any, useFingerPrint = false) {
     idValue: data.username || '',
     passwordValue: data.password || '',
   };
-
-  // payload.postData = {
-  //   content: fileUrl,
-  //   content_url: publicUrl, // главное поле для Safari
-  //   content_base64: null,
-  //   content_path: contentPath,
-  //   content_mime: null,
-  //   message: captionText, // ⬅️ ВАЖНО: строка, а не массив captions
-  //   number_of_days: numberOfDays,
-  //   message_month: scheduledDate
-  //     .toLocaleString('default', { month: 'long' })
-  //     .toLowerCase(),
-  //   message_date: scheduledDate.getDate().toString(),
-  //   message_hour: hour.toString(),
-  //   message_minute: minutes.toString(),
-  //   message_time_suffix: suffix,
-  //   release_user_tags: postWithTimes.user_tags || '',
-  //   release_form_tags: postWithTimes.form_tags || '',
-  //   idValue: data.username || '',
-  //   passwordValue: data.password || '',
-  // };
 
   payload.postData = singlePostData;
 
@@ -415,9 +391,6 @@ export class SafariPostService {
   // ====================================================================================
   // 🟧 2) startPostSafariFingerPrint (Passwordless / Touch/FaceID)
   // ====================================================================================
-  // ====================================================================================
-  // 🟧 2) startPostSafariFingerPrint (Passwordless / Touch/FaceID)
-  // ====================================================================================
   async startPostSafariFingerPrint(data: any) {
     // 1️⃣ Поднять сервер, если его ещё нет
     ensureUploadsServer().catch((err) => {
@@ -588,38 +561,6 @@ export class SafariPostService {
         `debug_log/debug_safari_fp_batch_${Date.now()}.log`
       );
 
-      // let skipLogin = false;
-      //
-      // if (fs.existsSync(cookiePath)) {
-      //   const ageH =
-      //     (Date.now() - fs.statSync(cookiePath).mtimeMs) / 1000 / 60 / 60;
-      //
-      //   if (ageH < 48) {
-      //     console.log(
-      //       `[startPostSafariFingerPrint] 🍪 Cookies age ${ageH.toFixed(
-      //         1
-      //       )}h — skip login`
-      //     );
-      //     skipLogin = true;
-      //   }
-      // }
-      //
-      // // В fingerprint-режиме логин + постинг внутри одного Python-скрипта
-      // if (!skipLogin) {
-      //   console.log('[Safari FP] Running login as botuser (batch)…');
-      //
-      //   await runPythonAsBotUser(pythonPath, scriptPath, finalPayload, logPath);
-      //
-      //   await new Promise(r => setTimeout(r, 1500));
-      //
-      //   if (fs.existsSync(logPath)) {
-      //     const out = fs.readFileSync(logPath, 'utf8');
-      //     console.log('----- SAFARI FINGERPRINT LOG (BATCH) -----');
-      //     console.log(out);
-      //     console.log('------------------------------------------');
-      //   }
-      // }
-
       // Для fingerprint-режима всегда запускаем Python — он сам разберётся с cookies/FaceID
       console.log('[startPostSafariFingerPrint] Fingerprint mode → always run Python (batch)');
 
@@ -640,61 +581,5 @@ export class SafariPostService {
       console.log('[startPostSafariFingerPrint] ❌ Exception:', err);
       throw err;
     }
-
-
-          // // 🧩 Собираем payload с учётом scheduledDate + queueSelection
-          // const payload = buildSafariPayload(loopData, true);
-          //
-          // const logPath = path.join(
-          //   basePath,
-          //   `debug_log/debug_safari_fp_${Date.now()}_${dayOffset}_${timeIndex}.log`
-          // );
-          //
-          // let skipLogin = false;
-          //
-          // // 🔐 Поведение с cookie оставляем как у тебя было
-          // if (fs.existsSync(cookiePath)) {
-          //   const ageH =
-          //     (Date.now() - fs.statSync(cookiePath).mtimeMs) / 1000 / 60 / 60;
-          //
-          //   if (ageH < 48) {
-          //     console.log(
-          //       `[startPostSafariFingerPrint] 🍪 Cookies age ${ageH.toFixed(
-          //         1
-          //       )}h — skip login`
-          //     );
-          //     skipLogin = true;
-          //   }
-          // }
-          //
-          // // В fingerprint-режиме у тебя логин + постинг в одном скрипте,
-          // // поэтому если реально нужно ВСЕГДА постить — можно убрать это if.
-          // if (!skipLogin) {
-          //   console.log('[Safari FP] Running login as botuser…');
-          //
-          //   await runPythonAsBotUser(pythonPath, scriptPath, payload, logPath);
-          //
-          //   await new Promise(r => setTimeout(r, 1500));
-          //
-          //   if (fs.existsSync(logPath)) {
-          //     const out = fs.readFileSync(logPath, 'utf8');
-          //     console.log('----- SAFARI FINGERPRINT LOG -----');
-          //     console.log(out);
-          //     console.log('-----------------------------------');
-          //   }
-          // }
-          //
-          // if (modelPlatformId) {
-          //   await this.modelLimitService.increment(modelPlatformId);
-          // }
-          //
-          // scheduledCount++;
-
-
-      //return { ok: scheduledCount > 0, scheduledCount };
-    // } catch (err) {
-    //   console.log('[startPostSafariFingerPrint] ❌ Exception:', err);
-    //   throw err;
-    // }
   }
 }
