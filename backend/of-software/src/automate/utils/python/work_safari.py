@@ -387,21 +387,9 @@ def ensure_world_readable(path: str) -> str:
     try:
         os.chmod(path, 0o644)
         print(f"✅ chmod 644 succeeded for {path}")
-        return path
     except Exception as e:
-        print(f"⚠️ Failed to chmod file: {e}, trying temp copy...")
-        try:
-            tmp_dir = os.path.join(tempfile.gettempdir(), "of_uploads")
-            os.makedirs(tmp_dir, exist_ok=True)
-            filename = os.path.basename(path)
-            tmp_path = os.path.join(tmp_dir, filename)
-            shutil.copy2(path, tmp_path)
-            os.chmod(tmp_path, 0o644)
-            print(f"✅ Copied file to tmp and chmod 644: {tmp_path}")
-            return tmp_path
-        except Exception as e2:
-            print(f"❌ unable to prepare temp file: {e2}")
-            raise
+        print(f"⚠️ Failed to chmod file (will use original path): {e}")
+    return path
 
 def _find_file_input_near_dropzone(driver, timeout=10):
     """
@@ -525,33 +513,173 @@ def _find_file_input_near_dropzone(driver, timeout=10):
     print(f"❌ [_find_file_input_near_dropzone] not found, last={last}")
     return None
 
+def _handle_select_media_by_index(driver, step, post_data, state):
+    """
+    Выбирает РОВНО одно медиа по индексу:
+    1) снимает selected со всех .b-make-post__set-order-btn
+    2) кликает по нужной карточке и ставит selected
+    """
+    key = step.get("key") or "run_index"
+    raw = post_data.get(key, step.get("value", 0))
+
+    try:
+        index = int(raw)
+    except Exception:
+        print(f"⚠️ selectMediaByIndex: invalid index '{raw}', default 0")
+        index = 0
+
+    print(f"🎯 selectMediaByIndex → index={index}")
+
+    try:
+        ok = driver.execute_script(
+            """
+            const idx = arguments[0];
+
+            // Карточки медиа в посте
+            const cards = Array.from(
+              document.querySelectorAll('.b-make-post__media-photos .b-make-post__preview')
+            );
+            console.log('[selectMediaByIndex] cards count =', cards.length);
+
+            if (!cards.length) {
+              return { ok: false, reason: 'no-cards' };
+            }
+
+            const safeIdx = Math.max(0, Math.min(idx, cards.length - 1));
+
+            // 1) сбрасываем selected на всех чекбоксах
+            for (const card of cards) {
+              const btn = card.querySelector('.b-make-post__set-order-btn');
+              if (!btn) continue;
+
+              if (btn.classList.contains('selected')) {
+                btn.click(); // выключаем
+              }
+            }
+
+            // 2) включаем selected на нужной карточке
+            const targetCard = cards[safeIdx];
+            if (!targetCard) {
+              return {
+                ok: false,
+                reason: 'index-out-of-range',
+                idx: safeIdx,
+                total: cards.length
+              };
+            }
+
+            const targetBtn = targetCard.querySelector('.b-make-post__set-order-btn');
+            if (!targetBtn) {
+              return { ok: false, reason: 'no-button', idx: safeIdx, total: cards.length };
+            }
+
+            targetBtn.scrollIntoView({block: 'center'});
+            targetBtn.click();
+
+            // опционально: читаем номер
+            const numSpan = targetBtn.querySelector('.checkbox-item__num');
+            const numText = numSpan ? numSpan.textContent.trim() : null;
+
+            return {
+              ok: true,
+              reason: 'selected',
+              idx: safeIdx,
+              total: cards.length,
+              num: numText
+            };
+            """,
+            index,
+        )
+
+        print("🧩 selectMediaByIndex result:", ok)
+        if not ok or not ok.get("ok"):
+            print(f"⚠️ selectMediaByIndex: failed → {ok}")
+            state.mark_failed()
+        else:
+            print("✅ selectMediaByIndex: media selected")
+
+    except Exception as e:
+        print(f"❌ selectMediaByIndex error: {e}")
+        state.mark_failed()
+
 def _handle_append_medias(driver, step, post_data, state):
     key = step.get("key") or "content_path"
     file_path = post_data.get(key) or post_data.get("content_path")
     selector = step.get("selector") or "input[type='file']"
 
-    print(f"📦 appendMedias: key={key}, file_path={file_path}, selector={selector}")
+    # 🔁 НОВОЕ: поддержка bulk — берём список путей, если он есть
+    bulk_paths = post_data.get("bulk_media_paths")
+    if bulk_paths and isinstance(bulk_paths, list):
+        raw_paths = [p for p in bulk_paths if isinstance(p, str) and p.strip()]
+        mode = "bulk"
+    else:
+        raw_paths = [file_path] if file_path else []
+        mode = "single"
 
-    if not file_path or not os.path.exists(file_path):
-        print(f"⚠️ File does not exist or not provided: {file_path}")
+    print(f"📦 appendMedias[{mode}]: key={key}, file_path={raw_paths}, selector={selector}")
+
+    if not raw_paths:
+        print("⚠️ No media paths provided for appendMedias")
         return state.mark_skipped()
 
-    # 🔐 ВАЖНО: делаем файл world-readable для SafariDriver
-    try:
-        safe_path = ensure_world_readable(file_path)
-        print(f"🔐 chmod 644 applied to {safe_path}")
-    except Exception as e:
-        print(f"⚠️ Failed to chmod file: {e}")
+    # фильтруем по существующим файлам
+    existing_paths = []
+    for p in raw_paths:
+        if os.path.exists(p):
+            existing_paths.append(p)
+        else:
+            print(f"⚠️ File does not exist: {p}")
+
+    if not existing_paths:
+        print("⚠️ appendMedias: no existing files after check")
+        return state.mark_skipped()
+
+
+    # if not file_path or not os.path.exists(file_path):
+    #     print(f"⚠️ File does not exist or not provided: {file_path}")
+    #     return state.mark_skipped()
+
+    # # 🔐 ВАЖНО: делаем файл world-readable для SafariDriver
+    # try:
+    #     safe_path = ensure_world_readable(file_path)
+    #     print(f"🔐 chmod 644 applied to {safe_path}")
+    # except Exception as e:
+    #     print(f"⚠️ Failed to chmod file: {e}")
+    #     return state.mark_failed()
+
+    # # sanity-check
+    # try:
+    #     if not os.path.isfile(safe_path):
+    #         print(f"❌ File not found at safe_path: {safe_path}")
+    #     if not os.path.isfile(file_path):
+    #         print(f"❌ File not found at original file_path: {file_path}")
+    # except Exception as e:
+    #     print(f"⚠️ os.path.isfile check failed: {e}")
+
+
+    # 🔐 готовим файлы (chmod 644 или копия в /tmp/of_uploads)
+    safe_paths = []
+    for p in existing_paths:
+        try:
+            safe_p = ensure_world_readable(p) # теперь это ОСНОВНОЙ путь, без /tmp
+            safe_paths.append(safe_p)
+        except Exception as e:
+            print(f"⚠️ Failed to prepare file {p}: {e}")
+
+    if not safe_paths:
+        print("❌ appendMedias: no safe_paths after ensure_world_readable")
         return state.mark_failed()
 
-    # sanity-check
+    # значение для send_keys — либо один путь, либо "\n".join(...)
+    upload_value = "\n".join(safe_paths)
+
     try:
-        if not os.path.isfile(safe_path):
-            print(f"❌ File not found at safe_path: {safe_path}")
-        if not os.path.isfile(file_path):
-            print(f"❌ File not found at original file_path: {file_path}")
+        for sp in safe_paths:
+            if not os.path.isfile(sp):
+                print(f"❌ File not found at safe_path: {sp}")
     except Exception as e:
         print(f"⚠️ os.path.isfile check failed: {e}")
+
 
     try:
         # 🔗 Ищем file input ТОЛЬКО рядом с .b-dropzone__label
@@ -564,27 +692,49 @@ def _handle_append_medias(driver, step, post_data, state):
 
         driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", el)
 
-        # 🔁 1) сначала пробуем temp-путь (/tmp/of_uploads/…)
+        # 1️⃣ Сначала пробуем bulk строку (одна или несколько дорожек)
         try:
-            print(f"📁 appendMedias: Uploading {safe_path} into dropzone file input")
-            el.send_keys(safe_path)
+            print(f"📁 appendMedias: Uploading {upload_value} into dropzone file input")
+            el.send_keys(upload_value)
         except Exception as e1:
             print(
-                f"❌ appendMedias: Safari rejected temp path {safe_path}: {e1}. "
-                f"Trying original file_path: {file_path}"
+                f"❌ appendMedias: Safari rejected bulk paths {upload_value}: {e1}. "
+                f"Trying per-file fallback..."
             )
 
-            # 🔁 2) fallback — пробуем прямой путь из /uploads/…
-            try:
-                print(f"📁 appendMedias: Retrying upload with original path {file_path}")
-                el.send_keys(file_path)
-            except Exception as e2:
-                print(
-                    f"❌ appendMedias: Safari rejected original path {file_path} too: {e2}"
-                )
-                return state.mark_failed()
+            # 2️⃣ Фолбэк — по одному файлу
+            for sp in safe_paths:
+                try:
+                    print(f"📁 appendMedias: Uploading single file {sp}")
+                    el.send_keys(sp)
+                    time.sleep(0.5)
+                except Exception as e2:
+                    print(f"❌ appendMedias: Safari rejected file {sp}: {e2}")
+                    state.mark_failed()
+                    return
 
-        # ⏳ ждём окончания загрузки (оставляю твой код как есть)
+
+        # # 🔁 1) сначала пробуем temp-путь (/tmp/of_uploads/…)
+        # try:
+        #     print(f"📁 appendMedias: Uploading {safe_path} into dropzone file input")
+        #     el.send_keys(safe_path)
+        # except Exception as e1:
+        #     print(
+        #         f"❌ appendMedias: Safari rejected temp path {safe_path}: {e1}. "
+        #         f"Trying original file_path: {file_path}"
+        #     )
+        #
+        #     # 🔁 2) fallback — пробуем прямой путь из /uploads/…
+        #     try:
+        #         print(f"📁 appendMedias: Retrying upload with original path {file_path}")
+        #         el.send_keys(file_path)
+        #     except Exception as e2:
+        #         print(
+        #             f"❌ appendMedias: Safari rejected original path {file_path} too: {e2}"
+        #         )
+        #         return state.mark_failed()
+        #
+        # # ⏳ ждём окончания загрузки (оставляю твой код как есть)
         try:
             WebDriverWait(driver, 20).until_not(
                 EC.presence_of_element_located(
@@ -917,6 +1067,10 @@ def _exec_one_step(driver, step, post_data, state):
 
         elif stype == "appendMedias":
             _handle_append_medias(driver, step, post_data, state)
+
+        elif stype == "selectMediaByIndex":
+            _handle_select_media_by_index(driver, step, post_data, state)
+
         #testme
         elif stype == "runScript":
             script = step.get("value", "")
