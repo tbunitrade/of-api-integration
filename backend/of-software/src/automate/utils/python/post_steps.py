@@ -42,16 +42,37 @@ POST_STEPS = [
         "value": ".b-dropzone__preview, .b-dropzone__item, .b-dropzone__video",
         "timeout": 5000,
     },
+
+    # даём интерфейсу проглотить загрузку
     { "type": "waitForTime", "value": "800" },
-    { "type": "selectMediaByIndex", "key": "run_index" },
+
+    # 1) включаем режим сортировки (стрелка вправо)
+    { "type": "click", "value": ".b-make-post__sort-btn.m-right", "safeguard": True },
+    { "type": "waitForTime", "value": "500" },
+
+    # 2) ждём появления чекбоксов на карточках
     {
         "type": "waitForSelector",
-        "value": ".b-dropzone__preview, .b-dropzone__item, .b-dropzone__video",
+        "value": ".b-make-post__media-photos .b-make-post__set-order-btn",
         "timeout": 5000,
     },
 
+    # 3) выбираем медиа по run_index (0,1,2,3 ...)
+    { "type": "selectMediaByIndex", "key": "run_index", "waitAfterMs": 1500 },
+
+    # (можно оставить маленькую паузу, чтобы UI отрисовал выделение)
+    { "type": "waitForTime", "value": "300" },
+
+    # 4) сохраняем сортировку
     { "type": "click", "value": ".b-make-post__sort-done-btn", "safeguard": True },
     { "type": "waitForTime", "value": "500" },
+
+    # # дальше уже блок с датой/временем, как у тебя сейчас
+    # # 3) Schedule post — POPUP
+    # {
+    #     "type": "click",
+    #     "value": ".b-make-post__sticky-panel button[at-attr='scheduled_msg']",
+    # },
 
     # # 🔁 Дополнительная пауза, чтобы OnlyFans проглотил видео до конца
     # { "type": "waitForTime", "value": "15000" },
