@@ -42,9 +42,19 @@ POST_STEPS = [
         "value": ".b-dropzone__preview, .b-dropzone__item, .b-dropzone__video",
         "timeout": 5000,
     },
+    { "type": "waitForTime", "value": "800" },
+    { "type": "selectMediaByIndex", "key": "run_index" },
+    {
+        "type": "waitForSelector",
+        "value": ".b-dropzone__preview, .b-dropzone__item, .b-dropzone__video",
+        "timeout": 5000,
+    },
 
-    # 🔁 Дополнительная пауза, чтобы OnlyFans проглотил видео до конца
-    { "type": "waitForTime", "value": "15000" },
+    { "type": "click", "value": ".b-make-post__sort-done-btn", "safeguard": True },
+    { "type": "waitForTime", "value": "500" },
+
+    # # 🔁 Дополнительная пауза, чтобы OnlyFans проглотил видео до конца
+    # { "type": "waitForTime", "value": "15000" },
 
     # ----------------------------------------------------------
     # 3) Schedule post — POPUP
