@@ -516,8 +516,9 @@ def _find_file_input_near_dropzone(driver, timeout=10):
 def _handle_select_media_by_index(driver, step, post_data, state):
     """
     Выбирает РОВНО одно медиа по индексу:
-    1) снимает selected со всех .b-make-post__set-order-btn
-    2) кликает по нужной карточке и ставит selected
+    1) ждёт появления .b-make-post__set-order-btn
+    2) снимает selected со всех кнопок
+    3) включает selected только на одной по index (по умолчанию post_data['run_index'])
     """
     key = step.get("key") or "run_index"
     raw = post_data.get(key, step.get("value", 0))
@@ -528,55 +529,62 @@ def _handle_select_media_by_index(driver, step, post_data, state):
         print(f"⚠️ selectMediaByIndex: invalid index '{raw}', default 0")
         index = 0
 
+    wait_after_ms = int(step.get("waitAfterMs", 0))
+
     print(f"🎯 selectMediaByIndex → index={index}")
+
+    # 1) ждём, пока сортировка реально активна и чекбоксы появились
+    try:
+        WebDriverWait(driver, 10).until(
+            lambda d: len(
+                d.find_elements(
+                    By.CSS_SELECTOR,
+                    ".b-make-post__media-photos .b-make-post__set-order-btn"
+                )
+            ) > 0
+        )
+    except Exception as e_wait:
+        print(f"❌ selectMediaByIndex: buttons not found: {e_wait}")
+        state.mark_failed()
+        return
 
     try:
         ok = driver.execute_script(
             """
             const idx = arguments[0];
 
-            // Карточки медиа в посте
-            const cards = Array.from(
-              document.querySelectorAll('.b-make-post__media-photos .b-make-post__preview')
+            // Все кнопки выбора порядка
+            const btns = Array.from(
+              document.querySelectorAll('.b-make-post__media-photos .b-make-post__set-order-btn')
             );
-            console.log('[selectMediaByIndex] cards count =', cards.length);
+            console.log('[selectMediaByIndex] btns count =', btns.length);
 
-            if (!cards.length) {
-              return { ok: false, reason: 'no-cards' };
+            if (!btns.length) {
+              return { ok: false, reason: 'no-buttons' };
             }
 
-            const safeIdx = Math.max(0, Math.min(idx, cards.length - 1));
+            const safeIdx = Math.max(0, Math.min(idx, btns.length - 1));
 
-            // 1) сбрасываем selected на всех чекбоксах
-            for (const card of cards) {
-              const btn = card.querySelector('.b-make-post__set-order-btn');
-              if (!btn) continue;
-
+            // 1) сбрасываем selected на всех
+            for (const btn of btns) {
               if (btn.classList.contains('selected')) {
-                btn.click(); // выключаем
+                btn.click();
               }
             }
 
-            // 2) включаем selected на нужной карточке
-            const targetCard = cards[safeIdx];
-            if (!targetCard) {
+            const targetBtn = btns[safeIdx];
+            if (!targetBtn) {
               return {
                 ok: false,
                 reason: 'index-out-of-range',
                 idx: safeIdx,
-                total: cards.length
+                total: btns.length
               };
             }
 
-            const targetBtn = targetCard.querySelector('.b-make-post__set-order-btn');
-            if (!targetBtn) {
-              return { ok: false, reason: 'no-button', idx: safeIdx, total: cards.length };
-            }
-
-            targetBtn.scrollIntoView({block: 'center'});
+            targetBtn.scrollIntoView({ block: 'center' });
             targetBtn.click();
 
-            // опционально: читаем номер
             const numSpan = targetBtn.querySelector('.checkbox-item__num');
             const numText = numSpan ? numSpan.textContent.trim() : null;
 
@@ -584,7 +592,7 @@ def _handle_select_media_by_index(driver, step, post_data, state):
               ok: true,
               reason: 'selected',
               idx: safeIdx,
-              total: cards.length,
+              total: btns.length,
               num: numText
             };
             """,
@@ -597,6 +605,10 @@ def _handle_select_media_by_index(driver, step, post_data, state):
             state.mark_failed()
         else:
             print("✅ selectMediaByIndex: media selected")
+
+        if wait_after_ms > 0:
+            print(f"⏳ selectMediaByIndex: waitAfterMs={wait_after_ms}ms")
+            time.sleep(wait_after_ms / 1000.0)
 
     except Exception as e:
         print(f"❌ selectMediaByIndex error: {e}")

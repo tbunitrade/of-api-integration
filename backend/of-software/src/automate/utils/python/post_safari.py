@@ -34,6 +34,7 @@ def inject_payload_into_steps(steps, cli_payload):
         injected_steps.append(deep_replace(step, cli_payload))
     return injected_steps
 
+
 # ============================================================
 # create_post — открывает /posts/create и выполняет POST_STEPS
 # ============================================================
@@ -49,8 +50,24 @@ def create_post(safari_driver, cli_payload):
     post_runs = cli_payload.get("postRuns")
     single_post_data = cli_payload.get("postData", {})
 
+    all_media_paths = []
+
     if post_runs:
         print(f"📅 Received {len(post_runs)} postRuns from payload")
+
+        # Если TS уже передал bulk_media_paths в первый run — уважаем это
+        first_bulk = post_runs[0].get("bulk_media_paths") if post_runs else None
+        if first_bulk:
+            all_media_paths = list(first_bulk)
+        else:
+            # Иначе собираем список из всех content_path
+            for pr in post_runs:
+                p = pr.get("content_path")
+                if p:
+                    all_media_paths.append(p)
+
+        print("🎞 all_media_paths for bulk:", all_media_paths)
+
     else:
         print("📅 No postRuns array, falling back to single postData")
 
@@ -70,15 +87,38 @@ def create_post(safari_driver, cli_payload):
             print("⚠️ .b-feed not found after 30s, continuing anyway...")
         if post_runs:
             total = len(post_runs)
-            for idx, post_data in enumerate(post_runs, start=1):
+            for idx, pr in enumerate(post_runs, start=1):
                 print("\n============================================================")
-                print(f"▶️ Run {idx}/{total}")
-                print("📦 postData = ", post_data)
+                # базовые данные
+                post_data = dict(single_post_data)
+                post_data.update(pr or {})
 
-                steps = inject_payload_into_steps(POST_STEPS, post_data)
+                # 0-based индекс руна – будем использовать в selectMediaByIndex
+                run_index = idx - 1
+                post_data["run_index"] = run_index
+
+                print(f"▶️ Run {idx}/{total}")
+                print("📦 postData (base) = ", post_data)
+
+                # работаем с копией, чтобы не портить исходный массив
+                local_post_data = dict(post_data)
+
+                # если TS не передал bulk_media_paths, можно (опционально) подложить с Python
+                if idx == 1 and all_media_paths and "bulk_media_paths" not in local_post_data:
+                    local_post_data["bulk_media_paths"] = all_media_paths
+                    print("🎞 bulk_media_paths attached to first run (from Python)")
+
+                # сначала подставляем payload в POST_STEPS
+                steps = inject_payload_into_steps(POST_STEPS, local_post_data)
+
+                # для всех run кроме первого — вырезаем appendMedias
+                if idx > 1:
+                    steps = [s for s in steps if s.get("type") != "appendMedias"]
+
+                print("📦 postData (final) = ", local_post_data)
                 print(f"🚀 Loaded {len(steps)} steps for post execution.")
 
-                work(safari_driver, steps, post_data)
+                work(safari_driver, steps, local_post_data)
 
                 print("✅ Post workflow finished for this run.")
                 # если нужно — можно добавить паузу:

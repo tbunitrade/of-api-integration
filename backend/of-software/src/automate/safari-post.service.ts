@@ -544,6 +544,19 @@ export class SafariPostService {
         return { ok: false, scheduledCount: 0 };
       }
 
+      // 🔗 Собираем ВСЕ пути к медиа из postRuns и кладём их в первый run
+      const allMediaPaths = aggregatedRuns
+        .map((run) => run && run.content_path)
+        .filter((p: string | null | undefined) => !!p);
+
+      if (allMediaPaths.length) {
+        (aggregatedRuns[0] as any).bulk_media_paths = allMediaPaths;
+        console.log(
+          '[SafariPostService] bulk_media_paths подготовлены для первого run:',
+          allMediaPaths,
+        );
+      }
+
       // ✅ Теперь один финальный payload, в который кладём МАССИВ постов
       const finalPayload = buildSafariPayload(
         {
