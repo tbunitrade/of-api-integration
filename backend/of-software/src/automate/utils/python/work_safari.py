@@ -13,7 +13,7 @@
 
 from __future__ import annotations
 
-import time, os, shutil, tempfile
+import time, os, shutil, tempfile, math
 from typing import Any, Dict, List, Optional
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
@@ -391,15 +391,111 @@ def ensure_world_readable(path: str) -> str:
         print(f"⚠️ Failed to chmod file (will use original path): {e}")
     return path
 
-def _find_file_input_near_dropzone(driver, timeout=10):
+from selenium.webdriver.common.by import By
+from selenium.common.exceptions import NoSuchElementException
+import time
+import math
+
+def _distance(a, b):
+    dx = (a["left"] + a["width"] / 2) - (b["left"] + b["width"] / 2)
+    dy = (a["top"] + a["height"] / 2) - (b["top"] + b["height"] / 2)
+    return math.sqrt(dx * dx + dy * dy)
+
+def _get_rect(driver, selector):
+    return driver.execute_script(
+        """
+        const el = document.querySelector(arguments[0]);
+        if (!el) return null;
+        const r = el.getBoundingClientRect();
+        const style = window.getComputedStyle(el);
+        return {
+            left: r.left, top: r.top,
+            width: r.width, height: r.height,
+            display: style.display,
+            visibility: style.visibility
+        };
+        """,
+        selector,
+    )
+
+def _collect_file_inputs(driver):
+    return driver.execute_script(
+        """
+        const inputs = Array.from(document.querySelectorAll("input[type='file']"));
+        return inputs.map(el => {
+            const r = el.getBoundingClientRect();
+            const style = window.getComputedStyle(el);
+            return {
+                id: el.id || null,
+                className: el.className || null,
+                name: el.name || null,
+                hidden: el.hidden,
+                width: r.width,
+                height: r.height,
+                left: r.left,
+                top: r.top,
+                display: style.display,
+                visibility: style.visibility,
+            };
+        });
+        """
+    )
+
+def _close_modal_alert_if_present(driver) -> bool:
     """
-    Ищем input[type="file"], который логически относится к дропзоне:
-    1) Пытаемся найти .b-dropzone__label и ближайший к ней input[type=file].
-    2) Если input'ов нет — ОДИН раз:
-       • пробуем кликнуть .button-add-media (новый UI с медиа-слайдером),
-       • если её нет — пробуем кликнуть #attach_file_photo (старый вариант).
+    Закрывает #ModalAlert, если он есть.
+    Возвращает True, если модалка была и мы её закрыли.
     """
-    print("🔎 [_find_file_input_near_dropzone] start search near .b-dropzone__label")
+    from selenium.webdriver.common.by import By
+
+    try:
+        modals = driver.find_elements(By.CSS_SELECTOR, "#ModalAlert")
+        if not modals:
+            return False
+
+        try:
+            text = driver.execute_script(
+                "const el = document.querySelector('#ModalAlert .dialog_message');"
+                "return el ? el.textContent.trim() : '';"
+            )
+        except Exception:
+            text = ""
+
+        print(f"⚠️ ModalAlert detected: '{text}'")
+
+        btns = driver.find_elements(By.CSS_SELECTOR, "#ModalAlert button")
+        if btns:
+            try:
+                btns[0].click()
+                time.sleep(0.5)
+                print("✅ ModalAlert closed via Close button")
+                return True
+            except Exception as e:
+                print(f"⚠️ Failed to click Close on ModalAlert: {e}")
+        return False
+    except Exception as e_outer:
+        print(f"⚠️ _close_modal_alert_if_present error: {e_outer}")
+        return False
+
+def _find_file_input_near_dropzone(driver, timeout=10, run_index: int = 0):
+    """
+    Ищем input[type="file"], который относится к дропзоне.
+
+    ЛОГИКА:
+      • run_index == 0  → обычный первый аплоад:
+          - пытаемся найти готовый input рядом с .b-dropzone__label
+          - если инпутов нет → жмём #attach_file_photo, потом .button-add-media
+
+      • run_index > 0   → сценарий "дозагрузки" работает через ошибку:
+          - СНАЧАЛА запускается #attach_file_photo он выдает ошибку что нет input, подтягивается загруженый ранее файл, но не стараемся повторно загружать файл так как получим ошибку Media has already added. Please choose another.
+          - После этого доступна новая загрузка → жмём .button-add-media, чтобы появился новый input.
+          - Потом ищем ближайший input[type=file] к .b-dropzone__label и туда заливаем новый файл.
+    """
+    # сперва подчистим возможную прошлую модалку
+    _close_modal_alert_if_present(driver)
+
+    # дальше идёт твоя текущая реализация ...
+    print(f"🔎 [_find_file_input_near_dropzone] start search near .b-dropzone__label (run_index={run_index})")
 
     js = """
     const label = document.querySelector('.b-dropzone__label');
@@ -407,9 +503,9 @@ def _find_file_input_near_dropzone(driver, timeout=10):
       return { chosen: null, meta: [], reason: 'no-label' };
     }
 
-    const labelRect = label.getBoundingClientRect();
-    const labelCx = labelRect.left + labelRect.width / 2;
-    const labelCy = labelRect.top + labelRect.height / 2;
+    const rect = label.getBoundingClientRect();
+    const labelCx = rect.left + rect.width / 2;
+    const labelCy = rect.top + rect.height / 2;
 
     const inputs = Array.from(document.querySelectorAll('input[type="file"]'));
     if (!inputs.length) {
@@ -431,34 +527,68 @@ def _find_file_input_near_dropzone(driver, timeout=10):
 
       meta.push({
         id: inp.id || null,
-        name: inp.name || null,
         className: inp.className || null,
+        name: inp.name || null,
+        hidden: inp.hidden,
         display: style.display,
         visibility: style.visibility,
-        hidden: inp.hidden,
-        top: r.top,
-        left: r.left,
         width: r.width,
         height: r.height,
-        dist
+        left: r.left,
+        top: r.top,
+        dist,
       });
 
-      // Берём ближайший НЕ disabled инпут (даже если он скрыт)
-      if (!inp.disabled && dist < bestDist) {
+      if (dist < bestDist) {
         bestDist = dist;
         best = inp;
       }
     }
 
-    return { chosen: best, meta, reason: best ? 'ok' : 'no-visible' };
+    return { chosen: best, meta, reason: 'ok' };
     """
+
+    from selenium.webdriver.common.by import By
 
     deadline = time.time() + timeout
     last = None
-    clicked_media_btn = False  # чтобы не долбить кнопку в цикле
+    clicked_media_btn_name = None  # 'attach-file' / 'add-media'
+
+    # 🔁 ДО ЦИКЛА: если это дозагрузка (run_index > 0) — чёткая последовательность:
+    # 1) #attach_file_photo
+    # 2) .button-add-media
+    if run_index > 0:
+        try:
+            btn2 = driver.find_element(By.CSS_SELECTOR, "#attach_file_photo")
+            print("🖱 [_find_file_input_near_dropzone] run_index>0: click #attach_file_photo (error / rebind previous file)")
+            driver.execute_script("arguments[0].scrollIntoView({block:'center'});", btn2)
+            btn2.click()
+            clicked_media_btn_name = "attach-file"
+
+            # сперва подчистим возможную модалку
+            _close_modal_alert_if_present(driver)
+            time.sleep(1.0)
+
+            # 🔥 если вылез ModalAlert — закрываем
+            _close_modal_alert_if_present(driver)
+        except Exception as e_btn2:
+            print(f"⚠️ run_index>0: cannot click #attach_file_photo: {e_btn2}")
+
+        try:
+            btn = driver.find_element(By.CSS_SELECTOR, ".button-add-media")
+            print("🖱 [_find_file_input_near_dropzone] run_index>0: click .button-add-media (spawn new input)")
+            driver.execute_script("arguments[0].scrollIntoView({block:'center'});", btn)
+            btn.click()
+            clicked_media_btn_name = "add-media"
+            time.sleep(1.0)
+        except Exception as e_btn:
+            print(f"⚠️ run_index>0: cannot click .button-add-media: {e_btn}")
 
     while time.time() < deadline:
         try:
+            # каждый цикл проверяем и закрываем модалку, если она висит
+            _close_modal_alert_if_present(driver)
+
             result = driver.execute_script(js)
             if result is None:
                 print("⚠️ [_find_file_input_near_dropzone] JS returned null")
@@ -477,31 +607,31 @@ def _find_file_input_near_dropzone(driver, timeout=10):
                 print("✅ [_find_file_input_near_dropzone] found closest input[type=file]")
                 return chosen
 
-            # Fallback: нет инпутов → один раз жмём кнопку Add media
-            if reason == "no-inputs" and not clicked_media_btn:
-                # 1) Новый UI — кнопка .button-add-media
-                try:
-                    btn = driver.find_element(By.CSS_SELECTOR, ".button-add-media")
-                    print("🖱 [_find_file_input_near_dropzone] click .button-add-media to spawn file input")
-                    driver.execute_script("arguments[0].scrollIntoView({block:'center'});", btn)
-                    btn.click()
-                    clicked_media_btn = True
-                    time.sleep(1.0)  # даём странице создать input
-                    continue
-                except Exception as e_btn1:
-                    print(f"⚠️ cannot click .button-add-media: {e_btn1}")
-
-                # 2) Старый UI — кнопка #attach_file_photo
+            # 👉 только для первого run'а (run_index == 0) пробуем спавнить инпуты
+            if run_index == 0 and reason == "no-inputs" and clicked_media_btn_name is None:
+                # 1) старый UI: #attach_file_photo
                 try:
                     btn2 = driver.find_element(By.CSS_SELECTOR, "#attach_file_photo")
-                    print("🖱 [_find_file_input_near_dropzone] click #attach_file_photo to spawn file input")
+                    print("🖱 [_find_file_input_near_dropzone] run_index=0: click #attach_file_photo to spawn file input")
                     driver.execute_script("arguments[0].scrollIntoView({block:'center'});", btn2)
                     btn2.click()
-                    clicked_media_btn = True
+                    clicked_media_btn_name = "attach-file"
                     time.sleep(1.0)
                     continue
                 except Exception as e_btn2:
-                    print(f"⚠️ cannot click #attach_file_photo: {e_btn2}")
+                    print(f"⚠️ run_index=0: cannot click #attach_file_photo: {e_btn2}")
+
+                # 2) новый UI: .button-add-media
+                try:
+                    btn = driver.find_element(By.CSS_SELECTOR, ".button-add-media")
+                    print("🖱 [_find_file_input_near_dropzone] run_index=0: click .button-add-media to spawn file input")
+                    driver.execute_script("arguments[0].scrollIntoView({block:'center'});", btn)
+                    btn.click()
+                    clicked_media_btn_name = "add-media"
+                    time.sleep(1.0)
+                    continue
+                except Exception as e_btn1:
+                    print(f"⚠️ run_index=0: cannot click .button-add-media: {e_btn1}")
 
             last = reason
         except Exception as e:
@@ -621,6 +751,7 @@ def _handle_append_medias(driver, step, post_data, state):
 
     # 🔁 НОВОЕ: поддержка bulk — берём список путей, если он есть
     bulk_paths = post_data.get("bulk_media_paths")
+
     if bulk_paths and isinstance(bulk_paths, list):
         raw_paths = [p for p in bulk_paths if isinstance(p, str) and p.strip()]
         mode = "bulk"
@@ -629,6 +760,10 @@ def _handle_append_medias(driver, step, post_data, state):
         mode = "single"
 
     print(f"📦 appendMedias[{mode}]: key={key}, file_path={raw_paths}, selector={selector}")
+    print(
+        f"📦 appendMedias[{mode}]: run_index={post_data.get('run_index')}, "
+        f"raw_paths={raw_paths}, selector={selector}"
+    )
 
     if not raw_paths:
         print("⚠️ No media paths provided for appendMedias")
@@ -694,36 +829,73 @@ def _handle_append_medias(driver, step, post_data, state):
 
 
     try:
-        # 🔗 Ищем file input ТОЛЬКО рядом с .b-dropzone__label
-        el = _find_file_input_near_dropzone(driver, timeout=10)
+        # Определяем run_index для понимания, первый это прогон или нет
+        run_index = 0
+        try:
+            raw_idx = post_data.get("run_index")
+            if raw_idx is not None:
+                run_index = int(raw_idx)
+        except Exception as e_idx:
+            print(f"⚠️ appendMedias: invalid run_index '{post_data.get('run_index')}', default 0: {e_idx}")
+            run_index = 0
+
+            # 🔗 Ищем file input ТОЛЬКО рядом с .b-dropzone__label, с учётом run_index
+        el = _find_file_input_near_dropzone(driver, timeout=10, run_index=run_index)
+
+        # 🛟 Fallback: если "рядом с дропзоной" не нашли — пробуем любой input[type=file]
+        if el is None:
+            print("⚠️ appendMedias: no input near dropzone, trying global fallback for input[type='file']")
+
+            try:
+                from selenium.webdriver.common.by import By as _ByFallback
+                candidates = driver.find_elements(_ByFallback.CSS_SELECTOR, "input[type='file']")
+                print(f"⚙️ appendMedias fallback: found {len(candidates)} global file inputs")
+
+                if candidates:
+                    el = candidates[0]
+                    print("✅ appendMedias fallback: using first global file input")
+            except Exception as e_f:
+                print(f"⚠️ appendMedias fallback search error: {e_f}")
+                el = None
 
         if el is None:
-            print("❌ appendMedias: NO usable input[type='file'] found near dropzone → FAIL")
+            print("❌ appendMedias: NO usable input[type='file'] found → FAIL")
             state.mark_failed()
             return
 
         driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", el)
 
-        # 1️⃣ Сначала пробуем bulk строку (одна или несколько дорожек)
-        try:
-            print(f"📁 appendMedias: Uploading {upload_value} into dropzone file input")
-            el.send_keys(upload_value)
-        except Exception as e1:
-            print(
-                f"❌ appendMedias: Safari rejected bulk paths {upload_value}: {e1}. "
-                f"Trying per-file fallback..."
-            )
+        # 1️⃣ Просто загружаем по одному файлу из safe_paths
+        for sp in safe_paths:
+            try:
+                print(f"📁 appendMedias: Uploading single file {sp}")
+                el.send_keys(sp)
+                time.sleep(0.5)
+            except Exception as e2:
+                print(f"❌ appendMedias: Safari rejected file {sp}: {e2}")
+                state.mark_failed()
+                return
 
-            # 2️⃣ Фолбэк — по одному файлу
-            for sp in safe_paths:
-                try:
-                    print(f"📁 appendMedias: Uploading single file {sp}")
-                    el.send_keys(sp)
-                    time.sleep(0.5)
-                except Exception as e2:
-                    print(f"❌ appendMedias: Safari rejected file {sp}: {e2}")
-                    state.mark_failed()
-                    return
+        # # 1️⃣ Сначала пробуем bulk строку (одна или несколько дорожек)
+        # try:
+        #     print(f"📁 appendMedias: Uploading {upload_value} into dropzone file input")
+        #     el.send_keys(upload_value)
+        # except Exception as e1:
+        #     print(
+        #         f"❌ appendMedias: Safari rejected bulk paths {upload_value}: {e1}. "
+        #         f"Trying per-file fallback..."
+        #     )
+        #
+        #     # 2️⃣ Фолбэк — по одному файлу
+        #     for sp in safe_paths:
+        #         try:
+        #             print(f"📁 appendMedias: Uploading single file {sp}")
+        #             el.send_keys(sp)
+        #             time.sleep(0.5)
+        #         except Exception as e2:
+        #             print(f"❌ appendMedias: Safari rejected file {sp}: {e2}")
+        #             state.mark_failed()
+        #             return
 
 
         # # 🔁 1) сначала пробуем temp-путь (/tmp/of_uploads/…)
@@ -746,6 +918,7 @@ def _handle_append_medias(driver, step, post_data, state):
         #         )
         #         return state.mark_failed()
         #
+
         # # ⏳ ждём окончания загрузки (оставляю твой код как есть)
         try:
             WebDriverWait(driver, 20).until_not(
@@ -821,6 +994,79 @@ def _handle_append_medias(driver, step, post_data, state):
             print("✅ appendMedias: preview element detected in dropzone before submit.")
         except Exception as e_wait:
             print(f"⚠️ appendMedias: no preview detected before timeout: {e_wait}")
+
+        print("✅ File uploaded successfully (appendMedias end)")
+
+        # 🧹 Если это не первый прогон — пробуем удалить "первое" медиа из дропзоны,
+        # чтобы оставить только что загруженный файл.
+        try:
+            run_index = 0
+            try:
+                raw_idx = post_data.get("run_index")
+                if raw_idx is not None:
+                    run_index = int(raw_idx)
+            except Exception:
+                run_index = 0
+
+            if run_index > 0:
+                print(f"🧹 appendMedias: run_index={run_index} → try to remove first media in dropzone")
+                cleanup_result = driver.execute_script(
+                    """
+                    const sels = [
+                      '.b-dropzone__item',
+                      '.b-dropzone__preview',
+                      '.b-dropzone__video'
+                    ];
+                    let previews = [];
+                    for (const sel of sels) {
+                      const found = Array.from(document.querySelectorAll(sel));
+                      if (found.length) {
+                        previews = found;
+                        break;
+                      }
+                    }
+                    if (!previews.length) {
+                      return { removed: false, reason: 'no-previews', count: 0 };
+                    }
+                    const first = previews[0];
+
+                    let btn =
+                      first.querySelector('.b-dropzone__preview__delete') ||           // 👈 твоя реальная кнопка
+                      first.querySelector('button[aria-label*="Delete" i]') ||
+                      first.querySelector('button[aria-label*="Remove" i]') ||
+                      first.querySelector('.b-dropzone__remove') ||
+                      first.querySelector('.button-remove-media') ||
+                      first.querySelector('[data-role*="remove"]') ||
+                      first.querySelector('[data-testid*="remove"]');
+
+                    if (!btn) {
+                      // fallback: пробуем найти svg/use и кликнуть ближайшую кнопку
+                      const icon = first.querySelector('svg, use');
+                      if (icon) {
+                        const b = icon.closest('button');
+                        if (b) {
+                          b.click();
+                          return {
+                            removed: true,
+                            reason: 'svg-closest-button',
+                            count: previews.length
+                          };
+                        }
+                      }
+                      return {
+                        removed: false,
+                        reason: 'no-remove-button',
+                        count: previews.length
+                      };
+                    }
+
+                    btn.click();
+                    return { removed: true, reason: 'button-clicked', count: previews.length };
+                    """
+                )
+                print(f"🧹 appendMedias: dropzone cleanup result: {cleanup_result}")
+        except Exception as e_cleanup:
+            print(f"⚠️ appendMedias: failed to cleanup first media: {e_cleanup}")
 
         print("✅ File uploaded successfully (appendMedias end)")
 

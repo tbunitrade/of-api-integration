@@ -1,10 +1,9 @@
 # start_login_safari.py
-import os
+import os, sys, json, time, traceback
 from os import mkdir
 import logging
 from pathlib import Path
 from dotenv import load_dotenv
-import sys, json, time, traceback
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
@@ -13,6 +12,8 @@ from safari_session_manager import get_driver, load_cookies_before_login, save_c
 from solve_recaptcha_and_cloudflare import solve_recaptcha_and_insert_token
 from post_safari import create_post
 #from safari_session_manager import get_driver
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, BASE_DIR)
 
 print("🔥 ARGV:", sys.argv)
 #payload = json.loads(sys.argv[1])
@@ -120,20 +121,40 @@ def main():
     print('Accepted cookies rules')
 
     is_fingerprint_login = False
-
     print("status", use_fingerprint, "user-> ", fingerprint_username)
 
+    # 🔹 ВСЕГДА сначала открываем сайт
+    driver.get("https://onlyfans.com")
+    time.sleep(10)
+
+    # 🔹 (по желанию) здесь можно один раз обработать cookie-баннер,
+    # чтобы не дублировать код в ветках
     if use_fingerprint:
         is_fingerprint_login = True
-        driver.get("https://onlyfans.com")
 
-        time.sleep(5)
+        # cookies_btn = WebDriverWait(driver, 5).until(
+        #     EC.presence_of_element_located((By.CSS_SELECTOR, '.b-cookies-informer__nav .g-btn[data-v-fe22891a]:not(:first-child)'))
+        # )
+        #
+        # cookies_btn.click()
 
-        cookies_btn = WebDriverWait(driver, 5).until(
-            EC.presence_of_element_located((By.CSS_SELECTOR, '.b-cookies-informer__nav .g-btn[data-v-fe22891a]:not(:first-child)'))
-        )
+        # 🍪 Cookie-баннер не должен валить весь скрипт
+        try:
+            cookies_btn = WebDriverWait(driver, 5).until(
+                EC.element_to_be_clickable((
+                    By.CSS_SELECTOR,
+                    # твой старый селектор
+                    '.b-cookies-informer__nav .g-btn[data-v-fe22891a]:not(:first-child),'
+                    # более общий fallback на случай изменения data-v-*
+                    '.b-cookies-informer__nav .g-btn:not(:first-child),'
+                    '.b-cookies-informer__nav button:not(:first-child)'
+                ))
+            )
+            cookies_btn.click()
+            print("🍪 Cookies banner accepted")
+        except Exception as e:
+            print(f"⚠️ Cookies banner not shown or selector mismatch, continue without click: {e}")
 
-        cookies_btn.click()
 
         try:
             # Ждём появления и кликаем на иконку Fingerprint
