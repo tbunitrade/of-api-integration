@@ -1,14 +1,19 @@
 # ============================================================
-# work_safari.py — v3 Stable Safari
-# Полностью очищенный, исправленный и задокументированный.
-# Основные улучшения:
-#   • Исправлена подстановка $value
-#   • Удалён мусорный handler _handle_keyboard_type
-#   • Исправлен ввод caption (ProseMirror-friendly)
-#   • Исправлен clickForValue (работает для месяца, дней, часов, AM/PM)
-#   • Исправлен clickUntil (не ломается state)
-#   • Добавлены комментарии к каждому блоку
-#   • Устранены конфликты логики
+# work_safari.py — v3 Stable Safari (media-ready)
+# Универсальный исполнитель шагов для Safari OnlyFans.
+#
+# Что делает сейчас:
+#   • Единый движок шагов: waitForTime, waitForSelector, click, type, loop, condition
+#   • Корректная подстановка $value / key из post_data во все шаги
+#   • ProseMirror-friendly ввод caption через JS (без глюков send_keys)
+#   • Надёжные клики: _safe_click, clickForValue, clickUntil с retry и автоскроллом
+#   • Поддержка appendMedias: bulk_media_paths + пофайловая загрузка через input[type=file]
+#   • Обход дублей медиа и алертов: #ModalAlert + generic duplicate/alert dialog
+#   • selectMediaByIndex: выбор РОВНО одного медиа по индексу (для повторных постов)
+#   • RuntimeState: счётчики retries/skipped/failed + логирование прогресса по шагам
+#
+# Файл очищен от экспериментальных хендлеров и лишней логики, оставлены только
+# стабильные, боевые функции для продакшен-ранов.
 # ============================================================
 
 from __future__ import annotations
@@ -552,141 +557,6 @@ def _close_modal_alert_if_present(driver) -> bool:
         return False
 
 
-# def _find_file_input_near_dropzone(driver, timeout=10, run_index: int = 0):
-#     """
-#     Ищем input[type="file"], который относится к дропзоне.
-#
-#     ЛОГИКА:
-#       • run_index == 0  → обычный первый аплоад:
-#           - пытаемся найти готовый input рядом с .b-dropzone__label
-#           - если инпутов нет → жмём #attach_file_photo (первое открытие), ждём и ищем снова
-#
-#       • run_index > 0   → сценарий "дозагрузки":
-#           - чистим возможный ModalAlert
-#           - жмём #attach_file_photo (подтягивает старое медиа, может показать «Media has already added»)
-#           - жмём .button-add-media, чтобы появился новый input
-#           - ещё раз чистим модалки и несколько раз проверяем наличие input[type=file]
-#     """
-#
-#     label_selector = ".b-dropzone__label"
-#     file_selector = "input[type='file']"
-#
-#     print(f"🔎 [_find_file_input_near_dropzone] start search near {label_selector} (run_index={run_index})")
-#
-#     # 0) Ждём, пока появится дропзона
-#     try:
-#         WebDriverWait(driver, timeout).until(
-#             EC.presence_of_element_located((By.CSS_SELECTOR, label_selector))
-#         )
-#     except Exception as e:
-#         print(f"⚠️ [_find_file_input_near_dropzone] dropzone label not found: {e}")
-#         return None
-#
-#     def _scan_inputs(reason: str):
-#         try:
-#             inputs = driver.find_elements(By.CSS_SELECTOR, file_selector)
-#         except Exception as e:
-#             print(f"⚠️ [_find_file_input_near_dropzone] error during scan '{reason}': {e}")
-#             return None
-#
-#         print(f"🧩 [_find_file_input_near_dropzone] reason={reason}, inputs={len(inputs)}")
-#
-#         if not inputs:
-#             return None
-#
-#         visible = []
-#         for i, el in enumerate(inputs):
-#             try:
-#                 if el.is_enabled():
-#                     visible.append(el)
-#             except Exception:
-#                 continue
-#
-#         if not visible:
-#             return None
-#
-#         return visible[0]
-#
-#     # 1) Пробуем найти уже существующий input (после первого attach он уже есть)
-#     el = _scan_inputs("initial-scan")
-#     if el:
-#         print("✅ [_find_file_input_near_dropzone] found existing input[type=file] on initial scan")
-#         return el
-#
-#     # ---------------------------
-#     # ВЕТКА 1: ПЕРВЫЙ ЗАПУСК
-#     # ---------------------------
-#     if run_index == 0:
-#         try:
-#             print("🖱 [_find_file_input_near_dropzone] run_index=0: click #attach_file_photo to spawn file input")
-#             attach_btn = driver.find_element(By.CSS_SELECTOR, "#attach_file_photo")
-#             attach_btn.click()
-#             time.sleep(0.5)
-#         except Exception as e:
-#             print(f"⚠️ [_find_file_input_near_dropzone] cannot click #attach_file_photo: {e}")
-#
-#         el = _scan_inputs("after-attach-file-photo")
-#         if el:
-#             print("✅ [_find_file_input_near_dropzone] found input[type=file] after #attach_file_photo")
-#             return el
-#
-#     # ---------------------------
-#     # ВЕТКА 2: ДОЗАГРУЗКА (run_index > 0)
-#     # ---------------------------
-#     elif run_index > 0:
-#         # На всякий пожарный — почистим ModalAlert, если он всплыл
-#         _close_modal_alert_if_present(driver)
-#
-#         # 1) кликаем #attach_file_photo (он может подтянуть прошлое медиа / вызвать алерт)
-#         try:
-#             print("🖱 [_find_file_input_near_dropzone] run_index>0: click #attach_file_photo (rebind previous media)")
-#             attach_btn = driver.find_element(By.CSS_SELECTOR, "#attach_file_photo")
-#             attach_btn.click()
-#             time.sleep(0.7)
-#         except Exception as e:
-#             print(f"⚠️ [_find_file_input_near_dropzone] cannot click #attach_file_photo: {e}")
-#
-#         # ещё раз проверим модалку (Media has already added и т.п.)
-#         _close_modal_alert_if_present(driver)
-#
-#         # 2) жмём .button-add-media, чтобы появился новый инпут
-#         try:
-#             print("🖱 [_find_file_input_near_dropzone] run_index>0: click .button-add-media to spawn new input")
-#             add_btn = driver.find_element(By.CSS_SELECTOR, ".button-add-media")
-#             add_btn.click()
-#             time.sleep(0.8)
-#         except Exception as e:
-#             print(f"⚠️ [_find_file_input_near_dropzone] cannot click .button-add-media: {e}")
-#
-#         # ещё раз чистим возможный попап и несколько раз пробуем найти инпут
-#         closed = _close_modal_alert_if_present(driver)
-#         if closed:
-#             print("🧹 [_find_file_input_near_dropzone] duplicate/alert modal was closed after .button-add-media")
-#             # 🔁 НОВОЕ: пробуем ещё раз дернуть attach после закрытия попапа
-#             try:
-#                 print("🖱 [_find_file_input_near_dropzone] re-click #attach_file_photo after closing modal")
-#                 attach_btn2 = driver.find_element(By.CSS_SELECTOR, "#attach_file_photo")
-#                 attach_btn2.click()
-#                 time.sleep(0.8)
-#             except Exception as e:
-#                 print(f"⚠️ [_find_file_input_near_dropzone] cannot re-click #attach_file_photo after modal: {e}")
-#
-#         for attempt in range(3):
-#             el = _scan_inputs(f"after-button-add-media-try{attempt}")
-#             if el:
-#                 print("✅ [_find_file_input_near_dropzone] found input[type=file] after .button-add-media")
-#                 return el
-#             time.sleep(0.4)
-#
-#     # 3) Фолбэк — вдруг всё же есть какой-то input глобально
-#     el = _scan_inputs("global-fallback")
-#     if el:
-#         print("✅ [_find_file_input_near_dropzone] using global fallback input[type=file]")
-#         return el
-#
-#     print("❌ [_find_file_input_near_dropzone] not found any usable input[type=file]")
-#     return None
-
 def _find_file_input_near_dropzone(driver, timeout: int = 10, run_index: int = 0):
     """
     Ищем input[type="file"], который относится к дропзоне.
@@ -968,7 +838,6 @@ def _handle_append_medias(driver, step, post_data, state):
         return state.mark_skipped()
 
 
-
     # 🔐 готовим файлы (chmod 644 или копия в /tmp/of_uploads)
     safe_paths = []
     for p in existing_paths:
@@ -1101,6 +970,11 @@ def _handle_append_medias(driver, step, post_data, state):
                     return False
 
                 cards = drv.find_elements(By.CSS_SELECTOR, ".post_media")
+
+                # 🔧 ВАЖНО: пока нет ни одной карточки — считаем, что загрузка НЕ завершена
+                if not cards:
+                    return False
+
                 for c in cards:
                     cls = (c.get_attribute("class") or "") or ""
                     if "m-processing" in cls or "m-uploading-media" in cls:
@@ -1132,79 +1006,6 @@ def _handle_append_medias(driver, step, post_data, state):
             print(f"⚠️ appendMedias: no preview detected before timeout: {e_wait}")
 
         print("✅ File uploaded successfully (appendMedias end)")
-
-        # 🧹 Если это не первый прогон — пробуем удалить "первое" медиа из дропзоны,
-        # чтобы оставить только что загруженный файл.
-        # try:
-        #     run_index = 0
-        #     try:
-        #         raw_idx = post_data.get("run_index")
-        #         if raw_idx is not None:
-        #             run_index = int(raw_idx)
-        #     except Exception:
-        #         run_index = 0
-
-            # if run_index > 0:
-            #     print(f"🧹 appendMedias: run_index={run_index} → try to remove first media in dropzone")
-            #     cleanup_result = driver.execute_script(
-            #         """
-            #         const sels = [
-            #           '.b-dropzone__item',
-            #           '.b-dropzone__preview',
-            #           '.b-dropzone__video'
-            #         ];
-            #         let previews = [];
-            #         for (const sel of sels) {
-            #           const found = Array.from(document.querySelectorAll(sel));
-            #           if (found.length) {
-            #             previews = found;
-            #             break;
-            #           }
-            #         }
-            #         if (!previews.length) {
-            #           return { removed: false, reason: 'no-previews', count: 0 };
-            #         }
-            #         const first = previews[0];
-            #
-            #         let btn =
-            #           first.querySelector('.b-dropzone__preview__delete') ||           // 👈 твоя реальная кнопка
-            #           first.querySelector('button[aria-label*="Delete" i]') ||
-            #           first.querySelector('button[aria-label*="Remove" i]') ||
-            #           first.querySelector('.b-dropzone__remove') ||
-            #           first.querySelector('.button-remove-media') ||
-            #           first.querySelector('[data-role*="remove"]') ||
-            #           first.querySelector('[data-testid*="remove"]');
-            #
-            #         if (!btn) {
-            #           // fallback: пробуем найти svg/use и кликнуть ближайшую кнопку
-            #           const icon = first.querySelector('svg, use');
-            #           if (icon) {
-            #             const b = icon.closest('button');
-            #             if (b) {
-            #               b.click();
-            #               return {
-            #                 removed: true,
-            #                 reason: 'svg-closest-button',
-            #                 count: previews.length
-            #               };
-            #             }
-            #           }
-            #           return {
-            #             removed: false,
-            #             reason: 'no-remove-button',
-            #             count: previews.length
-            #           };
-            #         }
-            #
-            #         btn.click();
-            #         return { removed: true, reason: 'button-clicked', count: previews.length };
-            #         """
-            #     )
-            #     print(f"🧹 appendMedias: dropzone cleanup result: {cleanup_result}")
-        # except Exception as e_cleanup:
-        #     print(f"⚠️ appendMedias: failed to cleanup first media: {e_cleanup}")
-        #
-        #print("✅ File uploaded successfully (appendMedias end)")
 
     except Exception as e:
         print(f"❌ appendMedias failed: {e}")
