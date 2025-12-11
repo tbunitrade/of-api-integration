@@ -805,7 +805,6 @@ def _handle_append_medias(driver, step, post_data, state):
     file_path = post_data.get(key) or post_data.get("content_path")
     selector = step.get("selector") or "input[type='file']"
 
-    # 🔁 НОВОЕ: поддержка bulk — берём список путей, если он есть
     bulk_paths = post_data.get("bulk_media_paths")
 
     if bulk_paths and isinstance(bulk_paths, list):
@@ -825,7 +824,7 @@ def _handle_append_medias(driver, step, post_data, state):
         print("⚠️ No media paths provided for appendMedias")
         return state.mark_skipped()
 
-    # фильтруем по существующим файлам
+    # 1) фильтруем по существующим файлам
     existing_paths = []
     for p in raw_paths:
         if os.path.exists(p):
@@ -837,12 +836,11 @@ def _handle_append_medias(driver, step, post_data, state):
         print("⚠️ appendMedias: no existing files after check")
         return state.mark_skipped()
 
-
-    # 🔐 готовим файлы (chmod 644 или копия в /tmp/of_uploads)
+    # 2) готовим файлы
     safe_paths = []
     for p in existing_paths:
         try:
-            safe_p = ensure_world_readable(p) # теперь это ОСНОВНОЙ путь, без /tmp
+            safe_p = ensure_world_readable(p)
             safe_paths.append(safe_p)
         except Exception as e:
             print(f"⚠️ Failed to prepare file {p}: {e}")
@@ -851,9 +849,6 @@ def _handle_append_medias(driver, step, post_data, state):
         print("❌ appendMedias: no safe_paths after ensure_world_readable")
         return state.mark_failed()
 
-    # значение для send_keys — либо один путь, либо "\n".join(...)
-    upload_value = "\n".join(safe_paths)
-
     try:
         for sp in safe_paths:
             if not os.path.isfile(sp):
@@ -861,191 +856,148 @@ def _handle_append_medias(driver, step, post_data, state):
     except Exception as e:
         print(f"⚠️ os.path.isfile check failed: {e}")
 
+    # 3) run_index
+    base_run_index = 0
+    try:
+        raw_idx = post_data.get("run_index")
+        if raw_idx is not None:
+            base_run_index = int(raw_idx)
+    except Exception as e_idx:
+        print(f"⚠️ appendMedias: cannot parse run_index from post_data: {e_idx}")
+        base_run_index = 0
+
+    uploaded_any = False
+
+    # 4) для КАЖДОГО файла ищем input[type=file]
+    for idx, sp in enumerate(safe_paths):
+        try:
+            if idx == 0:
+                local_run_index = base_run_index
+            else:
+                local_run_index = max(1, base_run_index + idx)
+
+            print(f"📁 appendMedias: Uploading file #{idx} (local_run_index={local_run_index}) → {sp}")
+
+            el = _find_file_input_near_dropzone(
+                driver,
+                timeout=10,
+                run_index=local_run_index,
+            )
+
+            if el is None:
+                print("❌ appendMedias: NO usable input[type='file'] found for this file → FAIL")
+                state.mark_failed()
+                # ⬇️ ВАЖНО: НЕ return
+                continue
+
+            driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", el)
+
+            print(f"📁 appendMedias: send_keys({sp})")
+            el.send_keys(sp)
+            uploaded_any = True
+            time.sleep(0.5)
+
+        except Exception as e_upload:
+            print(f"❌ appendMedias: error while uploading {sp}: {e_upload}")
+            state.mark_failed()
+            continue
+
+    # 5) если ни один файл физически не ушёл — дальше ждать нечего
+    if not uploaded_any:
+        print("⚠️ appendMedias: no files were actually sent to OF, skip waits & upload_settled")
+        return
+
+    print("🔁 appendMedias: reached post-upload waits (progress + upload_settled)")
+
+    # 6) твои ожидания — как были, только без внешнего глобального try/except
+    try:
+        WebDriverWait(driver, 20).until_not(
+            EC.presence_of_element_located(
+                (By.CSS_SELECTOR, "span.b-dropzone__preview__progress")
+            )
+        )
+        print("⏳ Upload progress indicator disappeared (b-dropzone__preview__progress)")
+    except Exception:
+        print("⚠️ No explicit upload progress indicator or wait timeout, continue anyway")
 
     try:
-        # Берём базовый run_index из post_data (0 для первого поста, 1 для второго и т.д.)
-        base_run_index = 0
-        try:
-            raw_idx = post_data.get("run_index")
-            if raw_idx is not None:
-                base_run_index = int(raw_idx)
-        except Exception as e_idx:
-            print(f"⚠️ appendMedias: cannot parse run_index from post_data: {e_idx}")
-            base_run_index = 0
+        print("🔎 Checking dropzone preview nodes after upload…")
+        preview_info = driver.execute_script(
+            """
+            const sels = [
+              '.b-dropzone__video',
+              '.b-dropzone__item',
+              '.b-dropzone__preview'
+            ];
+            const result = {};
+            for (const sel of sels) {
+              const els = Array.from(document.querySelectorAll(sel));
+              result[sel] = els.map(el => ({
+                tag: el.tagName,
+                className: el.className,
+                html: el.outerHTML.slice(0, 180)
+              }));
+            }
+            return result;
+            """
+        )
+        print("🎯 Dropzone preview snapshot:", preview_info)
+    except Exception as e:
+        print(f"⚠️ Failed to inspect dropzone preview: {e}")
 
-        # 🔹 Флаг: хотя бы один файл реально ушёл в send_keys
-        uploaded_any = False
-
-        # Для КАЖДОГО файла ищем свой input[type=file]
-        for idx, sp in enumerate(safe_paths):
+    try:
+        def upload_settled(drv):
             try:
-                # Для первого файла в этом RUN используем base_run_index,
-                # для всех последующих файлов в том же RUN — считаем их "дозагрузкой"
-                if idx == 0:
-                    local_run_index = base_run_index
-                else:
-                    # гарантированно > 0 для дополнительных файлов
-                    local_run_index = max(1, base_run_index + idx)
-
-                print(f"📁 appendMedias: Uploading file #{idx} (local_run_index={local_run_index}) → {sp}")
-
-                el = _find_file_input_near_dropzone(
-                    driver,
-                    timeout=10,
-                    run_index=local_run_index,
+                progress = drv.find_elements(
+                    By.CSS_SELECTOR,
+                    ".b-dropzone__preview__progress"
                 )
-
-                # 🛟 Fallback: если "рядом с дропзоной" не нашли — пробуем любой input[type=file]
-                if el is None:
-                    print("⚠️ appendMedias: no input near dropzone, trying global fallback for input[type='file']")
-
-                    try:
-                        from selenium.webdriver.common.by import By as _ByFallback
-                        candidates = driver.find_elements(_ByFallback.CSS_SELECTOR, "input[type='file']")
-                        print(f"⚙️ appendMedias fallback: found {len(candidates)} global file inputs")
-
-                        if candidates:
-                            el = candidates[0]
-                            print("✅ appendMedias fallback: using first global file input")
-                    except Exception as e_f:
-                        print(f"⚠️ appendMedias fallback search error: {e_f}")
-                        el = None
-
-                if el is None:
-                    print("❌ appendMedias: NO usable input[type='file'] found for this file → FAIL")
-                    state.mark_failed()
-                    continue
-
-                driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", el)
-
-                # try:
-                #     print(f"📁 appendMedias: send_keys({sp})")
-                #     el.send_keys(sp)
-                #     time.sleep(0.5)
-                # except Exception as e2:
-                #     print(f"❌ appendMedias: Safari rejected file {sp}: {e2}")
-                #     state.mark_failed()
-                #     return
-                print(f"📁 appendMedias: send_keys({sp})")
-                el.send_keys(sp)
-                uploaded_any = True   # ← хотя бы один файл реально отправлен
-                time.sleep(0.5)
-
-            except Exception as e_upload:
-                print(f"❌ appendMedias: error while uploading {sp}: {e_upload}")
-                state.mark_failed()
-                # не рвём весь appendMedias, пробуем следующие файлы
-                continue
-            # 🔹 Если вообще НИ ОДИН файл не ушёл — дальше ждать нечего
-        if not uploaded_any:
-            print("⚠️ appendMedias: no files were actually sent to OF, skip waits & upload_settled")
-            return
-
-
-            # # ⏳ ждём окончания загрузки (оставляю твой код как есть)
-        try:
-            WebDriverWait(driver, 20).until_not(
-                EC.presence_of_element_located(
-                    (By.CSS_SELECTOR, "span.b-dropzone__preview__progress")
-                )
-            )
-            print("⏳ Upload progress indicator disappeared (b-dropzone__preview__progress)")
-        except Exception:
-            print("⚠️ No explicit upload progress indicator or wait timeout, continue anyway")
-
-        try:
-            print("🔎 Checking dropzone preview nodes after upload…")
-            preview_info = driver.execute_script(
-                """
-                const sels = [
-                  '.b-dropzone__video',
-                  '.b-dropzone__item',
-                  '.b-dropzone__preview'
-                ];
-                const result = {};
-                for (const sel of sels) {
-                  const els = Array.from(document.querySelectorAll(sel));
-                  result[sel] = els.map(el => ({
-                    tag: el.tagName,
-                    className: el.className,
-                    html: el.outerHTML.slice(0, 180)
-                  }));
-                }
-                return result;
-                """
-            )
-            print("🎯 Dropzone preview snapshot:", preview_info)
-        except Exception as e:
-            print(f"⚠️ Failed to inspect dropzone preview: {e}")
-
-        try:
-            def upload_settled(drv):
-                """
-                Аплоад считается завершённым, только если:
-                  1) НЕТ полоски прогресса .b-dropzone__preview__progress
-                  2) НЕТ .post_media с m-processing / m-uploading-media
-                  3) ЕСТЬ хотя бы один .b-photos .b-dropzone__preview.m-loaded
-                """
-                try:
-                    # 1) Полоска прогресса — пока есть, ещё грузится
-                    progress = drv.find_elements(
-                        By.CSS_SELECTOR,
-                        ".b-dropzone__preview__progress"
-                    )
-                    if progress:
-                        return False
-
-                    # 2) Внутренний контейнер "Your media is currently processing..."
-                    processing = drv.find_elements(
-                        By.CSS_SELECTOR,
-                        ".post_media.m-processing, .post_media.m-uploading-media"
-                    )
-                    if processing:
-                        return False
-
-                    # 3) Готовые превью после загрузки
-                    loaded = drv.find_elements(
-                        By.CSS_SELECTOR,
-                        ".b-photos .b-dropzone__preview.m-loaded"
-                    )
-                    if not loaded:
-                        return False
-
-                    return True
-                except Exception as e:
-                    print(f"⚠️ [upload_settled] error: {e}")
+                if progress:
                     return False
 
-            print("⏳ appendMedias: waiting for post_media to finish processing…")
-            WebDriverWait(driver, 60).until(upload_settled)
-            print("✅ appendMedias: upload finished (no m-processing / m-uploading-media).")
-        except Exception as e:
-            print(f"⚠️ appendMedias: upload still marked as processing after timeout: {e}")
+                processing = drv.find_elements(
+                    By.CSS_SELECTOR,
+                    ".post_media.m-processing, .post_media.m-uploading-media"
+                )
+                if processing:
+                    return False
 
-        try:
-            def any_preview(drv):
-                sels = [
-                    ".b-dropzone__video",
-                    ".b-dropzone__item",
-                    ".b-dropzone__preview",
-                ]
-                for sel in sels:
-                    if drv.find_elements(By.CSS_SELECTOR, sel):
-                        return True
+                loaded = drv.find_elements(
+                    By.CSS_SELECTOR,
+                    ".b-photos .b-dropzone__preview.m-loaded"
+                )
+                if not loaded:
+                    return False
+
+                return True
+            except Exception as e:
+                print(f"⚠️ [upload_settled] error: {e}")
                 return False
 
-            WebDriverWait(driver, 10).until(any_preview)
-            print("✅ appendMedias: preview element detected in dropzone before submit.")
-        except Exception as e_wait:
-            print(f"⚠️ appendMedias: no preview detected before timeout: {e_wait}")
-
-        print("✅ File uploaded successfully with any_preview passed (appendMedias end) ")
-
+        print("⏳ appendMedias: waiting for post_media to finish processing…")
+        WebDriverWait(driver, 60).until(upload_settled)
+        print("✅ appendMedias: upload finished (no m-processing / m-uploading-media).")
     except Exception as e:
-        print(f"❌ appendMedias failed: {e}")
-        state.mark_failed()
+        print(f"⚠️ appendMedias: upload still marked as processing after timeout: {e}")
 
-    print("✅ File uploaded successfully, success")
+    try:
+        def any_preview(drv):
+            sels = [
+                ".b-dropzone__video",
+                ".b-dropzone__item",
+                ".b-dropzone__preview",
+            ]
+            for sel in sels:
+                if drv.find_elements(By.CSS_SELECTOR, sel):
+                    return True
+            return False
+
+        WebDriverWait(driver, 10).until(any_preview)
+        print("✅ appendMedias: preview element detected in dropzone before submit.")
+    except Exception as e_wait:
+        print(f"⚠️ appendMedias: no preview detected before timeout: {e_wait}")
+
+    print("✅ appendMedias: completed with previews present")
 
 # ============================================================
 # EXECUTION ENGINE — НУЖЕН
