@@ -274,25 +274,34 @@ function runPythonAsBotUser(
   return new Promise((resolve, reject) => {
     const args = ['-u', scriptPath, JSON.stringify(payload)];
 
-    const child = spawn(
-      'sudo',
-      ['-u', 'botuser', pythonPath, ...args],
-      logPath ? { stdio: ['ignore', 'pipe', 'pipe'] } : { stdio: 'inherit' }
-    );
+    // 🔧 ВРЕМЕННО БЕЗ sudo — запускаем как текущий юзер (josephlicciardi)
+    const spawnOptions = logPath
+      ? {
+        cwd: path.dirname(scriptPath),
+        stdio: ['ignore', 'pipe', 'pipe'] as any,
+      }
+      : {
+        cwd: path.dirname(scriptPath),
+        stdio: 'inherit' as any,
+      };
 
-    let logStream = null;
-    if (logPath) logStream = fs.createWriteStream(logPath, { flags: 'a' });
+    const child = spawn(pythonPath, args, spawnOptions);
 
-    if (logStream) {
+    let logStream: fs.WriteStream | null = null;
+    if (logPath) {
+      logStream = fs.createWriteStream(logPath, { flags: 'a' });
       child.stdout.pipe(logStream);
       child.stderr.pipe(logStream);
     }
 
     child.on('error', reject);
 
-    child.on('close', code => {
-      if (code === 0) resolve(true);
-      else reject(new Error(`Python exited with code ${code}`));
+    child.on('close', (code) => {
+      if (code === 0) {
+        resolve(true);
+      } else {
+        reject(new Error(`Python exited with code ${code}`));
+      }
     });
   });
 }
