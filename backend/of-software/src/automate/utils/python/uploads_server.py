@@ -8,7 +8,7 @@ class CORSRequestHandler(SimpleHTTPRequestHandler):
         return super().end_headers()
 
 if __name__ == "__main__":
-    os.chdir("/Users/oleksandrsonich/sites/joefans/backend/of-software/uploads")
+    os.chdir("/Users/josephlicciardi/of-subs-software/of-software/backend/of-software/uploads")
     server = HTTPServer(("127.0.0.1", 3001), CORSRequestHandler)
     print("Serving uploads on http://127.0.0.1:3001")
     server.serve_forever()

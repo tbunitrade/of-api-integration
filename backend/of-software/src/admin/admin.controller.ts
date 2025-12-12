@@ -16,7 +16,7 @@ export class AdminController {
 
     switch (env) {
       case 'local':
-        scriptPath = '/Users/oleksandrsonich/sites/joefans/backend/of-software/scripts/restart-backend.sh';
+        scriptPath = '/Users/josephlicciardi/of-subs-software/of-software/backend/of-software/scripts/restart-backend.sh';
         break;
       case 'DEV':
       case 'development':
