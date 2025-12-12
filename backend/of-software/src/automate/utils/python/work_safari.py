@@ -975,29 +975,56 @@ def _handle_append_medias(driver, step, post_data, state):
                 return False
 
         print("⏳ appendMedias: waiting for post_media to finish processing…")
-        WebDriverWait(driver, 60).until(upload_settled)
+        WebDriverWait(driver, 5 * 60).until(upload_settled)
         print("✅ appendMedias: upload finished (no m-processing / m-uploading-media).")
     except Exception as e:
         print(f"⚠️ appendMedias: upload still marked as processing after timeout: {e}")
 
     try:
         def any_preview(drv):
-            sels = [
-                ".b-dropzone__video",
-                ".b-dropzone__item",
-                ".b-dropzone__preview",
-            ]
-            for sel in sels:
-                if drv.find_elements(By.CSS_SELECTOR, sel):
-                    return True
-            return False
+            sels = [".b-dropzone__video", ".b-dropzone__item", ".b-dropzone__preview"]
+            return any(drv.find_elements(By.CSS_SELECTOR, sel) for sel in sels)
 
         WebDriverWait(driver, 10).until(any_preview)
-        print("✅ appendMedias: preview element detected in dropzone before submit.")
-    except Exception as e_wait:
-        print(f"⚠️ appendMedias: no preview detected before timeout: {e_wait}")
 
-    print("✅ appendMedias: completed with previews present")
+        # ❗️Второй критерий: НЕТ processing
+        still_processing = driver.execute_script("""
+            const root = document.querySelector('.b-dropzone__preview') || document;
+            return !!root.querySelector('.post_media.m-processing, .post_media.m-uploading-media, .m-uploading-media');
+        """)
+
+        if still_processing:
+            print("❌ appendMedias: preview exists but still processing — FAIL")
+            state.mark_failed()
+            raise TimeoutException("appendMedias: preview exists but m-processing/m-uploading-media still present")
+
+        print("✅ appendMedias: preview detected and NOT processing (ready).")
+
+    except Exception as e_wait:
+        print(f"❌ appendMedias: preview not ready (or still processing): {e_wait}")
+        state.mark_failed()
+        raise
+
+    print("✅ appendMedias: completed — ready for submit (no fake success)")
+
+    # try:
+    #     def any_preview(drv):
+    #         sels = [
+    #             ".b-dropzone__video",
+    #             ".b-dropzone__item",
+    #             ".b-dropzone__preview",
+    #         ]
+    #         for sel in sels:
+    #             if drv.find_elements(By.CSS_SELECTOR, sel):
+    #                 return True
+    #         return False
+    #
+    #     WebDriverWait(driver, 10).until(any_preview)
+    #     print("✅ appendMedias: preview element detected in dropzone before submit.")
+    # except Exception as e_wait:
+    #     print(f"⚠️ appendMedias: no preview detected before timeout: {e_wait}")
+    #
+    # print("✅ appendMedias: completed with previews present")
 
 # ============================================================
 # EXECUTION ENGINE — НУЖЕН

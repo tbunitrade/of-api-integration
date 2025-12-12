@@ -44,7 +44,7 @@ POST_STEPS = [
     },
 
     # 🔁 Дополнительная пауза, чтобы OnlyFans проглотил видео до конца
-    { "type": "waitForTime", "value": "15000" },
+    { "type": "waitForTime", "value": "1000" },
 
     # ----------------------------------------------------------
     # 3) Schedule post — POPUP
@@ -134,110 +134,112 @@ POST_STEPS = [
 
     # ----------------------------------------------------------
     # 4) RELEASE FORMS / TAGGING
+    # 4.0 Проверяем, есть ли вообще какие-либо release-теги
     # ----------------------------------------------------------
+    { "type": "checkValue", "key": "has_release_tags" },
     {
-        "type": "click",
-        "value": "form#make_post_form button[at-attr='release_forms_btn']",
-        "safeguard": True
-    },
-    { "type": "waitForTime", "value": "500" },
-
-    # LOOP user tags
-    # 4.1 LOOP user tags (Tab: "Tag user")
-    {
-        "type": "loop",
-        "key": "release_user_tags",
-        "value": "$value",
+        "type": "condition",
         "childs": {
             "yes": [
+                { "type": "click", "value": "form#make_post_form button[at-attr='release_forms_btn']", "safeguard": True },
+                { "type": "waitForTime", "value": "600" },
                 { "type": "waitForSelector", "value": "#ReleaseFormsModal___BV_modal_content_" },
-                { "type": "waitForTime", "value": "300" },
+                # 4.1 LOOP user tags (Tab: "Tag user")
                 {
-                    "type": "type",
+                    "type": "loop",
+                    "key": "release_user_tags",
                     "value": "$value",
-                    "selector": "#ReleaseFormsModal___BV_modal_content_ .b-search-form__input"
+                    "childs": {
+                        "yes": [
+                            { "type": "waitForSelector", "value": "#ReleaseFormsModal___BV_modal_content_" },
+                            { "type": "waitForTime", "value": "300" },
+                            {
+                                "type": "type",
+                                "value": "$value",
+                                "selector": "#ReleaseFormsModal___BV_modal_content_ .b-search-form__input"
+                            },
+                            {
+                                "type": "click",
+                                "value": "#ReleaseFormsModal___BV_modal_content_ .b-search-form button[type='submit']"
+                            },
+                            { "type": "waitForTime", "value": "900" },
+                            {
+                                "type": "click",
+                                "value": "#ReleaseFormsModal___BV_modal_content_ .b-rows-lists__item"
+                            }
+                        ]
+                    }
+                },
+
+                { "type": "waitForTime", "value": "400" },
+
+                # 4.2 Переключаемся на таб "Release form"
+                {
+                    "type": "click",
+                    "value": "#ReleaseFormsModal___BV_modal_content_ #Release-form",
+                    "safeguard": True
+                },
+                { "type": "waitForTime", "value": "300" },
+
+                # 4.3 LOOP release form tags (Tab: "Release form")
+                {
+                    "type": "loop",
+                    "key": "release_form_tags",
+                    "value": "$value",
+                    "childs": {
+                        "yes": [
+                            { "type": "waitForSelector", "value": "#ReleaseFormsModal___BV_modal_content_" },
+                            { "type": "waitForTime", "value": "300" },
+                            {
+                                "type": "type",
+                                "value": "$value",
+                                "selector": "#ReleaseFormsModal___BV_modal_content_ .b-search-form__input"
+                            },
+                            {
+                                "type": "click",
+                                "value": "#ReleaseFormsModal___BV_modal_content_ .b-search-form button[type='submit']"
+                            },
+                            { "type": "waitForTime", "value": "900" },
+                            {
+                                "type": "runScript",
+                                "value": """
+                                    const root = document.querySelector('#ReleaseFormsModal___BV_modal_content_');
+                                    if (!root) return;
+                                    const item = root.querySelector('.b-rows-lists__item');
+                                    if (!item) return;
+                                    const checkbox = item.querySelector('input[type="checkbox"]');
+                                    if (checkbox && !checkbox.checked) {
+                                      checkbox.click();
+                                    } else {
+                                      item.click();
+                                    }
+                                """
+                            },
+                            { "type": "waitForTime", "value": "400" }
+                        ]
+                    }
+                },
+                # 4.4 APPLY + CLOSE
+                # CLOSE MODAL
+                {
+                    "type": "click",
+                    "value": "#ReleaseFormsModal___BV_modal_content_ .b-row-selected__controls button",
+                    "safeguard": True
                 },
                 {
                     "type": "click",
-                    "value": "#ReleaseFormsModal___BV_modal_content_ .b-search-form button[type='submit']"
+                    "value": "#ReleaseFormsModal___BV_modal_footer_ button[type='button']",
+                    "safeguard": True
                 },
-                { "type": "waitForTime", "value": "900" },
-                {
-                    "type": "click",
-                    "value": "#ReleaseFormsModal___BV_modal_content_ .b-rows-lists__item"
-                }
+                # # ----------------------------------------------------------
+                # # 4.5) Add to list
+                # # ----------------------------------------------------------
+                # { "type": "waitForTime", "value": "300" },
+                # { "type": "click", "value": "form#make_post_form button[at-attr='add_to_list']", "safeguard": False },
+                # { "type": "waitForTime", "value": "400" },
             ]
         }
     },
-
-    { "type": "waitForTime", "value": "400" },
-
-    # 4.2 Переключаемся на таб "Release form"
-    {
-        "type": "click",
-        "value": "#ReleaseFormsModal___BV_modal_content_ #Release-form",
-        "safeguard": True
-    },
-    { "type": "waitForTime", "value": "300" },
-
-    # 4.3 LOOP release form tags (Tab: "Release form")
-    {
-        "type": "loop",
-        "key": "release_form_tags",
-        "value": "$value",
-        "childs": {
-            "yes": [
-                { "type": "waitForSelector", "value": "#ReleaseFormsModal___BV_modal_content_" },
-                { "type": "waitForTime", "value": "300" },
-                {
-                    "type": "type",
-                    "value": "$value",
-                    "selector": "#ReleaseFormsModal___BV_modal_content_ .b-search-form__input"
-                },
-                {
-                    "type": "click",
-                    "value": "#ReleaseFormsModal___BV_modal_content_ .b-search-form button[type='submit']"
-                },
-                { "type": "waitForTime", "value": "900" },
-                {
-                    "type": "runScript",
-                    "value": """
-                        const root = document.querySelector('#ReleaseFormsModal___BV_modal_content_');
-                        if (!root) return;
-                        const item = root.querySelector('.b-rows-lists__item');
-                        if (!item) return;
-                        const checkbox = item.querySelector('input[type="checkbox"]');
-                        if (checkbox && !checkbox.checked) {
-                          checkbox.click();
-                        } else {
-                          item.click();
-                        }
-                    """
-                },
-                { "type": "waitForTime", "value": "400" }
-            ]
-        }
-    },
-
-    # 4.4 APPLY + CLOSE
-    # CLOSE MODAL
-    {
-        "type": "click",
-        "value": "#ReleaseFormsModal___BV_modal_content_ .b-row-selected__controls button",
-        "safeguard": True
-    },
-    {
-        "type": "click",
-        "value": "#ReleaseFormsModal___BV_modal_footer_ button[type='button']",
-        "safeguard": True
-    },
-
-    # ----------------------------------------------------------
-    # 9) Add to list
-    # ----------------------------------------------------------
-    { "type": "waitForTime", "value": "300" },
-    { "type": "click", "value": "form#make_post_form button[at-attr='add_to_list']", "safeguard": False },
-    { "type": "waitForTime", "value": "400" },
 
     # ----------------------------------------------------------
     # 10) Publish

@@ -100,6 +100,14 @@ def create_post(safari_driver, cli_payload):
                 # работаем с копией, чтобы не портить исходный массив
                 local_post_data = dict(post_data)
 
+                has_tags = bool(
+                    (local_post_data.get("release_user_tags") or "").strip()
+                    or (local_post_data.get("release_form_tags") or "").strip()
+                )
+
+                local_post_data["has_release_tags"] = has_tags
+                print(f"🏷 has_release_tags = {has_tags}")
+
                 # ⬇️ Никакого bulk / bulk_media_paths — каждый run заливает СВОЙ content_path
                 # сначала подставляем payload в POST_STEPS
                 steps = inject_payload_into_steps(POST_STEPS, local_post_data)
@@ -120,8 +128,15 @@ def create_post(safari_driver, cli_payload):
 
             print("\n✅ All postRuns processed successfully.")
         else:
-            post_data = single_post_data
+            post_data = dict(single_post_data)
+
+            has_tags = bool(
+                (post_data.get("release_user_tags") or "").strip()
+                or (post_data.get("release_form_tags") or "").strip()
+            )
+            post_data["has_release_tags"] = has_tags
             print("📦 postData = ", post_data)
+            print(f"🏷 has_release_tags = {has_tags}")
             steps = inject_payload_into_steps(POST_STEPS, post_data)
             print(f"🚀 Loaded {len(steps)} steps for post execution.")
 
