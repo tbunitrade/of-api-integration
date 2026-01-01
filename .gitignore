@@ -31,3 +31,8 @@ backup.sh
 .env
 
 backup.sh
+
+backend/of-software/src/automate/utils/python/__pycache__/
+backend/of-software/src/automate/utils/python/cookies/
+backend/of-software/src/automate/utils/python/*.pyc
+backend/of-software/src/automate/utils/python/requirements.txt

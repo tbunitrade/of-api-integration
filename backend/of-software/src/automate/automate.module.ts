@@ -22,7 +22,10 @@ import { SafariMessageService } from './safari-message.service';
 import { PuppeteerPostService } from './puppeteer-post.service';
 import { PuppeteerMessageService } from './puppeteer-message.service';
 import { Post } from "../post/post.entity";
-import {PostFile} from "../postFile/post_file.entity";
+import { PostFile } from "../postFile/post_file.entity";
+import { ExternalModule } from "../integrations/external/external.module";
+import { ApiMassMessageService } from "./api-mass-message.service";
+import { ModelPlatformModule } from "../modelPlatform/model_platform.module";
 
 @Module({
   imports: [
@@ -31,11 +34,12 @@ import {PostFile} from "../postFile/post_file.entity";
       ModelDailyLimitEntity,
       PostQueueEntity,
       Post,
-      PostFile
-
+      PostFile,
     ]),
     PostFileModule,
-    PostCaptionModule
+    PostCaptionModule,
+    ExternalModule,
+    ModelPlatformModule
   ],
 
   controllers: [
@@ -54,6 +58,7 @@ import {PostFile} from "../postFile/post_file.entity";
     PostQueueService,
 
     // NEW SERVICES — REQUIRED BY AutomateService
+    ApiMassMessageService,
     SafariPostService,
     SafariMessageService,
     PuppeteerPostService,
@@ -70,6 +75,7 @@ import {PostFile} from "../postFile/post_file.entity";
     SafariMessageService,
     PuppeteerPostService,
     PuppeteerMessageService,
+    ApiMassMessageService
   ]
 })
 export class AutomateModule {}
