@@ -26,9 +26,9 @@ export class ApiMassMessageService {
       throw new Error(`ModelPlatform not found: ${modelPlatformId}`);
     }
 
-    const accountId = String(mp.fingerprint_username || '').trim();
+    const accountId = String(mp.ofid_username || '').trim();
     if (!accountId) {
-      throw new Error(`Account ID is empty for modelPlatformId=${modelPlatformId}`);
+      throw new Error(`Account ID (ofid_username) is empty for modelPlatformId=${modelPlatformId}`);
     }
 
     // аудитория — то, что выберет UI
