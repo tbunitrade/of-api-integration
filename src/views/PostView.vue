@@ -30,93 +30,7 @@ import SectionTitleLineWithButton from '@/components/SectionTitleLineWithButton.
 import NotificationBar from '@/components/NotificationBar.vue';
 import TableSampleClients from '@/components/TableSampleClients.vue';
 import CardBoxComponentEmpty from '@/components/CardBoxComponentEmpty.vue';
-
-const audienceLists = ref([]);
-const selectedUserLists = ref([]);
-const selectedExcludedLists = ref([]);
-const massMessageText = ref('');
-const loadingAudienceLists = ref(false);
-const sendingMassMessage = ref(false);
-
-const lastMassResponse = ref(null);
-
-const massModelPlatform = computed(() => {
-  const v = selectedModelPlatform.value;
-  return Array.isArray(v) ? (v[0] || null) : (v || null);
-});
-
-const loadAudienceLists = async () => {
-  const mp = massModelPlatform.value;
-  if (!mp?.id) {
-    notify({ title: 'Warning', type: 'error', text: 'ModelPlatform is not selected/found' });
-    return;
-  }
-
-  loadingAudienceLists.value = true;
-  try {
-    const url = `${import.meta.env.VITE_APP_ROOT_API}/automate/audience-lists?modelPlatformId=${mp.id}`;
-    const res = await fetch(url);
-    const data = await res.json().catch(() => ({}));
-
-    lastMassResponse.value = data;
-
-    const lists = Array.isArray(data) ? data : (data?.lists || []);
-    audienceLists.value = Array.isArray(lists) ? lists : [];
-
-    const set = new Set(audienceLists.value.map((x) => String(x).toLowerCase()));
-    selectedUserLists.value = selectedUserLists.value.filter((x) => set.has(String(x).toLowerCase()));
-    selectedExcludedLists.value = selectedExcludedLists.value.filter((x) => set.has(String(x).toLowerCase()));
-  } catch (e) {
-    console.log('[PostView] loadAudienceLists error', e);
-    notify({ title: 'Error', type: 'error', text: 'Failed to load audience lists' });
-  } finally {
-    loadingAudienceLists.value = false;
-  }
-};
-
-const onSendMassMessage = async () => {
-  const mp = massModelPlatform.value;
-  if (!mp?.id) {
-    notify({ title: 'Warning', type: 'error', text: 'ModelPlatform is not selected/found' });
-    return;
-  }
-
-  const text = String(massMessageText.value || '').trim();
-  if (!text) {
-    notify({ title: 'Warning', type: 'error', text: 'Message text is required' });
-    return;
-  }
-
-  sendingMassMessage.value = true;
-  try {
-    const payload = {
-      modelPlatformId: mp.id,
-      text,
-      userLists: selectedUserLists.value,
-      excludedLists: selectedExcludedLists.value,
-      userIds: [],
-    };
-
-    const res = await fetch(`${import.meta.env.VITE_APP_ROOT_API}/automate/send-mass-message`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-
-    const data = await res.json().catch(() => ({}));
-    lastMassResponse.value = data;
-
-    if (!res.ok) throw new Error(data?.message || `HTTP ${res.status}`);
-
-    notify({ title: 'Success', type: 'success', text: 'Mass message request sent' });
-    console.log('[PostView] send-mass-message response', data);
-  } catch (e) {
-    console.log('[PostView] send-mass-message error', e);
-    notify({ title: 'Error', type: 'error', text: e?.message || 'Failed to send mass message' });
-  } finally {
-    sendingMassMessage.value = false;
-  }
-};
+import ExternalMassMessageCard from '@/components/ExternalMassMessageCard.vue';
 
 const postStore = usePostStore();
 const postTimeStore = usePostTimeStore();
@@ -782,68 +696,11 @@ onMounted(async () => {
             <BaseButton label="Add Time" color="info" rounded small @click="onAddTime" />
           </div>
         </CardBox>
-
-        <CardBox class="border-2 border-gray-300" rounded="rounded-md">
-          <h2>Test</h2>
-          <div v-if="lastMassResponse" class="mt-4">
-            <label class="block text-sm">Last response</label>
-            <pre class="text-xs whitespace-pre-wrap">{{ JSON.stringify(lastMassResponse, null, 2) }}</pre>
-          </div>
-
-          <h1 class="font-bold text-xl">External API — Mass Message</h1>
-
-          <div class="text-sm mt-2">
-            <div><b>ModelPlatform:</b> {{ massModelPlatform?.id || '-' }}</div>
-            <div><b>Account (ofid_username):</b> {{ massModelPlatform?.ofid_username || '-' }}</div>
-          </div>
-
-          <div class="mt-4">
-            <BaseButton
-              label="Load audience lists"
-              color="info"
-              rounded
-              small
-              :disabled="loadingAudienceLists"
-              @click="loadAudienceLists"
-            />
-          </div>
-
-          <div class="mt-4">
-            <label class="block text-sm">Message</label>
-            <textarea
-              class="w-full rounded mt-1 p-2"
-              rows="5"
-              v-model="massMessageText"
-              placeholder="Type message text..."
-            ></textarea>
-          </div>
-
-          <div class="mt-4">
-            <label class="block text-sm">Include lists (userLists)</label>
-            <select class="w-full rounded mt-1 p-2" multiple size="8" v-model="selectedUserLists">
-              <option v-for="name in audienceLists" :key="'ul-' + name" :value="name">{{ name }}</option>
-            </select>
-          </div>
-
-          <div class="mt-4">
-            <label class="block text-sm">Exclude lists (excludedLists)</label>
-            <select class="w-full rounded mt-1 p-2" multiple size="8" v-model="selectedExcludedLists">
-              <option v-for="name in audienceLists" :key="'el-' + name" :value="name">{{ name }}</option>
-            </select>
-          </div>
-
-          <div class="mt-4 text-right">
-            <BaseButton
-              label="Send mass message"
-              color="success"
-              rounded
-              small
-              :disabled="sendingMassMessage"
-              @click="onSendMassMessage"
-            />
-          </div>
-        </CardBox>
+<!--      </div>-->
+<!--      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">-->
+        <ExternalMassMessageCard :modelPlatform="selectedModelPlatform" />
       </div>
+
       <CardBoxModal v-model="isContentModalActive" title="Content"
         size="xxl:!w-11/12 xl:!w-11/12 md:w-4/5 lg:w-4/5 w-4/5" :hasCancel="true" @confirm="onCloseContentModal">
         <CardBox is-form>
