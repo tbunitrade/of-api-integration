@@ -58,7 +58,8 @@ export class InitSchema20251123090500 implements MigrationInterface {
         created_at TIMESTAMP DEFAULT now() NOT NULL,
         updated_at TIMESTAMP DEFAULT now() NOT NULL,
         prokey VARCHAR,
-        fingerprint_username VARCHAR
+        fingerprint_username VARCHAR,
+        ofid_username VARCHAR
       );
     `);
 

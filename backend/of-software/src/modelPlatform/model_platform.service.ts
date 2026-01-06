@@ -89,21 +89,6 @@ export class ModelPlatformService {
     }
   }
 
-  // async findModelWithPlatform(): Promise<ModelPlatform[] | undefined> {
-  //   try {
-  //     const queryBuilder =
-  //       this.modelPlatformRepository.createQueryBuilder('model');
-
-  //     return await queryBuilder
-  //       .leftJoinAndSelect('model_platform', 'model_platform')
-  //       .leftJoinAndSelect('model_platform.models', 'models')
-  //       .leftJoinAndSelect('model_platform.platforms', 'platforms')
-  //       .getMany();
-  //   } catch (err) {
-  //     console.error('ModelPlatform findByModelId error', err);
-  //   }
-  // }
-
   async findByPlatformId(id: number): Promise<ModelPlatform[] | undefined> {
     try {
       const queryBuilder =
@@ -122,12 +107,7 @@ export class ModelPlatformService {
       return await this.modelPlatformRepository.find(
         rel ? { relations: ['models', 'platforms'] } : {},
       );
-      // return await this.modelPlatformRepository
-      //   .createQueryBuilder('model_platform')
-      //   .select('model_platform.model_id', 'model_id')
-      //   .addSelect('ARRAY_AGG(model_platform.platform)', 'platform')
-      //   .groupBy('model_platform.model_id')
-      //   .getRawMany();
+
     } catch (err) {
       console.error('ModelPlatform findAll error', err);
     }

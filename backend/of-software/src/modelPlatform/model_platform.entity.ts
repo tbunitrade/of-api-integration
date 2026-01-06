@@ -40,6 +40,9 @@ export class ModelPlatform {
   @Column( {nullable:true})
   fingerprint_username: string
 
+  @Column( {nullable:true})
+  ofid_username: string
+
   @Column({ nullable: true })
   site_url: string;
 
@@ -85,16 +88,4 @@ export class ModelPlatform {
     onUpdate: 'CURRENT_TIMESTAMP',
   })
   updated_at: Date;
-
-  // @BeforeInsert()
-  // async setPostId() {
-  //   this.post_id = this.id;
-  // }
-
-  // @AfterInsert()
-  // async setAfterPostId() {
-  //   if (!this.post_id) {
-  //     this.post_id = this.id;
-  //   }
-  // }
 }

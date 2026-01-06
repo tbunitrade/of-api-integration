@@ -54,4 +54,16 @@ export class ModelPlatformDto {
     type: 'number',
   })
   latest_group_id: number;
+
+  @ApiProperty({
+    type: 'string',
+    required: false,
+  })
+  fingerprint_username?: string;
+
+  @ApiProperty({
+    type: 'string',
+    required: false,
+  })
+  ofid_username?: string;
 }
