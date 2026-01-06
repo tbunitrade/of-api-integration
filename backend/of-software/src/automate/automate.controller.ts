@@ -1,4 +1,4 @@
-import { Controller, Get, Body, Query, Post } from '@nestjs/common';
+import { Controller, Get, Body, Query, Post, BadRequestException } from '@nestjs/common';
 import { AutomateService } from './automate.service';
 import { ApiTags } from '@nestjs/swagger';
 
@@ -9,7 +9,11 @@ export class AutomateController {
 
   @Get('audience-lists')
   getAudienceLists(@Query('modelPlatformId') modelPlatformId: string) {
-    return this.automateService.getAudienceLists(Number(modelPlatformId));
+    const id = Number(modelPlatformId);
+    if ( !id ) throw new BadRequestException('modelPlatformId is required');
+    //return this.automateService.getAudienceLists(Number(modelPlatformId));
+
+    return this.automateService.getAudienceLists(id);
   }
 
   @Post('send-mass-message')
