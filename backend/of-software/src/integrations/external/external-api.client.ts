@@ -19,12 +19,22 @@ export class ExternalApiClient {
   }
 
   private async request<T = any>(config: AxiosRequestConfig): Promise<T> {
+    const base = this.http.defaults.baseURL || '';
+    const fullUrl = `${base}${config.url || ''}`
+
+    console.log('[ExternalApiClient] request', {
+      fullUrl,
+      method: config.method,
+    });
+
     try {
       const res = await this.http.request<T>(config);
       return res.data as any;
     } catch (err: any) {
       const status = err?.response?.status;
       const data = err?.response?.data;
+
+
 
       console.log('[ExternalApiClient] request error', {
         url: config.url,
