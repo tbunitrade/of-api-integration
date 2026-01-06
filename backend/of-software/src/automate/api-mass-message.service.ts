@@ -3,6 +3,8 @@ import { Injectable, BadRequestException } from '@nestjs/common';
 import { ExternalApiClient } from 'src/integrations/external/external-api.client';
 import { ModelPlatformService } from 'src/modelPlatform/model_platform.service';
 
+type ProviderList = { id: any; name: string; type?: string };
+
 @Injectable()
 export class ApiMassMessageService {
   constructor(
@@ -10,6 +12,11 @@ export class ApiMassMessageService {
     private readonly modelPlatformService: ModelPlatformService,
   ) {}
 
+  /**
+   * dto.userLists / dto.excludedLists приходят как массив "токенов списка":
+   * - default list: "fans", "following", "tagged" ...
+   * - custom list:  1224114714 (или "1224114714")
+   */
   private _normalizeListNames(input: any): string[] {
     const arr = Array.isArray(input) ? input : [];
     const out = arr
@@ -19,21 +26,17 @@ export class ApiMassMessageService {
     // uniq (case-insensitive) but keep original
     const seen = new Set<string>();
     const uniq: string[] = [];
-    for (const name of out) {
-      const key = name.toLowerCase();
+    for (const token of out) {
+      const key = token.toLowerCase();
       if (!seen.has(key)) {
         seen.add(key);
-        uniq.push(name);
+        uniq.push(token);
       }
     }
     return uniq;
   }
 
-  private _extractProviderListNames(providerRes: any): string[] {
-    // Поддержим несколько возможных форматов ответа, чтобы не ломаться:
-    // 1) ["Fans", "Following"]
-    // 2) [{name:"Fans", id:1}, ...]
-    // 3) { lists: [...] } / { data: [...] } / { data: { lists: [...] } }
+  private _extractProviderLists(providerRes: any): ProviderList[] {
     const candidate =
       providerRes?.lists ??
       providerRes?.data?.lists ??
@@ -43,44 +46,79 @@ export class ApiMassMessageService {
 
     if (!Array.isArray(candidate)) return [];
 
-    if (candidate.length && typeof candidate[0] === 'string') {
-      return this._normalizeListNames(candidate);
+    return candidate
+      .map((x: any) => {
+        if (typeof x === 'string' || typeof x === 'number') {
+          const v = String(x).trim();
+          return { id: v, name: v };
+        }
+
+        const id = x?.id ?? x?.key ?? x?.type ?? x?.slug ?? x?.name;
+        const name = String(x?.name ?? x?.title ?? x?.label ?? x?.id ?? '').trim();
+        const type = x?.type;
+
+        return { id, name, type };
+      })
+      .filter((x: any) => x?.id != null && x?.name);
+  }
+
+  private _buildProviderKeySet(lists: ProviderList[]): Set<string> {
+    const set = new Set<string>();
+    for (const l of lists) {
+      // id — это то, что должен отправлять фронт (fans / following / 12345)
+      set.add(String(l.id).toLowerCase());
+
+      // запасной вариант: если кто-то всё же пришлёт name/type
+      if (l.name) set.add(String(l.name).toLowerCase());
+      if (l.type) set.add(String(l.type).toLowerCase());
     }
-
-    // objects
-    const names = candidate
-      .map((x: any) => (x?.name ?? x?.title ?? x?.label))
-      .filter(Boolean);
-
-    return this._normalizeListNames(names);
+    return set;
   }
 
   private async _validateAudienceLists(accountId: string, dto: any) {
     const userLists = this._normalizeListNames(dto?.userLists);
     const excludedLists = this._normalizeListNames(dto?.excludedLists);
 
-    // Если ничего не передали — валидировать нечего
     if (!userLists.length && !excludedLists.length) {
       return { userLists, excludedLists };
     }
 
     const providerRes = await this.externalApi.getAudienceLists(accountId);
-    const providerNames = this._extractProviderListNames(providerRes);
+    const providerLists = this._extractProviderLists(providerRes);
 
-    const providerSet = new Set(providerNames.map((x) => x.toLowerCase()));
+    const providerLists2 = await this._loadAllProviderLists(accountId);
 
-    const missingUser = userLists.filter((x) => !providerSet.has(x.toLowerCase()));
-    const missingExcluded = excludedLists.filter((x) => !providerSet.has(x.toLowerCase()));
+    // если пусто — не блочим UX
+    if (!providerLists2.length) {
+      console.log('[ApiMassMessageService] provider lists empty, skip strict validation', { accountId, userLists, excludedLists });
+      return { userLists, excludedLists };
+    }
+
+    //const providerSet = this._buildProviderKeySet(providerLists);
+
+    // Если провайдер вернул пусто — НЕ блокируем mass-message (иначе будет флапать UX)
+    if (!providerLists.length) {
+      console.log('[ApiMassMessageService] provider lists empty, skip strict validation', {
+        accountId,
+        userLists,
+        excludedLists,
+      });
+      return { userLists, excludedLists };
+    }
+
+    const providerSet = this._buildProviderKeySet(providerLists);
+
+    const missingUser = userLists.filter((x) => !providerSet.has(String(x).toLowerCase()));
+    const missingExcluded = excludedLists.filter((x) => !providerSet.has(String(x).toLowerCase()));
 
     if (missingUser.length || missingExcluded.length) {
       console.log('[ApiMassMessageService] audience lists mismatch', {
         accountId,
         missingUser,
         missingExcluded,
-        providerCount: providerNames.length,
+        providerCount: providerLists.length,
       });
 
-      // Жёстко валим — это и есть "подтвердить/обновить"
       throw new BadRequestException(
         `Audience lists are outdated. Missing: ` +
         `${missingUser.length ? `userLists=[${missingUser.join(', ')}] ` : ''}` +
@@ -101,18 +139,14 @@ export class ApiMassMessageService {
     const mp = await this.modelPlatformService.findById(modelPlatformId);
     if (!mp) throw new BadRequestException(`ModelPlatform not found: ${modelPlatformId}`);
 
-    // ВАЖНО: accountId берём из ofid_username (= acct_...)
+    // accountId берём из ofid_username (= acct_...)
     const accountId = String(mp.ofid_username || '').trim();
     if (!accountId) {
-      throw new BadRequestException(
-        `Account ID (ofid_username) is empty for modelPlatformId=${modelPlatformId}`
-      );
+      throw new BadRequestException(`Account ID (ofid_username) is empty for modelPlatformId=${modelPlatformId}`);
     }
 
-    // 1) Подтверждаем/обновляем lists (валидация на актуальность)
     const { userLists, excludedLists } = await this._validateAudienceLists(accountId, dto);
 
-    // 2) Собираем payload
     const payload = {
       text,
       userLists,
@@ -142,8 +176,41 @@ export class ApiMassMessageService {
     if (!accountId) throw new BadRequestException(`Account ID (ofid_username) is empty for modelPlatformId=${modelPlatformId}`);
 
     const providersRes = await this.externalApi.getAudienceLists(accountId);
-    const lists = this._extractProviderListNames(providersRes);
+    const lists = this._extractProviderLists(providersRes);
+    const lists = await this._loadAllProviderLists(accountId);
+    return { lists };
+  }
 
-    return { lists }
+  private async _loadAllProviderLists(accountId: string): Promise<ProviderList[]> {
+    const all: ProviderList[] = [];
+
+    let offset: any = undefined;
+    let guard = 0;
+
+    while (guard++ < 50) {
+      const res = await this.externalApi.getAudienceLists(accountId, offset != null ? { offset } : undefined);
+
+      const page = this._extractProviderLists(res);
+      if (page.length) all.push(...page);
+
+      const hasMore = Boolean(res?.data?.hasMore ?? res?.hasMore);
+      const nextOffset = res?.data?.nextOffset ?? res?.nextOffset;
+
+      if (!hasMore || nextOffset == null) break;
+      offset = nextOffset;
+    }
+
+    // uniq по id (case-insensitive) + сохраняем порядок
+    const seen = new Set<string>();
+    const uniq: ProviderList[] = [];
+    for (const l of all) {
+      const k = String(l.id).toLowerCase();
+      if (!seen.has(k)) {
+        seen.add(k);
+        uniq.push(l);
+      }
+    }
+
+    return uniq;
   }
 }
