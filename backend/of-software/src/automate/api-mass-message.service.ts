@@ -37,6 +37,7 @@ export class ApiMassMessageService {
     const candidate =
       providerRes?.lists ??
       providerRes?.data?.lists ??
+      providerRes?.data?.list ??
       providerRes?.data ??
       providerRes;
 
@@ -114,11 +115,9 @@ export class ApiMassMessageService {
     // 2) Собираем payload
     const payload = {
       text,
-      audience: {
-        userLists,
-        excludedLists,
-        userIds: Array.isArray(dto?.userIds) ? dto.userIds : [],
-      },
+      userLists,
+      excludedLists,
+      userIds: Array.isArray(dto?.userIds) ? dto.userIds : [],
     };
 
     console.log('[ApiMassMessageService] sending', {
@@ -127,7 +126,7 @@ export class ApiMassMessageService {
       textLen: text.length,
       userLists: userLists.length,
       excludedLists: excludedLists.length,
-      userIds: payload.audience.userIds?.length,
+      userIds: payload.userIds?.length,
     });
 
     const res = await this.externalApi.sendMassMessage(accountId, payload);

@@ -35,6 +35,7 @@ const selectedModelPlatform = ref({
   platform_id: null, //
   username: '', //
   fingerprint_username: '', //
+  ofid_username: '', //
   password: '' //
 });
 
@@ -54,6 +55,7 @@ const modelPlatformRules = computed(() => (
     platform_id: { required },//
     username: { required, minLength: minLength(2) },//
     fingerprint_username: { required, minLength: minLength(2) },//
+    ofid_username: { required, minLength: minLength(2) },//
     password: { required, minLength: minLength(2) },//
   }));
 const $v = useVuelidate(rules, selectedModel);//
@@ -338,6 +340,13 @@ const onChangePlatform = (value) => {
                            placeholder="Enter Username for FingerPrint" />
             </FormField>
             <div class="mb-3" v-for="error of  $mpv.fingerprint_username.$errors " :key="error.$uid">
+              <div :class="[colorsText['danger'], 'text-sm']">{{ error.$message }}</div>
+            </div>
+            <FormField label="OF-ID Username" help="Required. Username-OF-ID">
+              <FormControl v-model="selectedModelPlatform.ofid_username" name="username Username-OF-ID" required autocomplete="username"
+                           placeholder="Enter Username for Username-OF-ID" />
+            </FormField>
+            <div class="mb-3" v-for="error of  $mpv.ofid_username.$errors " :key="error.$uid">
               <div :class="[colorsText['danger'], 'text-sm']">{{ error.$message }}</div>
             </div>
             <FormField label="Password" help="Required. Password">
