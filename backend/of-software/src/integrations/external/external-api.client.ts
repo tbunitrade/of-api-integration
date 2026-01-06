@@ -1,5 +1,5 @@
 // src/integrations/external/external-api.client.ts
-import axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
+import axios, { AxiosInstance, AxiosRequestConfig, AxiosError } from 'axios';
 
 export class ExternalApiClient {
   private readonly http: AxiosInstance;
@@ -20,12 +20,8 @@ export class ExternalApiClient {
 
   private async request<T = any>(config: AxiosRequestConfig): Promise<T> {
     const base = this.http.defaults.baseURL || '';
-    const fullUrl = `${base}${config.url || ''}`
-
-    console.log('[ExternalApiClient] request', {
-      fullUrl,
-      method: config.method,
-    });
+    const fullUrl = `${base}${config.url || ''}`;
+    console.log('[ExternalApiClient] request', { fullUrl, method: config.method });
 
     try {
       const res = await this.http.request<T>(config);
@@ -33,39 +29,35 @@ export class ExternalApiClient {
     } catch (err: any) {
       const status = err?.response?.status;
       const data = err?.response?.data;
-
-
-
-      console.log('[ExternalApiClient] request error', {
-        url: config.url,
-        method: config.method,
-        status,
-        data,
-      });
-
+      console.log('[ExternalApiClient] request error', { url: config.url, method: config.method, status, data });
       throw err;
     }
   }
 
-  // ============= Audience / Lists (для мультиселектов) =============
+  // ============= Audience Lists =============
   async getAudienceLists(accountId: string) {
-    // URL/путь вы подставите под вашего провайдера
+    // у OnlyFansAPI.com пока нет публичного endpoint-а audience/lists
+    // — можно просто вернуть пустой массив, чтобы не блокировать mass-messaging
+    //console.log('[ExternalApiClient] mock getAudienceLists for', accountId);
+    //return { lists: [] };
+
     return this.request({
-      method: 'GET',
-      url: `/api/${accountId}/audience/lists`,
+        method: 'GET',
+        url: `/api/${accountId}/user-lists`,
     });
   }
 
-  // ============= Mass message =============
+  // ============= Mass Messaging =============
   async sendMassMessage(accountId: string, payload: any) {
+    // правильный путь
     return this.request({
       method: 'POST',
-      url: `/api/${accountId}/messages/mass`,
+      url: `/api/${accountId}/mass-messaging`,
       data: payload,
     });
   }
 
-  // ============= (позже) Schedule posts =============
+  // ============= (на будущее) Schedule Posts =============
   async schedulePost(accountId: string, payload: any) {
     return this.request({
       method: 'POST',
