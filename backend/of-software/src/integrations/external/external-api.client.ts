@@ -18,38 +18,53 @@ export class ExternalApiClient {
     });
   }
 
+  private _fixUrl(url?: string): string | undefined {
+    if (!url) return url;
+
+    const base = String(this.http.defaults.baseURL || '').replace(/\/+$/, '');
+    const baseHasApi = /\/api$/i.test(base);
+    const urlHasApi = url.startsWith('/api/');
+
+    // baseURL уже ".../api", а url тоже начинается с "/api/..." -> убираем одно "/api"
+    if (baseHasApi && urlHasApi) {
+      return url.replace(/^\/api/, '');
+    }
+
+    return url;
+  }
+
   private async request<T = any>(config: AxiosRequestConfig): Promise<T> {
+    const fixedUrl = this._fixUrl(config.url as any);
     const base = this.http.defaults.baseURL || '';
-    const fullUrl = `${base}${config.url || ''}`;
+    const fullUrl = `${base}${fixedUrl || ''}`;
+
     console.log('[ExternalApiClient] request', { fullUrl, method: config.method });
 
     try {
-      const res = await this.http.request<T>(config);
+      const res = await this.http.request<T>({
+        ...config,
+        url: fixedUrl,
+      });
       return res.data as any;
     } catch (err: any) {
       const status = err?.response?.status;
       const data = err?.response?.data;
-      console.log('[ExternalApiClient] request error', { url: config.url, method: config.method, status, data });
+      console.log('[ExternalApiClient] request error', { url: fixedUrl, method: config.method, status, data });
       throw err;
     }
   }
 
   // ============= Audience Lists =============
   async getAudienceLists(accountId: string) {
-    // у OnlyFansAPI.com пока нет публичного endpoint-а audience/lists
-    // — можно просто вернуть пустой массив, чтобы не блокировать mass-messaging
-    //console.log('[ExternalApiClient] mock getAudienceLists for', accountId);
-    //return { lists: [] };
-
+    // ВАЖНО: plural -> user-lists
     return this.request({
-        method: 'GET',
-        url: `/api/${accountId}/user-lists`,
+      method: 'GET',
+      url: `/api/${accountId}/user-lists`,
     });
   }
 
   // ============= Mass Messaging =============
   async sendMassMessage(accountId: string, payload: any) {
-    // правильный путь
     return this.request({
       method: 'POST',
       url: `/api/${accountId}/mass-messaging`,
@@ -57,7 +72,6 @@ export class ExternalApiClient {
     });
   }
 
-  // ============= (на будущее) Schedule Posts =============
   async schedulePost(accountId: string, payload: any) {
     return this.request({
       method: 'POST',
