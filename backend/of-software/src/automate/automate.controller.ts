@@ -1,6 +1,7 @@
 import { Controller, Get, Body, Query, Post, BadRequestException } from '@nestjs/common';
 import { AutomateService } from './automate.service';
 import { ApiTags } from '@nestjs/swagger';
+import {SendMassMessageDto} from "../dtos/send-mass-message.dto";
 
 @Controller('automate')
 @ApiTags('automate')
@@ -17,8 +18,8 @@ export class AutomateController {
   }
 
   @Post('send-mass-message')
-  sendMassMessage(@Body() body: any) {
-    return this.automateService.startMassMessage(body);
+  sendMassMessage(@Body() dto: SendMassMessageDto) {
+    return this.automateService.startMassMessage(dto);
   }
 
   // @Get('start')

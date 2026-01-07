@@ -698,7 +698,7 @@ onMounted(async () => {
         </CardBox>
 <!--      </div>-->
 <!--      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">-->
-        <ExternalMassMessageCard :modelPlatform="selectedModelPlatform" />
+        <ExternalMassMessageCard :modelPlatform="selectedModelPlatform" :notify="notify" />
       </div>
 
       <CardBoxModal v-model="isContentModalActive" title="Content"

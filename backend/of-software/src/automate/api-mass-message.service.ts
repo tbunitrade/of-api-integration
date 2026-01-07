@@ -23,7 +23,6 @@ export class ApiMassMessageService {
       .map((x) => String(x ?? '').trim())
       .filter(Boolean);
 
-    // uniq (case-insensitive) but keep original
     const seen = new Set<string>();
     const uniq: string[] = [];
     for (const token of out) {
@@ -65,10 +64,9 @@ export class ApiMassMessageService {
   private _buildProviderKeySet(lists: ProviderList[]): Set<string> {
     const set = new Set<string>();
     for (const l of lists) {
-      // id — это то, что должен отправлять фронт (fans / following / 12345)
       set.add(String(l.id).toLowerCase());
 
-      // запасной вариант: если кто-то всё же пришлёт name/type
+      // запасной вариант: если прилетит name/type
       if (l.name) set.add(String(l.name).toLowerCase());
       if (l.type) set.add(String(l.type).toLowerCase());
     }
@@ -83,18 +81,8 @@ export class ApiMassMessageService {
       return { userLists, excludedLists };
     }
 
-    const providerRes = await this.externalApi.getAudienceLists(accountId);
-    const providerLists = this._extractProviderLists(providerRes);
-
-    const providerLists2 = await this._loadAllProviderLists(accountId);
-
-    // если пусто — не блочим UX
-    if (!providerLists2.length) {
-      console.log('[ApiMassMessageService] provider lists empty, skip strict validation', { accountId, userLists, excludedLists });
-      return { userLists, excludedLists };
-    }
-
-    //const providerSet = this._buildProviderKeySet(providerLists);
+    // ЕДИНСТВЕННЫЙ источник истины: всегда грузим все списки
+    const providerLists = await this._loadAllProviderLists(accountId);
 
     // Если провайдер вернул пусто — НЕ блокируем mass-message (иначе будет флапать UX)
     if (!providerLists.length) {
@@ -139,7 +127,6 @@ export class ApiMassMessageService {
     const mp = await this.modelPlatformService.findById(modelPlatformId);
     if (!mp) throw new BadRequestException(`ModelPlatform not found: ${modelPlatformId}`);
 
-    // accountId берём из ofid_username (= acct_...)
     const accountId = String(mp.ofid_username || '').trim();
     if (!accountId) {
       throw new BadRequestException(`Account ID (ofid_username) is empty for modelPlatformId=${modelPlatformId}`);
@@ -147,11 +134,15 @@ export class ApiMassMessageService {
 
     const { userLists, excludedLists } = await this._validateAudienceLists(accountId, dto);
 
+    //const userLists = this._normalizeListNames(dto?.userLists);
+    //const excludedLists = this._normalizeListNames(dto?.excludedLists);
+    const userIds = Array.isArray(dto?.userIds) ? dto.userIds : [];
+
     const payload = {
       text,
       userLists,
       excludedLists,
-      userIds: Array.isArray(dto?.userIds) ? dto.userIds : [],
+      userIds
     };
 
     console.log('[ApiMassMessageService] sending', {
@@ -175,8 +166,7 @@ export class ApiMassMessageService {
     const accountId = String(mp.ofid_username || '').trim();
     if (!accountId) throw new BadRequestException(`Account ID (ofid_username) is empty for modelPlatformId=${modelPlatformId}`);
 
-    const providersRes = await this.externalApi.getAudienceLists(accountId);
-    const lists = this._extractProviderLists(providersRes);
+    // Возвращаем ПОЛНЫЙ список, а не первую страницу
     const lists = await this._loadAllProviderLists(accountId);
     return { lists };
   }
@@ -188,7 +178,12 @@ export class ApiMassMessageService {
     let guard = 0;
 
     while (guard++ < 50) {
-      const res = await this.externalApi.getAudienceLists(accountId, offset != null ? { offset } : undefined);
+
+      // ВАЖНО: этот вызов предполагает поддержку params в ExternalApiClient.getAudienceLists
+      const res = await this.externalApi.getAudienceLists(
+        accountId,
+        offset != null ? { offset, limit: 50 } : { limit: 50},
+      );
 
       const page = this._extractProviderLists(res);
       if (page.length) all.push(...page);
@@ -198,6 +193,14 @@ export class ApiMassMessageService {
 
       if (!hasMore || nextOffset == null) break;
       offset = nextOffset;
+
+      if (guard === 1) {
+        console.log('[ApiMassMessageService] audience raw first page keys', {
+          keys: Object.keys(res || {}),
+          dataKeys: Object.keys(res?.data || {}),
+          metaKeys: Object.keys(res?._meta || {}),
+        });
+      }
     }
 
     // uniq по id (case-insensitive) + сохраняем порядок

@@ -55,11 +55,12 @@ export class ExternalApiClient {
   }
 
   // ============= Audience Lists =============
-  async getAudienceLists(accountId: string) {
+  async getAudienceLists(accountId: string, params?: any ) {
     // ВАЖНО: plural -> user-lists
     return this.request({
       method: 'GET',
       url: `/api/${accountId}/user-lists`,
+      params
     });
   }
 
