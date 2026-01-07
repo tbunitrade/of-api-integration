@@ -185,17 +185,44 @@ export class ApiMassMessageService {
         offset != null ? { offset, limit: 50 } : { limit: 50},
       );
 
+      if (guard === 1) {
+        console.log('[ApiMassMessageService] audience FIRST PAGE raw', {
+          type: typeof res,
+          isArray: Array.isArray(res),
+          keys: res && typeof res === 'object' ? Object.keys(res) : [],
+          dataKeys: res?.data && typeof res.data === 'object' ? Object.keys(res.data) : [],
+          metaKeys: res?._meta && typeof res._meta === 'object' ? Object.keys(res._meta) : [],
+          sample: Array.isArray(res)
+            ? res.slice(0, 5)
+            : (Array.isArray(res?.data) ? res.data.slice(0, 5) : null),
+        });
+      }
+
       const page = this._extractProviderLists(res);
       if (page.length) all.push(...page);
 
-      const hasMore = Boolean(res?.data?.hasMore ?? res?.hasMore);
-      const nextOffset = res?.data?.nextOffset ?? res?.nextOffset;
+      //const hasMore = Boolean(res?.data?.hasMore ?? res?.hasMore);
+      const hasMore = Boolean(
+        res?.data?.hasMore ??
+        res?.hasMore ??
+        res?._meta?.hasMore ??
+        res?._meta?._pagination?.hasMore ??
+        res?._meta?._pagination?.has_more
+      );
+      //const nextOffset = res?.data?.nextOffset ?? res?.nextOffset;
+      const nextOffset =
+        res?.data?.nextOffset ??
+        res?.nextOffset ??
+        res?._meta?.nextOffset ??
+        res?._meta?._pagination?.nextOffset ??
+        res?._meta?._pagination?.next_offset;
+
 
       if (!hasMore || nextOffset == null) break;
       offset = nextOffset;
 
       if (guard === 1) {
-        console.log('[ApiMassMessageService] audience raw first page keys', {
+        console.log('[ApiMassMessageService 2] audience raw first page keys', {
           keys: Object.keys(res || {}),
           dataKeys: Object.keys(res?.data || {}),
           metaKeys: Object.keys(res?._meta || {}),
