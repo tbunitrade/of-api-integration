@@ -18,7 +18,8 @@ const mp = computed(() =>
   Array.isArray(props.modelPlatform) ? (props.modelPlatform[0] || null) : props.modelPlatform
 );
 
-const modelPlatformId = computed(() => Number(mp.value?.id || 0));
+//const modelPlatformId = computed(() => Number(mp.value?.id || 0));
+const modelPlatformId = computed(() => Number(mp.value?.model_platform_id || mp.value?.id || 0));
 const accountId = computed(() => String(mp.value?.ofid_username || '').trim());
 
 const audienceLists = ref([]); // [{id,name,type?}]
