@@ -108,11 +108,16 @@ const selectedModelPlatform = computed(() => {
   return res;
 });
 
-// Берём именно ID, который нужен для cron/manual-start-safari-finger-print
-// 🔹 Нам нужен именно ID model_platform, чтобы отправить в cron
-const selectedModelPlatformId = computed(() =>
-  selectedModelPlatform.value ? selectedModelPlatform.value.id : null,
-);
+/// Берём именно ID, который нужен для cron/manual-start-safari-finger-print
+/// 🔹 Нам нужен именно ID model_platform, чтобы отправить в cron
+//const selectedModelPlatformId = computed(() =>
+  //selectedModelPlatform.value ? selectedModelPlatform.value.id : null,
+//);
+const selectedModelPlatformId = computed(() => {
+  const x = selectedModelPlatformPlatform.value;
+  if (!x) return null;
+  return x.model_platform_id ?? x.id ?? null;
+});
 
 const fileInputRef = ref(null);
 const isContentModalActive = ref(false);
@@ -596,6 +601,18 @@ const onRestartServer = async () => {
 
 }
 
+// ✅ конкретная платформа внутри group.platforms[] для выбранной platform
+const selectedModelPlatformPlatform = computed(() => {
+  const grp = selectedModelPlatform.value;
+  if (!grp) return null;
+
+  if (Array.isArray(grp.platforms) && grp.platforms.length) {
+    return grp.platforms.find((p) => p.id === selectedPlatform.value?.id) || null;
+  }
+
+  // fallback если вдруг когда-то прилетит плоская запись
+  return grp;
+});
 
 onMounted(async () => {
   // 1️⃣ Подтягиваем пост + post_times
@@ -623,6 +640,7 @@ onMounted(async () => {
   console.log('[PostView:onMounted] selectedModel:', selectedModel.value);
   console.log('[PostView:onMounted] selectedPlatform:', selectedPlatform.value);
   console.log('[PostView:onMounted] modelPlatforms from store:', modelPlatforms.value);
+  console.log('[PostView] selectedModelPlatformPlatform:', selectedModelPlatformPlatform.value);
 
 });
 
@@ -698,7 +716,7 @@ onMounted(async () => {
         </CardBox>
 <!--      </div>-->
 <!--      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">-->
-        <ExternalMassMessageCard :modelPlatform="selectedModelPlatform" :notify="notify" />
+        <ExternalMassMessageCard :modelPlatform="selectedModelPlatformPlatform" :notify="notify" />
       </div>
 
       <CardBoxModal v-model="isContentModalActive" title="Content"

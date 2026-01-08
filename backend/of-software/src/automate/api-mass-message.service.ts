@@ -205,14 +205,20 @@ export class ApiMassMessageService {
       const hasMore = Boolean(
         res?.data?.hasMore ??
         res?.hasMore ??
+        res?._pagination?.hasMore ??
+        res?._pagination?.has_more ??
         res?._meta?.hasMore ??
         res?._meta?._pagination?.hasMore ??
         res?._meta?._pagination?.has_more
       );
+
+
       //const nextOffset = res?.data?.nextOffset ?? res?.nextOffset;
       const nextOffset =
         res?.data?.nextOffset ??
         res?.nextOffset ??
+        res?._pagination?.nextOffset ??
+        res?._pagination?.next_offset ??
         res?._meta?.nextOffset ??
         res?._meta?._pagination?.nextOffset ??
         res?._meta?._pagination?.next_offset;
@@ -226,6 +232,13 @@ export class ApiMassMessageService {
           keys: Object.keys(res || {}),
           dataKeys: Object.keys(res?.data || {}),
           metaKeys: Object.keys(res?._meta || {}),
+        });
+      }
+
+      if (guard === 1) {
+        console.log('[ApiMassMessageService] audience _pagination keys', {
+          paginationKeys: res?._pagination && typeof res._pagination === 'object' ? Object.keys(res._pagination) : [],
+          pagination: res?._pagination,
         });
       }
     }

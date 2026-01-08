@@ -44,6 +44,9 @@ export class ModelPlatformController {
         scheduled_date: item.scheduled_date,
         site_url: item.site_url,
         model_platform_id: item.id,
+        ofid_username: item.ofid_username,
+        fingerprint_username: item.fingerprint_username,
+        prokey: item.prokey,
       };
       _rst[modelId].platforms.push(_platform);
       return _rst;

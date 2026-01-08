@@ -83,6 +83,38 @@ const filteredLists = computed(() => {
   });
 });
 
+const listIndexById = computed(() => {
+  const m = new Map();
+  for (const l of audienceLists.value || []) {
+    const id = String(l?.id ?? '').trim();
+    if (!id) continue;
+    m.set(id, l);
+  }
+  return m;
+});
+
+const tokenLabel = (token) => {
+  const t = String(token ?? '').trim();
+  if (!t) return '';
+  const l = listIndexById.value.get(t);
+  const name = String(l?.name ?? '').trim();
+  return name || t; // если name нет — fallback на id
+};
+
+const tokenTitle = (token) => {
+  const t = String(token ?? '').trim();
+  const l = listIndexById.value.get(t);
+  const name = String(l?.name ?? '').trim();
+  // title всегда содержит id, чтобы оно было вторичным и доступным
+  return name ? `${name} — ${t}` : t;
+};
+
+const tokenShowIdInline = (token) => {
+  const t = String(token ?? '').trim();
+  const label = tokenLabel(t);
+  return label && label !== t; // показывать (id) только если label != id
+};
+
 const isIncluded = (token) => includeTokens.value.includes(token);
 const isExcluded = (token) => excludeTokens.value.includes(token);
 
@@ -247,14 +279,16 @@ watch(
         </div>
 
         <div class="mt-2 flex flex-wrap gap-2" v-if="includeTokens.length">
-          <span
-            v-for="t in includeTokens"
-            :key="'inc-chip-' + t"
-            class="text-xs px-2 py-1 rounded border cursor-pointer"
-            @click="removeInclude(t)"
-            title="Click to remove"
-          >
-            {{ t }} ✕
+         <span
+           v-for="t in includeTokens"
+           :key="'inc-chip-' + t"
+           class="text-xs px-2 py-1 rounded border cursor-pointer"
+           @click="removeInclude(t)"
+           :title="tokenTitle(t)"
+         >
+            {{ tokenLabel(t) }}
+            <span v-if="tokenShowIdInline(t)" class="opacity-60 ml-1">({{ t }})</span>
+            ✕
           </span>
         </div>
 
@@ -290,9 +324,11 @@ watch(
             :key="'exc-chip-' + t"
             class="text-xs px-2 py-1 rounded border cursor-pointer"
             @click="removeExclude(t)"
-            title="Click to remove"
+            :title="tokenTitle(t)"
           >
-            {{ t }} ✕
+            {{ tokenLabel(t) }}
+            <span v-if="tokenShowIdInline(t)" class="opacity-60 ml-1">({{ t }})</span>
+            ✕
           </span>
         </div>
 
