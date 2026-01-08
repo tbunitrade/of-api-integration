@@ -80,4 +80,19 @@ export class ExternalApiClient {
       data: payload,
     });
   }
+
+  async getVaultList(accountId: string, listId: string ) {
+    return this.request({
+      method: 'GET',
+      url: `/api/${accountId}/media/vault/lists/${encodeURIComponent(String(listId))}`,
+    });
+  }
+
+  async addMediaToVaultList(accountId: string, listId: string, mediaIds: string[]) {
+    return this.request({
+      method: 'POST',
+      url: `/api/${accountId}/media/vault/lists/${encodeURIComponent(String(listId))}/media`,
+      data: { mediaIds }
+    });
+  }
 }
