@@ -31,7 +31,10 @@ import NotificationBar from '@/components/NotificationBar.vue';
 import TableSampleClients from '@/components/TableSampleClients.vue';
 import CardBoxComponentEmpty from '@/components/CardBoxComponentEmpty.vue';
 import ExternalMassMessageCard from '@/components/ExternalMassMessageCard.vue';
+import ExternalVaultMediaCard from '@/components/ExternalVaultMediaCard.vue';
 
+
+const vaultMediaIds = ref([]);
 const postStore = usePostStore();
 const postTimeStore = usePostTimeStore();
 const postFileStore = usePostFileStore();
@@ -716,7 +719,9 @@ onMounted(async () => {
         </CardBox>
 <!--      </div>-->
 <!--      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">-->
-        <ExternalMassMessageCard :modelPlatform="selectedModelPlatformPlatform" :notify="notify" />
+        <ExternalMassMessageCard :modelPlatform="selectedModelPlatformPlatform" :notify="notify" :mediaIds="vaultMediaIds" />
+        <ExternalVaultMediaCard :modelPlatform="selectedModelPlatformPlatform" :notify="notify" v-model:mediaIds="vaultMediaIds"/>
+
       </div>
 
       <CardBoxModal v-model="isContentModalActive" title="Content"

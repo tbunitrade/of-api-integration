@@ -32,11 +32,20 @@ export class ExternalApiClient {
 
     return url;
   }
+  private _keys(obj: any): string[] {
+    try {
+      return obj && typeof obj === 'object' ? Object.keys(obj) : [];
+    } catch {
+      return [];
+    }
+  }
 
   private async request<T = any>(config: AxiosRequestConfig): Promise<T> {
     const fixedUrl = this._fixUrl(config.url as any);
     const base = this.http.defaults.baseURL || '';
     const fullUrl = `${base}${fixedUrl || ''}`;
+
+    const startedAt = Date.now();
 
     console.log('[ExternalApiClient] request', { fullUrl, method: config.method });
 
@@ -45,11 +54,46 @@ export class ExternalApiClient {
         ...config,
         url: fixedUrl,
       });
-      return res.data as any;
+
+      const ms = Date.now() - startedAt;
+
+      const body: any = res?.data;
+      const topKeys = this._keys(body);
+      const dataKeys = this._keys(body?.data);
+      const metaKeys = this._keys(body?._meta);
+
+      console.log('[ExternalApiClient] response', {
+        method: config.method,
+        url: fixedUrl,
+        status: res?.status,
+        ms,
+        topKeys,
+        dataKeys,
+        metaKeys,
+        // полезные “подсказки”, но без мусора
+        hasList: Array.isArray(body?.data?.list),
+        listLen: Array.isArray(body?.data?.list) ? body.data.list.length : undefined,
+        hasMore: body?.data?.hasMore,
+        creditsUsed: body?._meta?._credits?.used,
+        creditsBalance: body?._meta?._credits?.balance,
+        remainingMinute: body?._meta?._rate_limits?.remaining_minute,
+        remainingDay: body?._meta?._rate_limits?.remaining_day,
+      });
+
+      return body as any;
     } catch (err: any) {
+      const ms = Date.now() - startedAt;
       const status = err?.response?.status;
       const data = err?.response?.data;
-      console.log('[ExternalApiClient] request error', { url: fixedUrl, method: config.method, status, data });
+      console.log('[ExternalApiClient] request error', {
+        url: fixedUrl,
+        method: config.method,
+        status,
+        ms,
+        errorDataKeys: this._keys(data?.data),
+        errorMetaKeys: this._keys(data?._meta),
+        data,
+      });
       throw err;
     }
   }
@@ -78,6 +122,32 @@ export class ExternalApiClient {
       method: 'POST',
       url: `/api/${accountId}/posts/schedule`,
       data: payload,
+    });
+  }
+
+  // ✅ List Vault Lists (получить все категории/листы)
+  async getVaultLists(accountId: string, params?: any) {
+    return this.request({
+      method: 'GET',
+      url: `/api/${accountId}/media/vault/lists`,
+      params,
+    });
+  }
+
+  // ✅ List Vault Media (получить медиа, можно фильтровать list=...)
+  async getVaultMediaList(accountId: string, params?: any) {
+    return this.request({
+      method: 'GET',
+      url: `/api/${accountId}/media/vault`,
+      params,
+    });
+  }
+
+  // ✅ Get Vault Media (получить одно медиа по media_id)
+  async getVaultMedia(accountId: string, mediaId: string | number) {
+    return this.request({
+      method: 'GET',
+      url: `/api/${accountId}/media/vault/${encodeURIComponent(String(mediaId))}`,
     });
   }
 

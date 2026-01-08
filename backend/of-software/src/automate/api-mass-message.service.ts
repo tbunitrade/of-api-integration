@@ -137,12 +137,16 @@ export class ApiMassMessageService {
     //const userLists = this._normalizeListNames(dto?.userLists);
     //const excludedLists = this._normalizeListNames(dto?.excludedLists);
     const userIds = Array.isArray(dto?.userIds) ? dto.userIds : [];
+    const mediaIds = Array.isArray(dto?.mediaIds)
+      ? dto.mediaIds.map((x: any) => String(x ?? '').trim()).filter(Boolean)
+      : [];
 
     const payload = {
       text,
       userLists,
       excludedLists,
-      userIds
+      userIds,
+      ...(mediaIds.length ? { mediaIds } : {} ),
     };
 
     console.log('[ApiMassMessageService] sending', {

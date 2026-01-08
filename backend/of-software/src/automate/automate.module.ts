@@ -26,6 +26,7 @@ import { PostFile } from "../postFile/post_file.entity";
 import { ExternalModule } from "../integrations/external/external.module";
 import { ApiMassMessageService } from "./api-mass-message.service";
 import { ModelPlatformModule } from "../modelPlatform/model_platform.module";
+import { ApiVaultMediaService } from "./api-vault-media.service";
 
 @Module({
   imports: [
@@ -59,6 +60,8 @@ import { ModelPlatformModule } from "../modelPlatform/model_platform.module";
 
     // NEW SERVICES — REQUIRED BY AutomateService
     ApiMassMessageService,
+    ApiVaultMediaService,
+
     SafariPostService,
     SafariMessageService,
     PuppeteerPostService,
@@ -75,7 +78,8 @@ import { ModelPlatformModule } from "../modelPlatform/model_platform.module";
     SafariMessageService,
     PuppeteerPostService,
     PuppeteerMessageService,
-    ApiMassMessageService
+    ApiMassMessageService,
+    ApiVaultMediaService
   ]
 })
 export class AutomateModule {}

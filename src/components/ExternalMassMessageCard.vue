@@ -4,9 +4,20 @@ import { ref, computed, watch } from 'vue';
 import CardBox from '@/components/CardBox.vue';
 import BaseButton from '@/components/BaseButton.vue';
 
+const canWork = computed(() => modelPlatformId.value > 0);
+
+watch(
+  () => mp.value,
+  (v) => console.log('[ExternalVaultMediaCard] mp=', v),
+  { immediate: true }
+);
+
 const props = defineProps({
   modelPlatform: { type: [Object, Array], required: false, default: null },
   notify: { type: Function, required: false, default: null },
+
+  // NEW import media
+  mediaIds: { type: Array, required: false, default: () => [] },
 });
 
 const notify = (payload) => {
@@ -154,7 +165,7 @@ const clearExclude = () => (excludeTokens.value = []);
 
 const loadAudienceLists = async () => {
   if (!modelPlatformId.value) {
-    notify({ title: 'Warning', type: 'error', text: 'ModelPlatform is not selected/found' });
+    notify({ title: 'Warning', type: 'error', text: 'ModelPlatform in Mass Mess is not selected/found' });
     return;
   }
 
@@ -201,6 +212,7 @@ const onSendMassMessage = async () => {
       userLists: normalizeSelectedTokens(includeTokens.value),
       excludedLists: normalizeSelectedTokens(excludeTokens.value),
       userIds: [],
+      mediaIds: Array.isArray(props.mediaIds) ? props.mediaIds.map((x) => String(x)) : [],
     };
 
     const res = await fetch(`${import.meta.env.VITE_APP_ROOT_API}/automate/send-mass-message`, {
