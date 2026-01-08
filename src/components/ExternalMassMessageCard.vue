@@ -1,16 +1,8 @@
-<script setup>
+<script setup lang="ts">
 import { ref, computed, watch } from 'vue';
 
 import CardBox from '@/components/CardBox.vue';
 import BaseButton from '@/components/BaseButton.vue';
-
-const canWork = computed(() => modelPlatformId.value > 0);
-
-watch(
-  () => mp.value,
-  (v) => console.log('[ExternalVaultMediaCard] mp=', v),
-  { immediate: true }
-);
 
 const props = defineProps({
   modelPlatform: { type: [Object, Array], required: false, default: null },
@@ -20,32 +12,41 @@ const props = defineProps({
   mediaIds: { type: Array, required: false, default: () => [] },
 });
 
-const notify = (payload) => {
-  if (typeof props.notify === 'function') return props.notify(payload);
+const notify = (payload: any) => {
+  if (typeof props.notify === 'function') return (props.notify as any)(payload);
   console.log('[ExternalMassMessageCard notify]', payload);
 };
 
 const mp = computed(() =>
-  Array.isArray(props.modelPlatform) ? (props.modelPlatform[0] || null) : props.modelPlatform
+  Array.isArray(props.modelPlatform) ? ((props.modelPlatform as any)[0] || null) : (props.modelPlatform as any)
 );
 
-//const modelPlatformId = computed(() => Number(mp.value?.id || 0));
-const modelPlatformId = computed(() => Number(mp.value?.model_platform_id || mp.value?.id || 0));
-const accountId = computed(() => String(mp.value?.ofid_username || '').trim());
+// НЕ трогаем твою схему: model_platform_id || id
+const modelPlatformId = computed(() => Number((mp.value as any)?.model_platform_id || (mp.value as any)?.id || 0));
+const accountId = computed(() => String((mp.value as any)?.ofid_username || '').trim());
 
-const audienceLists = ref([]); // [{id,name,type?}]
+const canWork = computed(() => modelPlatformId.value > 0);
+
+// оставляю твой лог как есть (не меняю строку), но делаю корректно по порядку
+watch(
+  () => mp.value,
+  (v) => console.log('[ExternalVaultMediaCard] mp=', v),
+  { immediate: true }
+);
+
+const audienceLists = ref<any[]>([]); // [{id,name,type?}]
 const massMessageText = ref('');
 
-const includeTokens = ref([]); // string[]
-const excludeTokens = ref([]); // string[]
+const includeTokens = ref<string[]>([]);
+const excludeTokens = ref<string[]>([]);
 
 const search = ref('');
 
 const loadingAudienceLists = ref(false);
 const sendingMassMessage = ref(false);
-const lastMassResponse = ref(null);
+const lastMassResponse = ref<any>(null);
 
-const normalizeProviderLists = (data) => {
+const normalizeProviderLists = (data: any) => {
   const listsRaw = Array.isArray(data) ? data : (data?.lists || []);
   if (!Array.isArray(listsRaw)) return [];
 
@@ -56,26 +57,26 @@ const normalizeProviderLists = (data) => {
 
   // objects
   return listsRaw
-    .map((x) => ({
+    .map((x: any) => ({
       id: x?.id ?? x?.key ?? x?.type ?? x?.slug ?? x?.name,
       name: String(x?.name ?? x?.title ?? x?.label ?? x?.id ?? '').trim(),
       type: x?.type,
     }))
-    .filter((x) => x.id != null && x.name);
+    .filter((x: any) => x.id != null && x.name);
 };
 
-const normalizeSelectedTokens = (arr) => {
+const normalizeSelectedTokens = (arr: any) => {
   const a = Array.isArray(arr) ? arr : [];
   const out = a
-    .map((x) => {
+    .map((x: any) => {
       if (x == null) return '';
       if (typeof x === 'string' || typeof x === 'number') return String(x).trim();
       return String(x?.id ?? x?.value ?? x?.key ?? '').trim();
     })
     .filter(Boolean);
 
-  const seen = new Set();
-  return out.filter((t) => {
+  const seen = new Set<string>();
+  return out.filter((t: string) => {
     const k = t.toLowerCase();
     if (seen.has(k)) return false;
     seen.add(k);
@@ -87,7 +88,7 @@ const filteredLists = computed(() => {
   const q = String(search.value || '').trim().toLowerCase();
   if (!q) return audienceLists.value;
 
-  return audienceLists.value.filter((l) => {
+  return audienceLists.value.filter((l: any) => {
     const n = String(l.name || '').toLowerCase();
     const id = String(l.id || '').toLowerCase();
     return n.includes(q) || id.includes(q);
@@ -95,43 +96,41 @@ const filteredLists = computed(() => {
 });
 
 const listIndexById = computed(() => {
-  const m = new Map();
+  const m = new Map<string, any>();
   for (const l of audienceLists.value || []) {
-    const id = String(l?.id ?? '').trim();
+    const id = String((l as any)?.id ?? '').trim();
     if (!id) continue;
     m.set(id, l);
   }
   return m;
 });
 
-const tokenLabel = (token) => {
+const tokenLabel = (token: any) => {
   const t = String(token ?? '').trim();
   if (!t) return '';
   const l = listIndexById.value.get(t);
   const name = String(l?.name ?? '').trim();
-  return name || t; // если name нет — fallback на id
+  return name || t;
 };
 
-const tokenTitle = (token) => {
+const tokenTitle = (token: any) => {
   const t = String(token ?? '').trim();
   const l = listIndexById.value.get(t);
   const name = String(l?.name ?? '').trim();
-  // title всегда содержит id, чтобы оно было вторичным и доступным
   return name ? `${name} — ${t}` : t;
 };
 
-const tokenShowIdInline = (token) => {
+const tokenShowIdInline = (token: any) => {
   const t = String(token ?? '').trim();
   const label = tokenLabel(t);
-  return label && label !== t; // показывать (id) только если label != id
+  return label && label !== t;
 };
 
-const isIncluded = (token) => includeTokens.value.includes(token);
-const isExcluded = (token) => excludeTokens.value.includes(token);
+const isIncluded = (token: string) => includeTokens.value.includes(token);
+const isExcluded = (token: string) => excludeTokens.value.includes(token);
 
-const toggleInclude = (token) => {
+const toggleInclude = (token: string) => {
   token = String(token);
-  // remove from exclude if exists
   excludeTokens.value = excludeTokens.value.filter((t) => t !== token);
 
   if (includeTokens.value.includes(token)) {
@@ -141,9 +140,8 @@ const toggleInclude = (token) => {
   }
 };
 
-const toggleExclude = (token) => {
+const toggleExclude = (token: string) => {
   token = String(token);
-  // remove from include if exists
   includeTokens.value = includeTokens.value.filter((t) => t !== token);
 
   if (excludeTokens.value.includes(token)) {
@@ -153,18 +151,14 @@ const toggleExclude = (token) => {
   }
 };
 
-const removeInclude = (token) => {
-  includeTokens.value = includeTokens.value.filter((t) => t !== token);
-};
-const removeExclude = (token) => {
-  excludeTokens.value = excludeTokens.value.filter((t) => t !== token);
-};
+const removeInclude = (token: string) => (includeTokens.value = includeTokens.value.filter((t) => t !== token));
+const removeExclude = (token: string) => (excludeTokens.value = excludeTokens.value.filter((t) => t !== token));
 
 const clearInclude = () => (includeTokens.value = []);
 const clearExclude = () => (excludeTokens.value = []);
 
 const loadAudienceLists = async () => {
-  if (!modelPlatformId.value) {
+  if (!canWork.value) {
     notify({ title: 'Warning', type: 'error', text: 'ModelPlatform in Mass Mess is not selected/found' });
     return;
   }
@@ -180,11 +174,10 @@ const loadAudienceLists = async () => {
     const lists = normalizeProviderLists(data);
     audienceLists.value = lists;
 
-    // purge invalid selections
-    const set = new Set(lists.map((x) => String(x.id).toLowerCase()));
+    const set = new Set(lists.map((x: any) => String(x.id).toLowerCase()));
     includeTokens.value = includeTokens.value.filter((x) => set.has(String(x).toLowerCase()));
     excludeTokens.value = excludeTokens.value.filter((x) => set.has(String(x).toLowerCase()));
-  } catch (e) {
+  } catch (e: any) {
     console.log('[ExternalMassMessageCard] loadAudienceLists error', e);
     notify({ title: 'Error', type: 'error', text: 'Failed to load audience lists' });
   } finally {
@@ -193,7 +186,7 @@ const loadAudienceLists = async () => {
 };
 
 const onSendMassMessage = async () => {
-  if (!modelPlatformId.value) {
+  if (!canWork.value) {
     notify({ title: 'Warning', type: 'error', text: 'ModelPlatform is not selected/found' });
     return;
   }
@@ -212,7 +205,7 @@ const onSendMassMessage = async () => {
       userLists: normalizeSelectedTokens(includeTokens.value),
       excludedLists: normalizeSelectedTokens(excludeTokens.value),
       userIds: [],
-      mediaIds: Array.isArray(props.mediaIds) ? props.mediaIds.map((x) => String(x)) : [],
+      mediaIds: Array.isArray(props.mediaIds) ? (props.mediaIds as any).map((x: any) => String(x)) : [],
     };
 
     const res = await fetch(`${import.meta.env.VITE_APP_ROOT_API}/automate/send-mass-message`, {
@@ -228,7 +221,7 @@ const onSendMassMessage = async () => {
 
     notify({ title: 'Success', type: 'success', text: 'Mass message request sent' });
     console.log('[ExternalMassMessageCard] send-mass-message response', data);
-  } catch (e) {
+  } catch (e: any) {
     console.log('[ExternalMassMessageCard] send-mass-message error', e);
     notify({ title: 'Error', type: 'error', text: e?.message || 'Failed to send mass message' });
   } finally {
@@ -255,6 +248,7 @@ watch(
     <div class="text-sm mt-2">
       <div><b>ModelPlatform:</b> {{ modelPlatformId || '-' }}</div>
       <div><b>Account (ofid_username):</b> {{ accountId || '-' }}</div>
+      <div class="text-xs opacity-70" v-if="Array.isArray(mediaIds)"><b>Selected mediaIds:</b> {{ mediaIds.length }}</div>
     </div>
 
     <div class="mt-4 flex gap-2">
@@ -263,24 +257,15 @@ watch(
         color="info"
         rounded
         small
-        :disabled="loadingAudienceLists"
+        :disabled="loadingAudienceLists || !canWork"
         @click="loadAudienceLists"
       />
-      <input
-        class="flex-1 rounded p-2 border"
-        v-model="search"
-        placeholder="Search list..."
-      />
+      <input class="flex-1 rounded p-2 border" v-model="search" placeholder="Search list..." />
     </div>
 
     <div class="mt-4">
       <label class="block text-sm">Message</label>
-      <textarea
-        class="w-full rounded mt-1 p-2"
-        rows="5"
-        v-model="massMessageText"
-        placeholder="Type message text..."
-      ></textarea>
+      <textarea class="w-full rounded mt-1 p-2" rows="5" v-model="massMessageText" placeholder="Type message text..."></textarea>
     </div>
 
     <div class="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -291,13 +276,13 @@ watch(
         </div>
 
         <div class="mt-2 flex flex-wrap gap-2" v-if="includeTokens.length">
-         <span
-           v-for="t in includeTokens"
-           :key="'inc-chip-' + t"
-           class="text-xs px-2 py-1 rounded border cursor-pointer"
-           @click="removeInclude(t)"
-           :title="tokenTitle(t)"
-         >
+          <span
+            v-for="t in includeTokens"
+            :key="'inc-chip-' + t"
+            class="text-xs px-2 py-1 rounded border cursor-pointer"
+            @click="removeInclude(t)"
+            :title="tokenTitle(t)"
+          >
             {{ tokenLabel(t) }}
             <span v-if="tokenShowIdInline(t)" class="opacity-60 ml-1">({{ t }})</span>
             ✕
@@ -305,11 +290,7 @@ watch(
         </div>
 
         <div class="mt-3 max-h-64 overflow-auto border rounded p-2">
-          <div
-            v-for="l in filteredLists"
-            :key="'inc-' + String(l.id)"
-            class="flex items-center gap-2 py-1"
-          >
+          <div v-for="l in filteredLists" :key="'inc-' + String(l.id)" class="flex items-center gap-2 py-1">
             <input
               type="checkbox"
               :checked="isIncluded(String(l.id))"
@@ -345,11 +326,7 @@ watch(
         </div>
 
         <div class="mt-3 max-h-64 overflow-auto border rounded p-2">
-          <div
-            v-for="l in filteredLists"
-            :key="'exc-' + String(l.id)"
-            class="flex items-center gap-2 py-1"
-          >
+          <div v-for="l in filteredLists" :key="'exc-' + String(l.id)" class="flex items-center gap-2 py-1">
             <input
               type="checkbox"
               :checked="isExcluded(String(l.id))"
@@ -371,7 +348,7 @@ watch(
         color="success"
         rounded
         small
-        :disabled="sendingMassMessage"
+        :disabled="sendingMassMessage || !canWork"
         @click="onSendMassMessage"
       />
     </div>

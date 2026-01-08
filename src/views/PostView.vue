@@ -604,17 +604,33 @@ const onRestartServer = async () => {
 
 }
 
-// ✅ конкретная платформа внутри group.platforms[] для выбранной platform
+// // ✅ конкретная платформа внутри group.platforms[] для выбранной platform
+// const selectedModelPlatformPlatform = computed(() => {
+//   const grp = selectedModelPlatform.value;
+//   if (!grp) return null;
+//
+//   if (Array.isArray(grp.platforms) && grp.platforms.length) {
+//     return grp.platforms.find((p) => p.id === selectedPlatform.value?.id) || null;
+//   }
+//
+//   // fallback если вдруг когда-то прилетит плоская запись
+//   return grp;
+// });
+
 const selectedModelPlatformPlatform = computed(() => {
   const grp = selectedModelPlatform.value;
-  if (!grp) return null;
+  const platId = selectedPlatform.value?.id;
 
-  if (Array.isArray(grp.platforms) && grp.platforms.length) {
-    return grp.platforms.find((p) => p.id === selectedPlatform.value?.id) || null;
-  }
+  if (!grp || !platId) return null;
 
-  // fallback если вдруг когда-то прилетит плоская запись
-  return grp;
+  const arr = Array.isArray(grp.platforms) ? grp.platforms : [];
+
+  return (
+    arr.find((p) => p.platform_id === platId) ||
+    arr.find((p) => p.platform?.id === platId) ||
+    arr.find((p) => p.id === platId) || // fallback
+    null
+  );
 });
 
 onMounted(async () => {
@@ -646,6 +662,8 @@ onMounted(async () => {
   console.log('[PostView] selectedModelPlatformPlatform:', selectedModelPlatformPlatform.value);
 
 });
+
+
 
 </script>
 
