@@ -21,6 +21,11 @@ export default [
     label: 'Dashboard'
   },
   {
+    to: '/mass',
+    label: 'Mass',
+    icon: mdiTable
+  },
+  {
     to: '/posts',
     label: 'Post',
     icon: mdiTable
