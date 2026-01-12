@@ -4,7 +4,7 @@ import BaseButtons from '@/components/BaseButtons.vue';
 import BaseDivider from '@/components/BaseDivider.vue';
 import CardBox from '@/components/CardBox.vue';
 import CardBoxModal from '@/components/CardBoxModal.vue';
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref , watch } from 'vue';
 import {
   useModelStore,
   usePostStore,
@@ -663,6 +663,33 @@ onMounted(async () => {
 
 });
 
+watch(
+  () => [selectedModel.value?.id, selectedPlatform.value?.id],
+  async ([modelId, platformId], [prevModelId, prevPlatformId]) => {
+    console.log('[PostView:watch] model/platform changed:', {
+      prevModelId, prevPlatformId, modelId, platformId,
+    });
+
+    if (!modelId || !platformId) return;
+
+    // 1) гарантируем, что связки загружены
+    try {
+      await modelPlatformStore.getAllModelPlatforms();
+    } catch (e) {
+      console.error('[PostView:watch] getAllModelPlatforms failed:', e);
+    }
+
+    // 2) подтягиваем post/post_times (если это нужно для экрана)
+    await fetchData();
+
+    console.log('[PostView:onMounted] selectedModel 2:', selectedModel.value);
+    console.log('[PostView:onMounted] selectedPlatform 2:', selectedPlatform.value);
+    console.log('[PostView:onMounted] modelPlatforms from store 2:', modelPlatforms.value);
+    console.log('[PostView] selectedModelPlatformPlatform 2:', selectedModelPlatformPlatform.value);
+  },
+  { immediate: true }
+);
+
 
 
 </script>
@@ -739,6 +766,7 @@ onMounted(async () => {
 <!--      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">-->
         <ExternalMassMessageCard :modelPlatform="selectedModelPlatformPlatform" :notify="notify" :mediaIds="vaultMediaIds" />
         <ExternalVaultMediaCard :modelPlatform="selectedModelPlatformPlatform" :notify="notify" v-model:mediaIds="vaultMediaIds"/>
+
 
       </div>
 
