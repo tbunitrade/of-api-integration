@@ -23,6 +23,8 @@ import TableMessageGroup from "@/components/TableMessageGroup.vue";
 import TableMessages from "@/components/TableMessages.vue";
 import BaseButton from "@/components/BaseButton.vue";
 
+//for new variation mass
+import { useFileStore } from "@/stores/files.store";
 import ExternalMassMessageCard from "@/components/ExternalMassMessageCard.vue";
 import ExternalVaultMediaCard from "@/components/ExternalVaultMediaCard.vue";
 
@@ -182,7 +184,7 @@ const fetchData = async () => {
     await authStore.getMyProfile();
 
     // группы/сообщения — как MessageView
-    await groupStore.getAllGroups(params);
+    await groupStore.getAllGroups( { ...params, massmsg: 1});
 
     // важно для External*Card: подтянуть все model_platforms, чтобы найти ofid_username
     await modelPlatformStore.getAllModelPlatforms();
@@ -304,6 +306,124 @@ const $mv = useVuelidate(mRules, selectedMessage);
 const deleteId = ref(null);
 const deleteCallback = ref(null);
 
+
+
+
+///area for edits or delete group
+const onClickEditGroup = (id) =>
+{
+  const group = (groupStore.groups || []).filter((it) => it.id === id);
+
+  if (group)
+  {
+    selectedGroup.value = { ...group[0], isEdit: true };
+    isGroupModalActive.value = true;
+  }
+};
+
+const onDeleteGroup = async (id) =>
+{
+  isModalDangerActive.value = true;
+  deleteId.value = id;
+  deleteCallback.value = confirmDeleteGroup;
+};
+
+const confirmDeleteGroup = async () =>
+{
+  const del_result = await groupStore.deleteGroup(deleteId.value);
+  if (del_result)
+  {
+    notify({
+      title: "Success",
+      type: "success",
+      text: "Group deleted successfully",
+    });
+    $gv.value.$reset();
+    isModalDangerActive.value = false;
+  }
+};
+
+
+const onClickEditMessage = (id) => {
+  const [row] = messagesInStore.value.filter((it) => it.id === id);
+  if (!row) return;
+
+  selectedMessage.value = {
+    isEdit: true,
+    id: String(row.id ?? ''),
+    ...selectedMessage.value,
+    ...row,
+    name: String(row.name ?? ''),
+    group_id: Number(row.group_id ?? selectedGroup.value?.id ?? 0),
+    price: Number(row.price ?? 0),
+    free_preview: Number(row.free_preview ?? 0),
+    message_time: String(row.message_time ?? ''),
+    message_list: Array.isArray(row.message_list) ? (row.message_list[0] ?? '') : String(row.message_list ?? ''),
+    message_exclude_list: Array.isArray(row.message_exclude_list) ? (row.message_exclude_list[0] ?? '') : String(row.message_exclude_list ?? ''),
+    release_form_tags: String(row.release_form_tags ?? ''),
+    release_user_tags: String(row.release_user_tags ?? ''),
+    content_attached: !!row.content_attached,
+    content: String(row.content ?? ''),
+  };
+  // Превью файлов
+  if (typeof selectedMessage.value.content === 'string' && selectedMessage.value.content.length > 0) {
+    fileStore.setFiles(selectedMessage.value.content.split(','));
+  }
+  isMessageModalActive.value = true;
+};
+
+const onDeleteMessage = async (id) =>
+{
+  isModalDangerActive.value = true;
+  deleteId.value = id;
+  deleteCallback.value = confirmDeleteMessage;
+};
+const confirmDeleteMessage = async () =>
+{
+  const del_result = await messageStore.deleteMessage(deleteId.value);
+  if (del_result)
+  {
+    notify({
+      title: "Success",
+      type: "success",
+      text: "Message deleted successfully",
+    });
+    $mv.value.$reset();
+    isModalDangerActive.value = false;
+  }
+};
+
+const onCheckGroups = (ids) =>
+{
+  checkedGroups.value = ids;
+};
+
+//add message
+
+const onAddNewMessage = () =>
+{
+  selectedMessage.value = {
+    isEdit: false,
+    id: null,
+    name: "",
+    group_id: selectedGroup.value?.id || 0,
+    price: 0,
+    free_preview: 0,
+    message: "",
+    message_time: "",
+    message_list: "",
+    message_exclude_list: "",
+    release_form_tags: "",
+    release_user_tags: "",
+    content_attached: false,
+    content: "",
+  };
+  fileStore.setEmpty();
+  $gv.value.$reset();
+  $mv.value.$reset();
+  isMessageModalActive.value = true;
+};
+
 // ---- Handlers, которые уже дергаются из template
 const onAddNewGroup = () => {
   console.log('[MassView] Add Group clicked');
@@ -328,7 +448,7 @@ const onSubmitGroup = async () => {
 
   try {
     if (selectedGroup.value.isEdit) {
-      const ok = await groupStore.updateGroup(selectedGroup.value);
+      const ok = await groupStore.updateGroup({ ...selectedGroup.value, massmsg: 1 });
       if (ok) {
         notify({ title: "Success", type: "success", text: "Group updated successfully" });
         $gv.value.$reset();
@@ -338,6 +458,7 @@ const onSubmitGroup = async () => {
         ...selectedGroup.value,
         model_id: selectedModel.value.id,
         platform_id: selectedPlatform.value.id,
+        massmsg: 1
       });
 
       if (ok) {
@@ -475,6 +596,9 @@ watch(
                   <TableMessageGroup
                     :groups="groupStore.groups"
                     @view-row="onViewGroup"
+                    @click-row="onClickEditGroup"
+                    @delete-row="onDeleteGroup"
+                    @check-rows="onCheckGroups"
                     :checkable="true"
                   />
 
@@ -497,11 +621,14 @@ watch(
                   <TableMessages
                     :messages="messagesInStore"
                     :showGroup="false"
+                    @click-row="onClickEditMessage"
+                    @delete-row="onDeleteMessage"
                   />
 
                   <div class="w-full flex justify-between">
                     <BaseButton label="Back" color="contrast" rounded small @click="onCancelAddMessage" />
-                    <!-- здесь можно добавить Add Message, если надо -->
+                    <!-- здесь можно добавить Add Message -->
+                    <BaseButton label="Add Message" color="info" rounded small @click="onAddNewMessage" />
                   </div>
                 </div>
               </TabContent>
@@ -509,7 +636,10 @@ watch(
               <TabContent :show="openTab === 2">
                 <div>
                   <h1 class="font-bold text-xl">Message List</h1>
-                  <TableMessages :messages="messagesInStore" />
+                  <TableMessages
+                    :messages="messagesInStore"
+                    @click-row="onClickEditMessage"
+                    @delete-row="onDeleteMessage" />
                 </div>
               </TabContent>
             </template>
