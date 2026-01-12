@@ -1,3 +1,4 @@
+<!--/sites/joefans-of-api/src/views/HomeView.vue-->
 <script setup>
 import { computed, ref, onMounted } from 'vue';
 import { useMainStore } from '@/stores/main';
