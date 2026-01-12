@@ -24,6 +24,9 @@ export class Group {
   @Column()
   model_id: number;
 
+  @Column({ type: 'boolean', default: false })
+  massmsg: boolean;
+
   @Column({
     nullable: true,
   })

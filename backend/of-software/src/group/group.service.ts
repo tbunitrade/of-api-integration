@@ -6,7 +6,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { FindOneOptions, In, Repository } from 'typeorm';
+import { DeepPartial, FindOneOptions, In, Repository } from 'typeorm';
 import { Group } from './group.entity';
 import { GroupDto } from 'src/dtos/group.dto';
 import { PlatformGroupDto } from 'src/dtos/platform_group.dto';
@@ -22,17 +22,33 @@ export class GroupService {
     private readonly platformGroupRepository: Repository<PlatformGroup>,
   ) {}
 
+  private normalizeMassmsg(value: any): boolean | undefined {
+    if (value === undefined || value === null || value === '') return undefined;
+    if (typeof value === 'boolean') return value;
+
+    const s = String(value).toLowerCase().trim();
+    if (s === 'true' || s === '1') return true;
+    if (s === 'false' || s === '0') return false;
+
+    return Boolean(Number(value));
+  }
+
   async create(group: GroupDto): Promise<Group> {
     try {
       const { name, model_id } = group;
+      const mass = this.normalizeMassmsg((group as any).massmsg) ?? false;
       const existingGroup = await this.groupRepository.findOne({
-        where: { name, model_id },
+        where: { name, model_id, massmsg: mass },
       });
       if (existingGroup) {
         throw new ConflictException('Group already exists');
       }
-      const newGroup = this.groupRepository.create(group);
-      const result = await this.groupRepository.save(newGroup);
+      const newGroup = this.groupRepository.create({
+        ...(group as any),
+        massmsg: mass,
+      } as DeepPartial<Group>);
+
+      const result: Group =  await this.groupRepository.save(newGroup);
       return result;
     } catch (err) {
       console.error('Group create error', err);
@@ -72,9 +88,27 @@ export class GroupService {
   async findAllByModelPlatform(
     model_id: number,
     platform_id: number,
+    massmsg?: boolean,
   ): Promise<any> {
     try {
-      const result = await this.groupRepository
+      // const result = await this.groupRepository
+      //   .createQueryBuilder('group')
+      //   .innerJoin(
+      //     'platform_group',
+      //     'platform_group',
+      //     'group.id = platform_group.group_id',
+      //   )
+      //   .leftJoinAndSelect('group.messages', 'messages')
+      //   .addSelect('COUNT(messages.id)', 'messageCount')
+      //   .where('platform_group.platform_id = :platform_id', { platform_id })
+      //   .andWhere('group.model_id = :model_id', { model_id })
+      //   .groupBy('group.id,messages.id')
+      //   .orderBy('group.order')
+      //   .addOrderBy('group.id')
+      //   .getMany();
+      // return result;
+
+      const qb = this.groupRepository
         .createQueryBuilder('group')
         .innerJoin(
           'platform_group',
@@ -84,11 +118,18 @@ export class GroupService {
         .leftJoinAndSelect('group.messages', 'messages')
         .addSelect('COUNT(messages.id)', 'messageCount')
         .where('platform_group.platform_id = :platform_id', { platform_id })
-        .andWhere('group.model_id = :model_id', { model_id })
+        .andWhere('group.model_id = :model_id', { model_id });
+
+      if (massmsg !== undefined) {
+        qb.andWhere('group.massmsg = :massmsg', { massmsg });
+      }
+
+      const result = await qb
         .groupBy('group.id,messages.id')
         .orderBy('group.order')
         .addOrderBy('group.id')
         .getMany();
+
       return result;
     } catch (err) {
       console.error('Group findAll error', err);
@@ -194,9 +235,20 @@ export class GroupService {
         throw new NotFoundException(`Group with ID ${id} not found`);
       }
 
+      // нормализуем patch, чтобы massmsg стал boolean
+      const patch: any = { ...(updateGroup as any) };
+
+      const mass = this.normalizeMassmsg(patch.massmsg);
+      if (mass !== undefined) {
+        patch.massmsg = mass;
+      }
+
+      // на всякий случай (если DTO притащит лишнее)
+      delete patch.platform_id;
+
       const updatedGroup = await this.groupRepository.save({
         ...group,
-        ...updateGroup,
+        ...patch,
       });
 
       return updatedGroup;

@@ -32,7 +32,8 @@ export class GroupMessage {
     onUpdate: 'NO ACTION',
   })
   @JoinColumn([{ name: 'group_id', referencedColumnName: 'id' }])
-  groups: Group[];
+  //groups: Group[];
+  groups: Group;
 
   @ManyToOne(() => Message, (message) => message.groups, {
     onDelete: 'NO ACTION',

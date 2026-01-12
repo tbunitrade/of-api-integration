@@ -12,4 +12,10 @@ export class GroupRequestDto {
     required: true,
   })
   platform_id: number;
+
+  @ApiProperty({
+    type: 'string',
+    required: false,
+  })
+  massmsg?: string;
 }

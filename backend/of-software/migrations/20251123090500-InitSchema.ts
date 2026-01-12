@@ -69,12 +69,18 @@ export class InitSchema20251123090500 implements MigrationInterface {
         id SERIAL PRIMARY KEY,
         name VARCHAR NOT NULL,
         model_id INTEGER NOT NULL,
+        massmsg BOOLEAN NOT NULL DEFAULT false,
         added_on_platform_at TIMESTAMP DEFAULT now(),
         status INTEGER DEFAULT 1 NOT NULL,
         created_at TIMESTAMP DEFAULT now() NOT NULL,
         updated_at TIMESTAMP DEFAULT now() NOT NULL,
         "order" INTEGER
       );
+    `);
+
+    await queryRunner.query(`
+      CREATE INDEX IF NOT EXISTS idx_group_model_platform_massmsg
+      ON public."group"(model_id, massmsg);
     `);
 
     // MESSAGE

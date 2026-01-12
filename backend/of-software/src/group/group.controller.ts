@@ -49,21 +49,26 @@ export class GroupController {
   @ApiBearerAuth('jwt')
   @UseGuards(JwtAuthGuard)
   async findAllByModelPlatform(@Query() requestDto: GroupRequestDto) {
-    const { model_id, platform_id } = requestDto;
-    try {
-      const result = await this.groupService.findAllByModelPlatform(
-        model_id,
-        platform_id,
-      );
-      result.map((it) => {
-        it['message_count'] = it.messages?.length ?? 0;
-        delete it['messages'];
-      });
+    const { model_id, platform_id, massmsg } = requestDto;
 
-      return result;
-    } catch (error) {
-      throw error;
-    }
+    // нормализуем massmsg (может быть "1", "0", "true", "false", undefined)
+    const massFlag =
+      massmsg === undefined || massmsg === null || massmsg === ''
+        ? undefined
+        : (String(massmsg).toLowerCase() === 'true' || String(massmsg) === '1');
+
+    const result = await this.groupService.findAllByModelPlatform(
+      model_id,
+      platform_id,
+      massFlag, // NEW
+    );
+
+    result.map((it) => {
+      it['message_count'] = it.messages?.length ?? 0;
+      delete it['messages'];
+    });
+
+    return result;
   }
 
   @Get('all-with-messages')
@@ -109,6 +114,15 @@ export class GroupController {
           HttpStatus.FORBIDDEN,
         );
       }
+      // normalize massmsg
+      // massmsg может прилететь как 1/0 или "1"/"0" или "true"/"false"
+      const massBool =
+        group.massmsg === undefined || group.massmsg === null || group.massmsg === ('' as any)
+          ? false
+          : (String(group.massmsg).toLowerCase() === 'true' || String(group.massmsg) === '1');
+
+      // сохраняем в DTO как number (0/1), чтобы не ломать типизацию DTO
+      group.massmsg = massBool ? 1 : 0;
       const result = await this.groupService.create(group);
       await this.groupService.addGroupToPlatform(group.platform_id, result.id);
 
@@ -198,7 +212,17 @@ export class GroupController {
     @Body() updateGroupDto: GroupDto,
   ): Promise<Group> {
     try {
-      const result = await this.groupService.update(id, updateGroupDto);
+      const payload: any = { ...(updateGroupDto as any) };
+
+      // ✅ normalize massmsg -> boolean
+      if (payload.massmsg !== undefined && payload.massmsg !== null && payload.massmsg !== '') {
+        const s = String(payload.massmsg).toLowerCase();
+        payload.massmsg = (s === 'true' || s === '1');
+      }
+
+      delete payload.platform_id;
+
+      const result = await this.groupService.update(id, payload as Partial<Group>);
       return result;
     } catch (error) {
       throw error;

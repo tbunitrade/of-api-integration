@@ -19,6 +19,13 @@ export class GroupDto {
   @ApiProperty({
     type: 'number',
     required: false,
+    default: 0,
+  })
+  massmsg?: number;
+
+  @ApiProperty({
+    type: 'number',
+    required: false,
   })
   platform_id: number;
 
