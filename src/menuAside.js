@@ -20,11 +20,13 @@ export default [
     icon: mdiMonitor,
     label: 'Dashboard'
   },
+  //add new routes
   {
     to: '/mass',
     label: 'Mass',
     icon: mdiTable
   },
+  //end  new routes
   {
     to: '/posts',
     label: 'Post',

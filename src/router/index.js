@@ -52,6 +52,14 @@ const routes = [
   },
   {
     meta: {
+      title: 'Mass'
+    },
+    path: '/mass',
+    name: 'mass-message',
+    component: () => import('@/views/MassView.vue')
+  },
+  {
+    meta: {
       title: 'Message'
     },
     path: '/message',

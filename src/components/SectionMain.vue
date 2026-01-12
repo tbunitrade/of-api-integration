@@ -1,3 +1,4 @@
+<!--/Users/oleksandrsonich/sites/joefans-of-api/src/components/SectionMain.vue-->
 <script setup>
 import { containerMaxW } from '@/config.js';
 </script>
