@@ -1,3 +1,4 @@
+<!--src/components/AsideMenuLayer.vue-->
 <script setup>
 import { mdiLogout, mdiClose } from '@mdi/js';
 import { computed } from 'vue';

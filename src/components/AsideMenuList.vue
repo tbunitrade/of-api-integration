@@ -1,3 +1,4 @@
+<!--src/components/AsideMenuList.vue-->
 <script setup>
 import AsideMenuItem from '@/components/AsideMenuItem.vue'
 

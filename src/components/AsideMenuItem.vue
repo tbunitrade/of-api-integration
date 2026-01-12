@@ -1,3 +1,4 @@
+<!--src/components/AsideMenuItem.vue-->
 <script setup>
 import { ref, computed } from 'vue'
 import { RouterLink } from 'vue-router'
