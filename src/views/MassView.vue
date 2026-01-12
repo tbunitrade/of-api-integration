@@ -23,8 +23,7 @@ import TableMessageGroup from "@/components/TableMessageGroup.vue";
 import TableMessages from "@/components/TableMessages.vue";
 import BaseButton from "@/components/BaseButton.vue";
 
-//for new variation mass
-import { useFileStore } from "@/stores/files.store";
+
 import ExternalMassMessageCard from "@/components/ExternalMassMessageCard.vue";
 import ExternalVaultMediaCard from "@/components/ExternalVaultMediaCard.vue";
 
