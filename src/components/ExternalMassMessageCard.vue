@@ -30,7 +30,7 @@ const canWork = computed(() => modelPlatformId.value > 0);
 // оставляю твой лог как есть (не меняю строку), но делаю корректно по порядку
 watch(
   () => mp.value,
-  (v) => console.log('[ExternalVaultMediaCard] mp=', v),
+  (v) => console.log('[ExternalVaultMediaCard]', v),
   { immediate: true }
 );
 
@@ -252,12 +252,21 @@ watch(
     </div>
 
     <div class="mt-4 flex gap-2">
+<!--      <BaseButton-->
+<!--        label="Load audience lists"-->
+<!--        color="info"-->
+<!--        rounded-->
+<!--        small-->
+<!--        :disabled="loadingAudienceLists || !canWork"-->
+<!--        @click="loadAudienceLists"-->
+<!--      />-->
+
       <BaseButton
         label="Load audience lists"
         color="info"
         rounded
         small
-        :disabled="loadingAudienceLists || !canWork"
+        :disabled="loadingAudienceLists || !modelPlatformId"
         @click="loadAudienceLists"
       />
       <input class="flex-1 rounded p-2 border" v-model="search" placeholder="Search list..." />
@@ -343,12 +352,21 @@ watch(
     </div>
 
     <div class="mt-4 text-right">
+<!--      <BaseButton-->
+<!--        label="Send mass message"-->
+<!--        color="success"-->
+<!--        rounded-->
+<!--        small-->
+<!--        :disabled="sendingMassMessage || !canWork"-->
+<!--        @click="onSendMassMessage"-->
+<!--      />-->
+
       <BaseButton
         label="Send mass message"
         color="success"
         rounded
         small
-        :disabled="sendingMassMessage || !canWork"
+        :disabled="sendingMassMessage || !modelPlatformId"
         @click="onSendMassMessage"
       />
     </div>

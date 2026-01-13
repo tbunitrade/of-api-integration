@@ -129,7 +129,7 @@ const fetchData = async () =>
       platform_id: selectedPlatform.value.id,
     };
     await authStore.getMyProfile();
-    await groupStore.getAllGroups(params);
+    await groupStore.getAllGroups( {...params, massmsg: 0 });
     await modelPlatformStore.getModelPlatform(params.model_id, params.platform_id);
   } catch (error)
   {

@@ -6,25 +6,46 @@ const useModelPlatformStore = defineStore({
   id: 'model_platforms',
   state: () => ({
     isLoading: false,
-    model_platforms: []
+    model_platforms: [],
+    current_model_platform: null,
+
+    // locks / in-flight
+    _allPromise: null,
+    _onePromise: null,
+    _oneKey: null,
   }),
   actions: {
-    async getAllModelPlatforms() {
-      try {
-        this.isLoading = true
-        const response = await axios.get(`${import.meta.env.VITE_APP_ROOT_API}/model_platform/all`)
-
-        if (response.data) {
-          const model_platforms = response.data
-          this.model_platforms = model_platforms
-        }
-        this.isLoading = false
-        return response.data
-      } catch (error) {
-        this.isLoading = false
-        console.error('Model Platforms get failed:', error)
-        throw error
+    async getAllModelPlatforms({ force = false } = {}) {
+      // ✅ если уже есть данные — ничего не меняем в сторе (важно: даже isLoading)
+      if (!force && Array.isArray(this.model_platforms) && this.model_platforms.length > 0) {
+        return this.model_platforms;
       }
+
+      if (this._allPromise) return this._allPromise;
+
+      this._allPromise = (async () => {
+        try {
+          this.isLoading = true;
+
+          const response = await axios.get(
+            `${import.meta.env.VITE_APP_ROOT_API}/model_platform/all`
+          );
+
+          if (response.data) {
+            this.model_platforms = response.data;
+          }
+
+          return response.data;
+        } catch (error) {
+          console.error('Model Platforms get failed:', error);
+          throw error;
+        } finally {
+          this.isLoading = false;
+          this._allPromise = null;
+        }
+      })();
+
+      return this._allPromise;
     },
 
     async getAModelPlatform(model_id) {
@@ -48,25 +69,37 @@ const useModelPlatformStore = defineStore({
     },
 
     async getModelPlatform(model_id, platform_id) {
-      try {
-        this.isLoading = true
-        const response = await axios.get(
-          `${
-            import.meta.env.VITE_APP_ROOT_API
-          }/model_platform/model/${model_id}/platform/${platform_id}`
-        )
+      const key = `${model_id}:${platform_id}`;
 
-        if (response.data) {
-          const model_platforms = response.data
-          this.model_platforms = [model_platforms]
+      if (this._onePromise && this._oneKey === key) return this._onePromise;
+
+      this._oneKey = key;
+
+      this._onePromise = (async () => {
+        try {
+          this.isLoading = true;
+
+          const response = await axios.get(
+            `${import.meta.env.VITE_APP_ROOT_API}/model_platform/model/${model_id}/platform/${platform_id}`
+          );
+
+          if (response.data) {
+            this.current_model_platform = response.data; // <-- ВАЖНО
+            // this.model_platforms НЕ МЕНЯЕМ
+          }
+
+          return response.data;
+        } catch (error) {
+          console.error('Model Platforms get failed:', error);
+          throw error;
+        } finally {
+          this.isLoading = false;
+          this._onePromise = null;
+          this._oneKey = null;
         }
-        this.isLoading = false
-        return response.data
-      } catch (error) {
-        this.isLoading = false
-        console.error('Model Platforms get failed:', error)
-        throw error
-      }
+      })();
+
+      return this._onePromise;
     },
 
     async addModelPlatform(data) {

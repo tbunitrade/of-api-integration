@@ -23,7 +23,8 @@ import TableMessageGroup from "@/components/TableMessageGroup.vue";
 import TableMessages from "@/components/TableMessages.vue";
 import BaseButton from "@/components/BaseButton.vue";
 
-
+//fi
+import { useFileStore } from "@/stores/files.store";
 import ExternalMassMessageCard from "@/components/ExternalMassMessageCard.vue";
 import ExternalVaultMediaCard from "@/components/ExternalVaultMediaCard.vue";
 
@@ -38,7 +39,9 @@ import ImageVideoUpload from "@/components/ImageVideoUpload.vue";
 import TimeField from "@/components/TimeField.vue";
 import FormField from "@/components/FormField.vue";
 import Multiselect from "@vueform/multiselect";
+import '@vueform/multiselect/themes/default.css';
 
+const fileStore = useFileStore();
 const { notify } = useNotification();
 
 const tabs = ref([
@@ -94,10 +97,10 @@ const selectedPlatform = computed(() => platformStore.selectedPlatform);
 const groupsInStore = computed(() => groupStore.groups || []);
 const messagesInStore = computed(() => messageStore.messages || []);
 
-// --- Берём список связок из стора
+// 🔹 Берём список связок из стора
 const modelPlatforms = computed(() => modelPlatformStore.model_platforms || []);
 
-// --- Ищем связку model_platform по выбранной модели и платформе (копия логики из PostView)
+// 🔹 Ищем связку model_platform по выбранной модели и платформе (как PostView)
 const selectedModelPlatform = computed(() => {
   if (!selectedModel.value?.id || !selectedPlatform.value?.id) return null;
 
@@ -108,19 +111,10 @@ const selectedModelPlatform = computed(() => {
       let platformMatch = false;
 
       if (Array.isArray(mp.platforms) && mp.platforms.length) {
-        platformMatch = mp.platforms.some((p) => {
-          const pId =
-            p.platform_id ??
-            (p.platform && p.platform.id) ??
-            p.id ??
-            null;
-
-          return pId === selectedPlatform.value.id;
-        });
+        // ВАЖНО: как в PostView — platforms: [{ id, name, ... }]
+        platformMatch = mp.platforms.some((p) => p.id === selectedPlatform.value.id);
       } else {
-        const mpPlatformId =
-          mp.platform_id ?? (mp.platform && mp.platform.id) ?? null;
-
+        const mpPlatformId = mp.platform_id ?? (mp.platform && mp.platform.id) ?? null;
         platformMatch = mpPlatformId === selectedPlatform.value.id;
       }
 
@@ -135,36 +129,58 @@ const selectedModelPlatform = computed(() => {
   return res;
 });
 
-// ✅ конкретная платформа внутри selectedModelPlatform.platforms[] для выбранной platform
-// НЕ переименовываем — оставляем как у тебя: selectedModelPlatformPlatform
-const selectedModelPlatformPlatform = computed(() => {
-  const grp = selectedModelPlatform.value;
-  const platId = selectedPlatform.value?.id;
+// всегда отдаёт объект платформы (с ofid_username, fingerprint_username, model_platform_id и т.п.)
+const selectedPlatformConfig = computed(() => {
+  const modelId = selectedModel.value?.id;
+  const platformId = selectedPlatform.value?.id;
+  const list = modelPlatforms.value || [];
 
-  if (!grp || !platId) return null;
+  if (!modelId || !platformId) return null;
 
-  const arr = Array.isArray(grp.platforms) ? grp.platforms : [];
+  // CASE A: grouped shape: [{ model_id, platforms: [...] }]
+  const grouped = list.find((x) => x && Number(x.model_id) === Number(modelId) && Array.isArray(x.platforms));
+  if (grouped) {
+    const p = grouped.platforms.find((p) => Number(p.id) === Number(platformId));
+    if (!p) return null;
 
-  const found =
-    arr.find((p) => (p.platform_id ?? null) === platId) ||
-    arr.find((p) => (p.platform && p.platform.id) === platId) ||
-    arr.find((p) => (p.id ?? null) === platId) ||
-    null;
+    // в grouped-ответе бекенда model_platform_id лежит в p.model_platform_id
+    return {
+      ...p,
+      model_id: modelId,
+      platform_id: platformId,
+      model_platform_id: p.model_platform_id ?? null,
+    };
+  }
 
-  console.log("[MassView] selectedModelPlatformPlatform:", found);
+  // CASE B: flat entity shape: [{ id, model_id, platform_id, ofid_username, ... }]
+  const flat = list.find(
+    (x) =>
+      x &&
+      Number(x.model_id) === Number(modelId) &&
+      Number(x.platform_id) === Number(platformId)
+  );
 
-  return found;
+  if (flat) {
+    return {
+      ...flat,
+      model_platform_id: flat.id ?? null,
+    };
+  }
+
+  return null;
 });
 
-// Если где-то нужен именно model_platform_id (для cron/бекенда)
-const selectedModelPlatformId = computed(() => {
-  const x = selectedModelPlatformPlatform.value;
-  if (!x) return null;
-  return x.model_platform_id ?? x.id ?? null;
-});
+// то, что реально нужно как ID
+const selectedModelPlatformId = computed(() => selectedPlatformConfig.value?.model_platform_id ?? null);
+
+// console.log(" selectedPlatformConfig --", selectedPlatformConfig.value);
 
 // --- Data loading
+const isFetching = ref(false);
+
 const fetchData = async () => {
+  if (isFetching.value) return;
+  isFetching.value = true;
   try {
     if (!selectedModel.value?.id || !selectedPlatform.value?.id) {
       console.log(
@@ -185,17 +201,13 @@ const fetchData = async () => {
     // группы/сообщения — как MessageView
     await groupStore.getAllGroups( { ...params, massmsg: 1});
 
-    // важно для External*Card: подтянуть все model_platforms, чтобы найти ofid_username
-    await modelPlatformStore.getAllModelPlatforms();
-
-    // если у тебя это реально нужно (как в MessageView) — оставляем
-    if (typeof modelPlatformStore.getModelPlatform === "function") {
-      await modelPlatformStore.getModelPlatform(params.model_id, params.platform_id);
+    if (!Array.isArray(modelPlatformStore.model_platforms) || modelPlatformStore.model_platforms.length === 0) {
+      await modelPlatformStore.getAllModelPlatforms();
     }
 
     console.log("[MassView] selectedModelPlatformId:", selectedModelPlatformId.value);
-  } catch (error) {
-    console.error("[MassView] Error fetching data:", error);
+  } finally {
+    isFetching.value = false;
   }
 };
 
@@ -236,11 +248,15 @@ onMounted(async () => {
 
 // ---- Options (как в доноре MessageView.vue)
 const messageNameOptions = [
-  "New Movie",
-  "New Pics",
-  "New photo",
-  "New video",
-  "New videos",
+  'SFS',
+  'Videos',
+  'Games',
+  'Custom',
+  'Services',
+  'Captions',
+  'Exclusive',
+  'Video Chat',
+  'ReSubscribe'
 ];
 
 const messageListOptions = [
@@ -309,15 +325,13 @@ const deleteCallback = ref(null);
 
 
 ///area for edits or delete group
-const onClickEditGroup = (id) =>
-{
+const onClickEditGroup = (id) => {
   const group = (groupStore.groups || []).filter((it) => it.id === id);
 
-  if (group)
-  {
-    selectedGroup.value = { ...group[0], isEdit: true };
-    isGroupModalActive.value = true;
-  }
+  if (!group || group.length === 0) return;
+
+  selectedGroup.value = { ...group[0], isEdit: true };
+  isGroupModalActive.value = true;
 };
 
 const onDeleteGroup = async (id) =>
@@ -543,11 +557,10 @@ const confirmDelete = async () => {
 };
 
 watch(
-  () => [selectedModel.value?.id, selectedPlatform.value?.id],
-  async (newVal, oldVal) => {
-    const [modelId, platformId] = newVal || [];
-    const [prevModelId, prevPlatformId] = oldVal || [];
-
+  [() => selectedModel.value?.id, () => selectedPlatform.value?.id],
+  async ([modelId, platformId], [prevModelId, prevPlatformId]) => {
+    vaultMediaIds.value = [];
+    console.log('[MassView] vaultMediaIds reset (modelPlatform changed)');
     console.log("[MassView:watch] model/platform changed:", {
       prevModelId,
       prevPlatformId,
@@ -556,6 +569,7 @@ watch(
     });
 
     if (!modelId || !platformId) return;
+    if (modelId === prevModelId && platformId === prevPlatformId) return;
 
     await fetchData();
   },
@@ -578,7 +592,7 @@ watch(
           <div>modelPlatformId: <b>{{ selectedModelPlatformId || "—" }}</b></div>
           <div>
             Account(ofid_username):
-            <b>{{ selectedModelPlatformPlatform?.ofid_username || "—" }}</b>
+            <b>{{ selectedPlatformConfig?.ofid_username || "—" }}</b>
           </div>
         </div>
       </CardBox>
@@ -650,28 +664,11 @@ watch(
             v-if="groupStore.isLoading || messageStore.isLoading"
           />
         </CardBox>
-
-
-
-
-<!--        &lt;!&ndash; RIGHT: External cards &ndash;&gt;-->
-<!--        <div class="space-y-6">-->
-<!--          <ExternalMassMessageCard-->
-<!--            :modelPlatform="selectedModelPlatformPlatform"-->
-<!--            :notify="notify"-->
-<!--            :mediaIds="vaultMediaIds"-->
-<!--          />-->
-<!--          <ExternalVaultMediaCard-->
-<!--            :modelPlatform="selectedModelPlatformPlatform"-->
-<!--            :notify="notify"-->
-<!--            v-model:mediaIds="vaultMediaIds"-->
-<!--          />-->
-<!--        </div>-->
-<!--      </div>-->
       <CardBoxModal v-model="isMessageModalActive" title="Message"
                     size="xxl:!w-11/12 xl:!w-11/12 md:w-4/5 lg:w-4/5 w-4/5"
                     :buttonLabel="selectedMessage.isEdit ? 'Update' : 'Save'" :hasCancel="true" @confirm="onFinalSubmitMessage">
 
+<!--        Need to update this-->
         <CardBox is-form>
           <div class="flex flex-col">
             <div class="flex gap-5 flex-wrap md:flex-row flex-col">
@@ -718,7 +715,7 @@ watch(
               <div class="flex flex-1 flex-col">
                 <div class="flex gap-5 md:flex-row flex-col">
                   <div class="flex-1">
-                    <FormField label="Message Time" help="Required. Message Time">
+                    <FormField help="Required. Message Time">
                       <TimeField
                         v-model="selectedMessage.message_time"
                         label="Message Time"
@@ -729,52 +726,15 @@ watch(
                       <div :class="[colorsText['danger'], 'text-sm']">{{ error.$message }}</div>
                     </div>
                   </div>
-                  <div class="flex-1">
-                    <FormField label="Message List" help="Required. Message List">
-                      <Multiselect
-                        v-model="selectedMessage.message_list"
-                        :options="messageListOptions"
-                        mode="single"
-                        :object="false"
-                        :can-clear="true"
-                        :searchable="true"
-                        placeholder="(separate with commas)"
-                      />
-                    </FormField>
-                    <div class="mb-3" v-for="error of $mv.message_list.$errors " :key="error.$uid">
-                      <div :class="[colorsText['danger'], 'text-sm']">{{ error.$message }}</div>
-                    </div>
-                  </div>
-
-
                 </div>
+
+                <ExternalVaultMediaCard
+                  :modelPlatform="selectedPlatformConfig"
+                  :notify="notify"
+                  v-model:mediaIds="vaultMediaIds"
+                />
                 <div class="flex gap-5 md:flex-row flex-col">
-                  <div class="flex-1">
-                    <FormField label="Message List Exclude">
-                      <!--                      <FormControl v-model="selectedMessage.message_exclude_list" name="message_exclude_list"-->
-
-                      <Multiselect
-                        v-model="selectedMessage.message_exclude_list"
-                        :options="messageEcludeOptions"
-                        mode="single"
-                        :object="false"
-                        :can-clear="true"
-                        :searchable="false"
-                        :allow-empty="true"
-                        placeholder="Select or type"
-                      />
-                    </FormField>
-
-                  </div>
-                  <div class="flex-1">
-                    <FormField label="User Tags" help="Required. User Tags">
-                      <FormControl v-model="selectedMessage.release_user_tags" name="release_user_tags"
-                                   autocomplete="release_user_tags" />
-                    </FormField>
-
-                  </div>
-
-
+                  <ExternalMassMessageCard :modelPlatform="selectedPlatformConfig" :notify="notify" :mediaIds="vaultMediaIds" />
                 </div>
                 <div class="flex gap-5 md:flex-row flex-col">
 
