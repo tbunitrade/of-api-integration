@@ -88,9 +88,9 @@ export class InitSchema20251123090500 implements MigrationInterface {
       CREATE TABLE public.message (
         id SERIAL PRIMARY KEY,
         name VARCHAR NOT NULL,
-        message_time TIME DEFAULT now(),
+        message_time TIME NULL,
         price DOUBLE PRECISION,
-        message_list VARCHAR NOT NULL,
+        message_list VARCHAR,
         message VARCHAR,
         message_exclude_list VARCHAR,
         content VARCHAR,
@@ -99,6 +99,13 @@ export class InitSchema20251123090500 implements MigrationInterface {
         release_user_tags VARCHAR,
         free_preview INTEGER,
         status INTEGER DEFAULT 1 NOT NULL,
+        -- NEW (mass message template fields)
+        massmsg BOOLEAN NOT NULL DEFAULT false,
+        audience_include_ids JSONB,
+        audience_exclude_ids JSONB,
+        user_ids_array JSONB,
+        vault_media_ids JSONB,
+        scheduled_date TIMESTAMPTZ,
         created_at TIMESTAMP DEFAULT now() NOT NULL,
         updated_at TIMESTAMP DEFAULT now() NOT NULL
       );
