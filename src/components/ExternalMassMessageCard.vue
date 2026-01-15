@@ -58,11 +58,11 @@ const normalizeProviderLists = (data: any) => {
   // objects
   return listsRaw
     .map((x: any) => ({
-      id: x?.id ?? x?.key ?? x?.type ?? x?.slug ?? x?.name,
+      id: String(x?.id ?? x?.key ?? x?.type ?? x?.slug ?? x?.name ?? '').trim(),
       name: String(x?.name ?? x?.title ?? x?.label ?? x?.id ?? '').trim(),
-      type: x?.type,
+      type: String(x?.type ?? '').trim(),
     }))
-    .filter((x: any) => x.id != null && x.name);
+    .filter((x: any) => x.id && x.name);
 };
 
 const normalizeSelectedTokens = (arr: any) => {

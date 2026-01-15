@@ -1,14 +1,14 @@
-// src/dtos/message.dto.ts
+// backend/of-software/src/dtos/message.dto.ts
+
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
 import {
   IsArray,
   IsBoolean,
-  IsDateString,
+  IsDate,
   IsNumber,
   IsOptional,
   IsString,
-  IsDate,
 } from 'class-validator';
 
 export class MessageDto {
@@ -20,10 +20,12 @@ export class MessageDto {
   @IsNumber()
   group_id: number;
 
-  // может быть null для massmsg
   @ApiPropertyOptional({ type: 'string', format: 'time', required: false })
   @IsOptional()
-  @Transform(({ value }) => (String(value ?? '').trim() === '' ? null : String(value).trim()))
+  @Transform(({ value }) => {
+    const v = String(value ?? '').trim();
+    return v === '' ? undefined : v; // ВАЖНО: undefined, не null
+  })
   message_time?: string;
 
   @ApiPropertyOptional({ type: 'number', format: 'float', required: false })
@@ -32,10 +34,12 @@ export class MessageDto {
   @IsNumber()
   price?: number;
 
-  // optional, т.к. для massmsg может не использоваться
   @ApiPropertyOptional({ type: 'string', required: false })
   @IsOptional()
-  @Transform(({ value }) => (String(value ?? '').trim() === '' ? null : String(value)))
+  @Transform(({ value }) => {
+    const v = String(value ?? '').trim();
+    return v === '' ? undefined : v; // ВАЖНО: undefined, не null
+  })
   message_list?: string;
 
   @ApiPropertyOptional({ type: 'string', required: false })
@@ -98,7 +102,6 @@ export class MessageDto {
   @IsString({ each: true })
   audience_exclude_ids?: string[];
 
-  // userIds по доке
   @ApiPropertyOptional({ type: 'array', items: { type: 'string' }, required: false })
   @IsOptional()
   @IsArray()
@@ -113,7 +116,7 @@ export class MessageDto {
 
   @ApiPropertyOptional({ type: 'string', format: 'date-time', required: false })
   @IsOptional()
-  @Type(() => Date)         // <-- конвертит ISO string в Date при transform:true
+  @Type(() => Date)
   @IsDate()
-  scheduled_date?: Date;
+  scheduled_date?: Date; // <-- ВАЖНО: Date, не string
 }

@@ -1,6 +1,6 @@
 // src/model/model.service.ts
 
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { FindOneOptions, Repository } from 'typeorm';
 import { Message } from './message.entity';
@@ -17,6 +17,113 @@ export class MessageService {
     @InjectRepository(GroupMessage)
     private readonly groupMessageRepository: Repository<GroupMessage>,
   ) {}
+
+  // =======================
+  // Massmsg guards/helpers
+  // =======================
+
+  private _isProvided(v: any) {
+    return v !== undefined; // важно: отличаем "не пришло" от null
+  }
+
+  private _normalizeStringArray(input: any): string[] | null {
+    if (!Array.isArray(input)) return null;
+
+    const out = input
+      .map((x) => String(x ?? '').trim())
+      .filter((x) => x.length > 0);
+
+    return out.length ? out : null;
+  }
+
+  private _normalizePrice(input: any): number {
+    if (input === null || input === '') return 0;
+    const n = Number(input);
+    return Number.isFinite(n) ? n : 0;
+  }
+
+  private _applyRulesForCreate(payload: any): Partial<Message> {
+    const isMass = payload?.massmsg === true;
+
+    const out: any = { ...payload };
+    out.massmsg = isMass;
+
+    if (isMass) {
+      out.audience_include_ids = this._normalizeStringArray(payload?.audience_include_ids);
+      out.audience_exclude_ids = this._normalizeStringArray(payload?.audience_exclude_ids);
+      out.user_ids_array = this._normalizeStringArray(payload?.user_ids_array);
+      out.vault_media_ids = this._normalizeStringArray(payload?.vault_media_ids);
+
+      if (this._isProvided(payload?.price)) {
+        out.price = this._normalizePrice(payload.price);
+      }
+
+      if ((out.price ?? 0) > 0 && (!out.vault_media_ids || out.vault_media_ids.length === 0)) {
+        throw new BadRequestException('Mass message: vault_media_ids is required when price > 0');
+      }
+
+      return out;
+    }
+
+    // обычное сообщение — mass поля очищаем
+    out.audience_include_ids = null;
+    out.audience_exclude_ids = null;
+    out.user_ids_array = null;
+    out.vault_media_ids = null;
+    out.scheduled_date = null;
+
+    return out;
+  }
+
+  private _applyRulesForUpdate(existing: Message, patch: any): Partial<Message> {
+    const effectiveMass =
+      patch?.massmsg !== undefined ? patch.massmsg === true : existing.massmsg === true;
+
+    const out: any = { ...patch };
+    out.massmsg = effectiveMass;
+
+    if (effectiveMass) {
+      if (this._isProvided(patch?.audience_include_ids)) {
+        out.audience_include_ids = this._normalizeStringArray(patch.audience_include_ids);
+      }
+      if (this._isProvided(patch?.audience_exclude_ids)) {
+        out.audience_exclude_ids = this._normalizeStringArray(patch.audience_exclude_ids);
+      }
+      if (this._isProvided(patch?.user_ids_array)) {
+        out.user_ids_array = this._normalizeStringArray(patch.user_ids_array);
+      }
+      if (this._isProvided(patch?.vault_media_ids)) {
+        out.vault_media_ids = this._normalizeStringArray(patch.vault_media_ids);
+      }
+      if (this._isProvided(patch?.price)) {
+        out.price = this._normalizePrice(patch.price);
+      }
+
+      const finalPrice = (this._isProvided(out.price) ? out.price : existing.price) ?? 0;
+      const finalVault = this._isProvided(out.vault_media_ids)
+        ? out.vault_media_ids
+        : existing.vault_media_ids;
+
+      if (finalPrice > 0 && (!finalVault || finalVault.length === 0)) {
+        throw new BadRequestException('Mass message: vault_media_ids is required when price > 0');
+      }
+
+      return out;
+    }
+
+    // переключили mass -> обычный: очищаем mass поля
+    const switchedToNonMass = patch?.massmsg === false && existing.massmsg === true;
+
+    if (switchedToNonMass || this._isProvided(patch?.audience_include_ids)) out.audience_include_ids = null;
+    if (switchedToNonMass || this._isProvided(patch?.audience_exclude_ids)) out.audience_exclude_ids = null;
+    if (switchedToNonMass || this._isProvided(patch?.user_ids_array)) out.user_ids_array = null;
+    if (switchedToNonMass || this._isProvided(patch?.vault_media_ids)) out.vault_media_ids = null;
+    if (switchedToNonMass || this._isProvided(patch?.scheduled_date)) out.scheduled_date = null;
+
+    return out;
+  }
+
+  // ===== дальше old методы findAll/findById/... =====
 
   async findAll(): Promise<Message[]> {
     try {
@@ -92,13 +199,15 @@ export class MessageService {
     }
   }
 
-  async create(group: MessageDto): Promise<Message> {
+  async create(payload: Partial<Message>): Promise<Message> {
     try {
-      const newMessage = this.messageRepository.create(group);
-      const result = await this.messageRepository.save(newMessage);
-      return result;
+      const normalized = this._applyRulesForCreate(payload);
+
+      const newMessage = this.messageRepository.create(normalized);
+      return await this.messageRepository.save(newMessage);
     } catch (err) {
       console.error('Message creation error', err);
+      throw err;
     }
   }
 
@@ -115,28 +224,28 @@ export class MessageService {
       return result;
     } catch (err) {
       console.error('Add Message To Group Error', err);
+      throw err; // <-- обязательно, иначе ошибка теряется
     }
   }
 
-  async update(id: number, updateMessage: Partial<Message>): Promise<Message> {
+  async update(id: number, patch: Partial<Message>): Promise<Message> {
     try {
-      const options: FindOneOptions<Message> = {
-        where: { id },
-      };
-      const message = await this.messageRepository.findOne(options);
+      const options: FindOneOptions<Message> = { where: { id } };
+      const existing = await this.messageRepository.findOne(options);
 
-      if (!message) {
+      if (!existing) {
         throw new NotFoundException(`Message with ID ${id} not found`);
       }
 
-      const updatedMessage = await this.messageRepository.save({
-        ...message,
-        ...updateMessage,
-      });
+      const normalizedPatch = this._applyRulesForUpdate(existing, patch);
 
-      return updatedMessage;
+      return await this.messageRepository.save({
+        ...existing,
+        ...normalizedPatch,
+      });
     } catch (err) {
       console.error('Message update error', err);
+      throw err;
     }
   }
 

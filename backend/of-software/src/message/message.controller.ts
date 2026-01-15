@@ -71,10 +71,13 @@ export class MessageController {
   @Post('add')
   @ApiBearerAuth('jwt')
   @UseGuards(JwtAuthGuard)
-  async addMessage(@Body(new ValidationPipe()) message: MessageDto) {
+  @UsePipes(new ValidationPipe({ transform: true }))
+  async addMessage(@Body() message: MessageDto) {
     try {
-      const result = await this.messageService.create(message);
-      await this.messageService.addMessageToGroup(message.group_id, result.id);
+      const { group_id, ...payload } = message as any;
+
+      const result = await this.messageService.create(payload);
+      await this.messageService.addMessageToGroup(group_id, result.id);
       return result;
     } catch (error) {
       throw error;
@@ -102,7 +105,11 @@ export class MessageController {
     @Body() updateMessageDto: MessageDto,
   ): Promise<Message> {
     try {
-      const result = await this.messageService.update(id, updateMessageDto);
+      // group_id не часть entity Message — выкидываем перед update
+      const { group_id, ...update } = updateMessageDto as any;
+
+      // update уже чисто под Message (Partial<Message>)
+      const result = await this.messageService.update(id, update);
       return result;
     } catch (error) {
       throw error;

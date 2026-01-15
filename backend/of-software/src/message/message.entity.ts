@@ -18,19 +18,19 @@ export class Message {
   @Column()
   name: string;
 
-  @UpdateDateColumn({
+  @Column({
     type: 'time',
     nullable: true,
   })
   message_time: string;
 
   @Column({
-    type: 'float',
+    type: 'double precision',
     nullable: true,
   })
   price: number;
 
-  @Column()
+  @Column({ nullable: true })
   message_list: string;
 
   @Column({
@@ -65,9 +65,28 @@ export class Message {
   release_user_tags: string;
 
   @Column({
+    type: 'int',
     nullable: true,
   })
   free_preview: number;
+
+  @Column({ type: 'boolean', default: false })
+  massmsg: boolean;
+
+  @Column({ type: 'jsonb', nullable: true })
+  audience_include_ids: string[];
+
+  @Column({ type: 'jsonb', nullable: true })
+  audience_exclude_ids: string[];
+
+  @Column({ type: 'jsonb', nullable: true })
+  user_ids_array: string[];
+
+  @Column({ type: 'jsonb', nullable: true })
+  vault_media_ids: string[];
+
+  @Column({ type: 'timestamptz', nullable: true })
+  scheduled_date: Date;
 
   @Column({ default: 1 })
   status: number; // 0: inactive, 1: active

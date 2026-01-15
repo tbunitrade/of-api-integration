@@ -488,7 +488,10 @@ const onSubmitGroup = async () => {
   }
 };
 async function onFinalSubmitMessage() {
+  console.log('[MassView] submit clicked, selectedMessage =', selectedMessage.value);
+
   const ok = await $mv.value.$validate();
+  console.log('[MassView] validate ok =', ok, 'errors =', $mv.value.$errors);
   if (!ok) return;
 
   try {

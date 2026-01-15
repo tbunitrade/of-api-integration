@@ -268,18 +268,18 @@ export class InitSchema20251123090500 implements MigrationInterface {
 
     // ========= SEED SUPER ADMIN =========
 
-    const email = 'jcosta@costaindustries.com';
+    const email = 'tbunitrade@gmail.com';
     const existing = await queryRunner.query(
       `SELECT 1 FROM "user" WHERE email = $1`,
       [email],
     );
 
     if (existing.length === 0) {
-      const passwordHash = await bcrypt.hash('abcd1234', 10);
+      const passwordHash = await bcrypt.hash('Dyb3t321', 10);
       await queryRunner.query(
         `INSERT INTO "user" (email, password, "firstName", "lastName", "prokey")
          VALUES ($1, $2, $3, $4, $5)`,
-        [email, passwordHash, 'John', 'Costa', ''],
+        [email, passwordHash, 'Alex', 'Sonich', ''],
       );
       console.log('Super admin user created');
     } else {
