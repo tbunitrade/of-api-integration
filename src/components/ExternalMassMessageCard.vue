@@ -4,13 +4,26 @@ import { ref, computed, watch } from 'vue';
 import CardBox from '@/components/CardBox.vue';
 import BaseButton from '@/components/BaseButton.vue';
 
+const audienceLists = ref<any[]>([]); // [{id,name,type?}]
+const massMessageText = ref('');
+const includeTokens = ref<string[]>([]);
+const excludeTokens = ref<string[]>([]);
+
 const props = defineProps({
   modelPlatform: { type: [Object, Array], required: false, default: null },
   notify: { type: Function, required: false, default: null },
 
   // NEW import media
   mediaIds: { type: Array, required: false, default: () => [] },
+
+    // v-model (parent -> child)
+  audienceIncludeIds: { type: Array, required: false, default: () => [] },
+  audienceExcludeIds: { type: Array, required: false, default: () => [] },
 });
+
+
+
+const emit = defineEmits(['update:audienceIncludeIds', 'update:audienceExcludeIds']);
 
 const notify = (payload: any) => {
   if (typeof props.notify === 'function') return (props.notify as any)(payload);
@@ -27,18 +40,6 @@ const accountId = computed(() => String((mp.value as any)?.ofid_username || '').
 
 const canWork = computed(() => modelPlatformId.value > 0);
 
-// оставляю твой лог как есть (не меняю строку), но делаю корректно по порядку
-watch(
-  () => mp.value,
-  (v) => console.log('[ExternalVaultMediaCard]', v),
-  { immediate: true }
-);
-
-const audienceLists = ref<any[]>([]); // [{id,name,type?}]
-const massMessageText = ref('');
-
-const includeTokens = ref<string[]>([]);
-const excludeTokens = ref<string[]>([]);
 
 const search = ref('');
 
@@ -63,6 +64,16 @@ const normalizeProviderLists = (data: any) => {
       type: String(x?.type ?? '').trim(),
     }))
     .filter((x: any) => x.id && x.name);
+};
+
+const sameArr = (a: any, b: any) => {
+    if (a === b) return true;
+    if (!Array.isArray(a) || !Array.isArray(b)) return false;
+    if (a.length !== b.length) return false;
+    for (let i = 0; i < a.length; i++) {
+        if (String(a[i]) !== String(b[i])) return false;
+      }
+    return true;
 };
 
 const normalizeSelectedTokens = (arr: any) => {
@@ -229,12 +240,84 @@ const onSendMassMessage = async () => {
   }
 };
 
+
+// оставляю твой лог как есть (не меняю строку), но делаю корректно по порядку
+watch(
+  () => mp.value,
+  (v) => console.log('[ExternalVaultMediaCard]', v),
+  { immediate: true }
+);
+
+
+watch(
+  () => includeTokens.value,
+  (v) => console.log('[ExternalMassMessageCard] includeTokens:', v),
+  { deep: true }
+);
+
+watch(
+  () => excludeTokens.value,
+  (v) => console.log('[ExternalMassMessageCard] excludeTokens:', v),
+  { deep: true }
+);
+
+
+
+
+
+// sync from parent -> local (anti ping-pong)
+
+watch(
+  () => props.audienceIncludeIds,
+  (v: any) => {
+    const next = Array.isArray(v) ? v.map(String) : [];
+    if (sameArr(next, includeTokens.value)) return;
+    includeTokens.value = normalizeSelectedTokens(next);
+  },
+  { deep: true, immediate: true }
+);
+
+watch(
+  () => props.audienceExcludeIds,
+  (v: any) => {
+    const next = Array.isArray(v) ? v.map(String) : [];
+    if (sameArr(next, excludeTokens.value)) return;
+    excludeTokens.value = normalizeSelectedTokens(next);
+  },
+  { deep: true, immediate: true }
+);
+
+// sync from local -> parent (anti ping-pong)
+watch(
+  () => includeTokens.value,
+  (v: any) => {
+    const next = Array.isArray(v) ? v.map(String) : [];
+    const curr = Array.isArray(props.audienceIncludeIds) ? (props.audienceIncludeIds as any).map(String) : [];
+    if (sameArr(next, curr)) return;
+    emit('update:audienceIncludeIds', next);
+  },
+  { deep: true }
+);
+
+watch(
+  () => excludeTokens.value,
+  (v: any) => {
+    const next = Array.isArray(v) ? v.map(String) : [];
+    const curr = Array.isArray(props.audienceExcludeIds) ? (props.audienceExcludeIds as any).map(String) : [];
+    if (sameArr(next, curr)) return;
+    emit('update:audienceExcludeIds', next);
+  },
+  { deep: true }
+);
+
 watch(
   () => modelPlatformId.value,
   () => {
     audienceLists.value = [];
     includeTokens.value = [];
     excludeTokens.value = [];
+    emit('update:audienceIncludeIds', []);
+    emit('update:audienceExcludeIds', []);
     lastMassResponse.value = null;
     search.value = '';
   }

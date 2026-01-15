@@ -59,7 +59,10 @@ const platformStore = usePlatformStore();
 const modelPlatformStore = useModelPlatformStore();
 const authStore = useAuthStore();
 
+//data for Saving
 const vaultMediaIds = ref([]);
+const audienceIncludeIds = ref([]); // ['recent','fans',...]
+const audienceExcludeIds = ref([]); // ['following','907433881',...]
 
 // UI state
 const isGroupModalActive = ref(false);
@@ -307,10 +310,10 @@ const mRules = computed(() => ({
     required: helpers.withMessage("Message time field is required", required),
     $autoDirty: true,
   },
-  message_list: {
-    required: helpers.withMessage("Message list field is required", required),
-    $autoDirty: true,
-  },
+  // message_list: {
+  //   required: helpers.withMessage("Message list field is required", required),
+  //   $autoDirty: true,
+  // },
 }));
 
 // Важно: шаблон использует $mv напрямую — Vue сам развернет ref
@@ -497,13 +500,44 @@ async function onFinalSubmitMessage() {
   try {
     const payload = { ...selectedMessage.value };
 
-    // нормализация списков
-    if (Array.isArray(payload.message_list)) {
-      payload.message_list = payload.message_list.join(",");
+    // ✅ это mass-message шаблон
+    payload.massmsg = true; // или true — но у тебя в Group DTO ты приводишь к 0/1, так что 1 ок
+
+    // ✅ эти поля должны быть пустыми — оставляем пустыми строками
+    payload.message_list = payload.message_list ?? '';
+    payload.message_exclude_list = payload.message_exclude_list ?? '';
+
+    payload.vault_media_ids = (vaultMediaIds.value || []).map(String);
+
+    payload.audience_include_ids = (audienceIncludeIds.value || []).map(String);
+    payload.audience_exclude_ids = (audienceExcludeIds.value || []).map(String);
+
+    const parseCsv = (s) =>
+      String(s ?? '')
+        .split(',')
+        .map(x => x.trim())
+        .filter(Boolean);
+
+    payload.user_ids_array = parseCsv(selectedMessage.value.release_form_tags);
+
+
+    const day = String(payload.scheduled_date || '').trim();   // 'YYYY-MM-DD'
+    const time = String(payload.message_time || '').trim();    // 'HH:MM'
+
+    if (day && time) {
+      // локальное время -> Date
+      payload.scheduled_date = new Date(`${day}T${time}:00`);
+    } else {
+      payload.scheduled_date = undefined; // или не отправляй
     }
-    if (Array.isArray(payload.message_exclude_list)) {
-      payload.message_exclude_list = payload.message_exclude_list.join(",");
-    }
+
+    // // нормализация списков
+    // if (Array.isArray(payload.message_list)) {
+    //   payload.message_list = payload.message_list.join(",");
+    // }
+    // if (Array.isArray(payload.message_exclude_list)) {
+    //   payload.message_exclude_list = payload.message_exclude_list.join(",");
+    // }
 
     // нормализация времени до HH:MM
     payload.message_time =
@@ -725,6 +759,9 @@ watch(
                         :presets="['08:00','10:00','12:00','14:00','16:00','18:00']"
                       />
                     </FormField>
+                    <FormField label="Scheduled Date" help="Required. Day for sending">
+                      <FormControl v-model="selectedMessage.scheduled_date" name="scheduled_date" type="date" />
+                    </FormField>
                     <div class="mb-3" v-for="error of $mv.message_time.$errors " :key="error.$uid">
                       <div :class="[colorsText['danger'], 'text-sm']">{{ error.$message }}</div>
                     </div>
@@ -737,12 +774,15 @@ watch(
                   v-model:mediaIds="vaultMediaIds"
                 />
                 <div class="flex gap-5 md:flex-row flex-col">
-                  <ExternalMassMessageCard :modelPlatform="selectedPlatformConfig" :notify="notify" :mediaIds="vaultMediaIds" />
+                  <ExternalMassMessageCard :modelPlatform="selectedPlatformConfig" :notify="notify" :mediaIds="vaultMediaIds"
+                                           v-model:audienceIncludeIds="audienceIncludeIds"
+                                           v-model:audienceExcludeIds="audienceExcludeIds"
+                  />
                 </div>
                 <div class="flex gap-5 md:flex-row flex-col">
 
                   <div class="flex-1">
-                    <FormField label="Release Form Tags" help="Required. Release Form Tags">
+                    <FormField label="user_ids_array = Release Form Tags" help="Required. Release Form Tags">
                       <FormControl v-model="selectedMessage.release_form_tags" name="release_form_tags" required
                                    autocomplete="release_form_tags" placeholder="(separate with commas)" />
                     </FormField>
