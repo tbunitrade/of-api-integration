@@ -1,85 +1,119 @@
 // src/dtos/message.dto.ts
-
-import { ApiProperty } from '@nestjs/swagger';
-import { Transform } from 'class-transformer';
-import { IsNumber } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Transform, Type } from 'class-transformer';
+import {
+  IsArray,
+  IsBoolean,
+  IsDateString,
+  IsNumber,
+  IsOptional,
+  IsString,
+  IsDate,
+} from 'class-validator';
 
 export class MessageDto {
-  @ApiProperty({
-    type: 'string',
-    required: true,
-  })
+  @ApiProperty({ type: 'string', required: true })
+  @IsString()
   name: string;
 
-  @ApiProperty({
-    type: 'number',
-    required: true,
-  })
+  @ApiProperty({ type: 'number', required: true })
+  @IsNumber()
   group_id: number;
 
-  @ApiProperty({
-    type: 'string',
-    format: 'time',
-  })
-  message_time: string;
+  // может быть null для massmsg
+  @ApiPropertyOptional({ type: 'string', format: 'time', required: false })
+  @IsOptional()
+  @Transform(({ value }) => (String(value ?? '').trim() === '' ? null : String(value).trim()))
+  message_time?: string;
 
-  @Transform(({ value }) => (value === '' ? 0 : value))
-  @ApiProperty({
-    type: 'number',
-    format: 'float',
-  })
+  @ApiPropertyOptional({ type: 'number', format: 'float', required: false })
+  @IsOptional()
+  @Transform(({ value }) => (value === '' || value == null ? 0 : value))
   @IsNumber()
-  price: number;
+  price?: number;
 
-  @ApiProperty({
-    type: 'string',
-    required: true,
-  })
-  message_list: string;
+  // optional, т.к. для massmsg может не использоваться
+  @ApiPropertyOptional({ type: 'string', required: false })
+  @IsOptional()
+  @Transform(({ value }) => (String(value ?? '').trim() === '' ? null : String(value)))
+  message_list?: string;
 
-  @ApiProperty({
-    type: 'string',
-    required: false,
-  })
-  message: string;
+  @ApiPropertyOptional({ type: 'string', required: false })
+  @IsOptional()
+  @IsString()
+  message?: string;
 
-  @ApiProperty({
-    type: 'string',
-    required: false,
-  })
-  content: string;
+  @ApiPropertyOptional({ type: 'string', required: false })
+  @IsOptional()
+  @IsString()
+  content?: string;
 
-  @ApiProperty({
-    type: 'string',
-    required: false,
-  })
-  message_exclude_list: string;
+  @ApiPropertyOptional({ type: 'string', required: false })
+  @IsOptional()
+  @IsString()
+  message_exclude_list?: string;
 
-  @ApiProperty({
-    type: 'boolean',
-    default: false,
-  })
-  content_attached: boolean;
+  @ApiPropertyOptional({ type: 'boolean', default: false, required: false })
+  @IsOptional()
+  @IsBoolean()
+  content_attached?: boolean;
 
-  @ApiProperty({
-    type: 'string',
-  })
-  release_form_tags: string;
+  @ApiPropertyOptional({ type: 'string', required: false })
+  @IsOptional()
+  @IsString()
+  release_form_tags?: string;
 
-  @ApiProperty({
-    type: 'string',
-  })
-  release_user_tags: string;
+  @ApiPropertyOptional({ type: 'string', required: false })
+  @IsOptional()
+  @IsString()
+  release_user_tags?: string;
 
-  @Transform(({ value }) => (value === '' ? 0 : value))
-  @ApiProperty({
-    type: 'number',
-  })
+  @ApiPropertyOptional({ type: 'number', required: false })
+  @IsOptional()
+  @Transform(({ value }) => (value === '' || value == null ? 0 : value))
   @IsNumber()
-  free_preview: number;
+  free_preview?: number;
 
-  @ApiProperty({
-    type: 'number',
-  })
-  status: number;
+  @ApiPropertyOptional({ type: 'number', required: false })
+  @IsOptional()
+  @IsNumber()
+  status?: number;
+
+  // ===== mass message template fields =====
+
+  @ApiPropertyOptional({ type: 'boolean', default: false, required: false })
+  @IsOptional()
+  @IsBoolean()
+  massmsg?: boolean;
+
+  @ApiPropertyOptional({ type: 'array', items: { type: 'string' }, required: false })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  audience_include_ids?: string[];
+
+  @ApiPropertyOptional({ type: 'array', items: { type: 'string' }, required: false })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  audience_exclude_ids?: string[];
+
+  // userIds по доке
+  @ApiPropertyOptional({ type: 'array', items: { type: 'string' }, required: false })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  user_ids_array?: string[];
+
+  @ApiPropertyOptional({ type: 'array', items: { type: 'string' }, required: false })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  vault_media_ids?: string[];
+
+  @ApiPropertyOptional({ type: 'string', format: 'date-time', required: false })
+  @IsOptional()
+  @Type(() => Date)         // <-- конвертит ISO string в Date при transform:true
+  @IsDate()
+  scheduled_date?: Date;
 }
