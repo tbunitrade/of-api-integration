@@ -87,7 +87,8 @@ const selectedPlatform = computed(() => platformStore.selectedPlatform);
 
 const filesInStore = computed(() => fileStore.files);
 const groupsInStore = computed(() => groupStore.groups || []);
-const messagesInStore = computed(() => messageStore.messages || []);
+const isMass = (v) => v === true || v === 1 || v === "1";
+const messagesInStore = computed(() =>  (messageStore.messages || []).filter((m) => !isMass(m?.massmsg)));
 const numberOfDays = computed(() =>
 {
   return modelPlatformStore.model_platforms.length > 0 ? modelPlatformStore.model_platforms[0].number_of_days : 0;
@@ -129,6 +130,7 @@ const fetchData = async () =>
       platform_id: selectedPlatform.value.id,
     };
     await authStore.getMyProfile();
+    messageStore.messages = []; // <-- важно
     await groupStore.getAllGroups( {...params, massmsg: 0 });
     await modelPlatformStore.getModelPlatform(params.model_id, params.platform_id);
   } catch (error)
@@ -149,7 +151,7 @@ const onSubmitGroup = async () =>
     {
       if (res)
       {
-        const add_result = await groupStore.updateGroup(selectedGroup.value);
+        const add_result = await groupStore.updateGroup({...selectedGroup.value, massmsg: 0 });
         if (add_result)
         {
           notify({
@@ -181,7 +183,7 @@ const onSubmitGroup = async () =>
           });
           return;
         }
-        const add_result = await groupStore.addGroup({ ...selectedGroup.value, model_id: selectedModel.value.id, platform_id: selectedPlatform.value.id });
+        const add_result = await groupStore.addGroup({ ...selectedGroup.value, model_id: selectedModel.value.id, platform_id: selectedPlatform.value.id, massmsg: 0 });
         if (add_result)
         {
           notify({
@@ -202,104 +204,196 @@ const onSubmitGroup = async () =>
 
 };
 
+// MessageView.vue
 // const onFinalSubmitMessage = async () =>
-async function onFinalSubmitMessage()
-{
-  const onSubmitMessage = async () => {
-    const payload = { ...selectedMessage.value }
-    delete payload.id
-    payload.group_id = selectedGroup.value?.id
+// async function onFinalSubmitMessage()
+// {
+//   const onSubmitMessage = async () => {
+//     const payload = { ...selectedMessage.value }
+//     //delete payload.id
+//     payload.group_id = selectedGroup.value?.id
+//     payload.massmsg = false
+//
+//     if (!selectedMessage.value.isEdit) {
+//       delete payload.id
+//     }
+//
+//     const saved = selectedMessage.value.isEdit
+//       ? await messageStore.updateMessage(payload)     // если у тебя есть апдейт
+//       : await messageStore.addMessage(payload)        // создание
+//
+//     if (saved?.id) {
+//       selectedMessage.value.id = saved.id            // ← вот теперь у нас реальный id
+//     }
+//     isMessageModalActive.value = false;
+//   };
+//
+//   if (selectedMessage.value.isEdit)
+//   {
+//     const result = $mv.value.$validate();
+//     result.then(async (res) =>
+//     {
+//       if (res)
+//       {
+//         if (Array.isArray(selectedMessage.value.message_list)) {
+//           selectedMessage.value.message_list = selectedMessage.value.message_list.join(',');
+//         }
+//
+//         if (Array.isArray(selectedMessage.value.message_exclude_list)) {
+//           selectedMessage.value.message_exclude_list = selectedMessage.value.message_exclude_list.join(',');
+//         }
+//
+//         selectedMessage.value.massmsg = false;
+//
+//         selectedMessage.value = {
+//           ...selectedMessage.value,
+//           ...(fileStore.files.length > 0 ? { content: fileStore.files.join(','), content_attached: true } : { content_attached: false }),
+//           //message_time: selectedMessage.value.message_time.split(":").slice(0, 2).join(":")
+//           message_time: (typeof selectedMessage.value.message_time === 'string'
+//            ? selectedMessage.value.message_time
+//            : (selectedMessage.value.message_time?.value || '')
+//             ).split(":").slice(0,2).join(":")
+//         };
+//
+//         const add_result = await messageStore.updateMessage(selectedMessage.value);
+//
+//         if (add_result) {
+//           notify({
+//             title: "Success",
+//             type: "success",
+//             text: "Message updated successfully",
+//           });
+//           $mv.value.$reset();
+//           // fetchData();
+//           // refresh lists
+//           if (isGroupSelected.value && selectedGroup.value?.id) {
+//             await messageStore.getMessagesByGroup(selectedGroup.value.id, { massmsg: false });
+//           } else if (selectedModel.value?.id) {
+//             await messageStore.getMessagesByModel(selectedModel.value.id, undefined, { massmsg: false });
+//           }
+//         }
+//
+//         isMessageModalActive.value = false;
+//       }
+//     });
+//
+//   } else
+//   {
+//     const result = $mv.value.$validate();
+//     result.then(async (res) =>
+//     {
+//       if (res)
+//       {
+//         if (Array.isArray(selectedMessage.value.message_list)) {
+//           selectedMessage.value.message_list = selectedMessage.value.message_list.join(',');
+//         }
+//         if (Array.isArray(selectedMessage.value.message_exclude_list)) {
+//           selectedMessage.value.message_exclude_list = selectedMessage.value.message_exclude_list.join(',');
+//         }
+//
+//         // ensure non-mass message
+//         selectedMessage.value.massmsg = false;
+//
+//         selectedMessage.value = {
+//           ...selectedMessage.value,
+//           ...(fileStore.files.length > 0 ? { content: fileStore.files.join(','), content_attached: true } : { content_attached: false }),
+//         };
+//         const add_result = await messageStore.addMessage(selectedMessage.value);
+//         if (add_result)
+//         {
+//           notify({
+//             title: "Success",
+//             type: "success",
+//             text: "Group added successfully",
+//           });
+//           $mv.value.$reset();
+//           //fetchData();
+//           // refresh lists
+//           if (isGroupSelected.value && selectedGroup.value?.id) {
+//             await messageStore.getMessagesByGroup(selectedGroup.value.id, { massmsg: false });
+//           } else if (selectedModel.value?.id) {
+//             await messageStore.getMessagesByModel(selectedModel.value.id, undefined, { massmsg: false });
+//           }
+//         }
+//
+//         isMessageModalActive.value = false;
+//       }
+//     }).catch((err) =>
+//     {
+//       console.log(err);
+//     });
+//     fileStore.files = [];
+//   }
+// };
+
+async function onFinalSubmitMessage() {
+  const ok = await $mv.value.$validate();
+  if (!ok) return;
+
+  try {
+    const payload = { ...selectedMessage.value };
+
+    // обязательно: тип сообщения
+    payload.massmsg = false;
+
+    // важно: group_id берем из формы (selectedMessage.group_id), а не selectedGroup.id
+    payload.group_id = Number(payload.group_id || selectedGroup.value?.id || 0);
+
+    // не отправляем UI-поля
+    delete payload.isEdit;
+
+    // delete id только при CREATE
+    if (!selectedMessage.value.isEdit) {
+      delete payload.id;
+    }
+
+    // нормализация list/exclude
+    if (Array.isArray(payload.message_list)) payload.message_list = payload.message_list.join(',');
+    if (Array.isArray(payload.message_exclude_list)) payload.message_exclude_list = payload.message_exclude_list.join(',');
+
+    // content
+    if (fileStore.files?.length > 0) {
+      payload.content = fileStore.files.join(',');
+      payload.content_attached = true;
+    } else {
+      payload.content_attached = false;
+    }
+
+    // время до HH:MM
+    payload.message_time = (typeof payload.message_time === 'string'
+        ? payload.message_time
+        : (payload.message_time?.value || '')
+    ).split(':').slice(0, 2).join(':');
 
     const saved = selectedMessage.value.isEdit
-      ? await messageStore.updateMessage(payload)     // если у тебя есть апдейт
-      : await messageStore.addMessage(payload)        // создание
+      ? await messageStore.updateMessage(payload)
+      : await messageStore.addMessage(payload);
 
-    if (saved?.id) {
-      selectedMessage.value.id = saved.id            // ← вот теперь у нас реальный id
+    if (saved) {
+      notify({
+        title: "Success",
+        type: "success",
+        text: selectedMessage.value.isEdit ? "Message updated successfully" : "Message added successfully",
+      });
+
+      $mv.value.$reset();
+
+      // refresh lists
+      if (isGroupSelected.value && selectedGroup.value?.id) {
+        await messageStore.getMessagesByGroup(selectedGroup.value.id, { massmsg: false });
+      } else if (selectedModel.value?.id) {
+        await messageStore.getMessagesByModel(selectedModel.value.id, undefined, { massmsg: false });
+      }
     }
+
     isMessageModalActive.value = false;
-  };
-
-  if (selectedMessage.value.isEdit)
-  {
-    const result = $mv.value.$validate();
-    result.then(async (res) =>
-    {
-      if (res)
-      {
-        if (Array.isArray(selectedMessage.value.message_list)) {
-          selectedMessage.value.message_list = selectedMessage.value.message_list.join(',');
-        }
-
-        if (Array.isArray(selectedMessage.value.message_exclude_list)) {
-          selectedMessage.value.message_exclude_list = selectedMessage.value.message_exclude_list.join(',');
-        }
-
-        selectedMessage.value = {
-          ...selectedMessage.value,
-          ...(fileStore.files.length > 0 ? { content: fileStore.files.join(','), content_attached: true } : { content_attached: false }),
-          //message_time: selectedMessage.value.message_time.split(":").slice(0, 2).join(":")
-          message_time: (typeof selectedMessage.value.message_time === 'string'
-           ? selectedMessage.value.message_time
-           : (selectedMessage.value.message_time?.value || '')
-            ).split(":").slice(0,2).join(":")
-        };
-        const add_result = await messageStore.updateMessage(selectedMessage.value);
-        if (add_result)
-        {
-          notify({
-            title: "Success",
-            type: "success",
-            text: "Message updated successfully",
-          });
-          $mv.value.$reset();
-          fetchData();
-        }
-
-        isMessageModalActive.value = false;
-      }
-    });
-
-  } else
-  {
-    const result = $mv.value.$validate();
-    result.then(async (res) =>
-    {
-      if (res)
-      {
-        if (Array.isArray(selectedMessage.value.message_list)) {
-          selectedMessage.value.message_list = selectedMessage.value.message_list.join(',');
-        }
-        if (Array.isArray(selectedMessage.value.message_exclude_list)) {
-          selectedMessage.value.message_exclude_list = selectedMessage.value.message_exclude_list.join(',');
-        }
-
-        selectedMessage.value = {
-          ...selectedMessage.value,
-          ...(fileStore.files.length > 0 ? { content: fileStore.files.join(','), content_attached: true } : { content_attached: false }),
-        };
-        const add_result = await messageStore.addMessage(selectedMessage.value);
-        if (add_result)
-        {
-          notify({
-            title: "Success",
-            type: "success",
-            text: "Group added successfully",
-          });
-          $mv.value.$reset();
-          fetchData();
-        }
-
-        isMessageModalActive.value = false;
-      }
-    }).catch((err) =>
-    {
-      console.log(err);
-    });
     fileStore.files = [];
+  } catch (error) {
+    console.error('[MessageView] onFinalSubmitMessage error:', error);
+    notify({ title: "Error", type: "error", text: "Failed to save message" });
   }
+}
 
-};
 const onClickEditGroup = (id) =>
 {
   const group = (groupStore.groups || []).filter((it) => it.id === id);
@@ -345,7 +439,7 @@ const onChangeSearchString = (e) =>
 {
   if (selectedModel.value && e.target)
   {
-    messageStore.getMessagesByModel(selectedModel.value.id, e.target.value);
+    messageStore.getMessagesByModel(selectedModel.value.id, e.target.value, { massmsg: false });
   }
 };
 
@@ -353,7 +447,7 @@ const onViewGroup = (id) =>
 {
 
   selectedGroup.value = groupStore.groups.filter((it) => it.id === id)[0];
-  messageStore.getMessagesByGroup(id);
+  messageStore.getMessagesByGroup(id, { massmsg: false });
   isGroupSelected.value = true;
 };
 const onCancelAddMessage = () =>
@@ -361,14 +455,15 @@ const onCancelAddMessage = () =>
   selectedGroup.value = { name: "" };
   isGroupSelected.value = false;
 };
-const onClickMessageList = (tabNumber) =>
+const onClickMessageList = async (tabNumber) =>
 {
   // If show messages
-  if (tabNumber === 2)
+  if (tabNumber === 2 && selectedModel.value)
   {
     if (selectedModel.value)
     {
-      messageStore.getMessagesByModel(selectedModel.value.id);
+      messageStore.messages = []; // <-- важно
+      await messageStore.getMessagesByModel(selectedModel.value.id, undefined, { massmsg : false});
     }
   }
   checkedGroups.value = [];
@@ -389,6 +484,7 @@ const onAddNewGroup = () =>
 const onAddNewMessage = () =>
 {
   selectedMessage.value = {
+    massmsg: false,
     isEdit: false,
     id: null,
     name: "",
@@ -614,24 +710,32 @@ watch(filesInStore, () =>
   }
 
 });
+
 watch(groupsInStore, () =>
 {
-  if (selectedMessage.value.name.length > 0 && selectedGroup.value.name.length > 0)
-  {
-    selectedMessage.value = groupsInStore.value.filter(it => it.id === selectedGroup.value.id)[0];
+  if (selectedGroup.value?.id) {
+    selectedGroup.value = groupsInStore.value.find(it => it.id === selectedGroup.value.id) || { name: "" };
   }
-  if (selectedGroup.value.name.length > 0)
-  {
-    selectedGroup.value = groupsInStore.value.filter(it => it.id === selectedGroup.value.id)[0];
-    if (!selectedGroup.value?.name)
-    {
-      selectedGroup.value = {
-        name: ""
-      };
-    }
-  }
-
 });
+
+// watch(groupsInStore, () =>
+// {
+//   if (selectedMessage.value.name.length > 0 && selectedGroup.value.name.length > 0)
+//   {
+//     selectedMessage.value = groupsInStore.value.filter(it => it.id === selectedGroup.value.id)[0];
+//   }
+//   if (selectedGroup.value.name.length > 0)
+//   {
+//     selectedGroup.value = groupsInStore.value.filter(it => it.id === selectedGroup.value.id)[0];
+//     if (!selectedGroup.value?.name)
+//     {
+//       selectedGroup.value = {
+//         name: ""
+//       };
+//     }
+//   }
+//
+// });
 
 // implement  @Post('restart-server')
 

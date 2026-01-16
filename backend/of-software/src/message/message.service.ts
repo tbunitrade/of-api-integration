@@ -1,5 +1,4 @@
 // src/model/model.service.ts
-
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { FindOneOptions, Repository } from 'typeorm';
@@ -7,7 +6,9 @@ import { Message } from './message.entity';
 import { MessageDto } from 'src/dtos/message.dto';
 import { GroupMessage } from 'src/groupMessages/group_message.entity';
 import { GroupMessageDto } from 'src/dtos/group_message.dto';
+import { Group } from 'src/group/group.entity'; // путь подстрой
 import * as path from 'path';
+
 
 @Injectable()
 export class MessageService {
@@ -16,6 +17,8 @@ export class MessageService {
     private readonly messageRepository: Repository<Message>,
     @InjectRepository(GroupMessage)
     private readonly groupMessageRepository: Repository<GroupMessage>,
+    @InjectRepository(Group)
+    private readonly groupRepository: Repository<Group>,
   ) {}
 
   // =======================
@@ -138,50 +141,49 @@ export class MessageService {
     }
   }
 
-  async findAllByGroupId(id: string): Promise<Message[]> {
+  async findAllByGroupId(id: string, massmsg?: boolean): Promise<Message[]> {
     try {
-      return await this.messageRepository
+      const qb = this.messageRepository
         .createQueryBuilder('message')
-        .innerJoin(
-          'group_message',
-          'group_message',
-          'message.id = group_message.message_id',
-        )
+        .innerJoin('group_message', 'group_message', 'message.id = group_message.message_id')
         .where('group_message.group_id = :group_id', { group_id: id })
-        .orderBy('message.message_time', 'ASC')
-        .getMany();
+        .orderBy('message.message_time', 'ASC');
+
+      if (massmsg !== undefined) {
+        qb.andWhere('message.massmsg = :massmsg', { massmsg });
+      }
+
+      return await qb.getMany();
     } catch (err) {
       console.error('Message findAll error', err);
     }
   }
 
-  async findAllByModelId(id: string, searchStr?: string) {
+  async findAllByModelId(id: string, searchStr?: string, massmsg?: boolean) {
     try {
-      const findQuery = await this.messageRepository
+      const qb = this.messageRepository
         .createQueryBuilder('message')
         .select(['message.*', 'group.id as group_id, group.name as group_name'])
-        .innerJoin(
-          'group_message',
-          'group_message',
-          'message.id = group_message.message_id',
-        )
+        .innerJoin('group_message', 'group_message', 'message.id = group_message.message_id')
         .innerJoin(
           'group',
           'group',
           'group.model_id = :model_id and group.id = group_message.group_id',
-          {
-            model_id: id,
-          },
+          { model_id: id }
         );
 
       if (searchStr) {
-        findQuery.where('message.message LIKE :searchStr ', {
-          searchStr: `%${searchStr}%`,
-        });
+        qb.where('message.message LIKE :searchStr', { searchStr: `%${searchStr}%` });
       }
 
-      const result = findQuery.orderBy('message.id').getRawMany();
-      return result;
+      if (massmsg !== undefined) {
+        // важно: если searchStr есть и ты использовал qb.where выше,
+        // то тут нужно andWhere, а не where
+        if (searchStr) qb.andWhere('message.massmsg = :massmsg', { massmsg });
+        else qb.where('message.massmsg = :massmsg', { massmsg });
+      }
+
+      return qb.orderBy('message.id').getRawMany();
     } catch (err) {
       console.error('Message findAll error', err);
     }
@@ -211,21 +213,31 @@ export class MessageService {
     }
   }
 
-  async addMessageToGroup(
-    group_id: number,
-    message_id: number,
-  ): Promise<GroupMessage> {
-    try {
-      const groupMessage = new GroupMessageDto();
-      groupMessage.group_id = group_id;
-      groupMessage.message_id = message_id;
-      const newGroupMessage = this.groupMessageRepository.create(groupMessage);
-      const result = await this.groupMessageRepository.save(newGroupMessage);
-      return result;
-    } catch (err) {
-      console.error('Add Message To Group Error', err);
-      throw err; // <-- обязательно, иначе ошибка теряется
-    }
+  // async addMessageToGroup(
+  //   group_id: number,
+  //   message_id: number,
+  // ): Promise<GroupMessage> {
+  //   try {
+  //     const groupMessage = new GroupMessageDto();
+  //     groupMessage.group_id = group_id;
+  //     groupMessage.message_id = message_id;
+  //     const newGroupMessage = this.groupMessageRepository.create(groupMessage);
+  //     const result = await this.groupMessageRepository.save(newGroupMessage);
+  //     return result;
+  //   } catch (err) {
+  //     console.error('Add Message To Group Error', err);
+  //     throw err; // <-- обязательно, иначе ошибка теряется
+  //   }
+  // }
+
+  async addMessageToGroup(group_id: number, message_id: number): Promise<void> {
+    await this.groupMessageRepository
+      .createQueryBuilder()
+      .insert()
+      .into(GroupMessage)
+      .values({ group_id, message_id })
+      .onConflict(`("group_id","message_id") DO NOTHING`)
+      .execute();
   }
 
   async update(id: number, patch: Partial<Message>): Promise<Message> {
@@ -317,5 +329,48 @@ export class MessageService {
       console.error('Message delete error', err);
       throw err;
     }
+  }
+
+  async moveMessageToGroup(message_id: number, new_group_id: number): Promise<void> {
+    await this.messageRepository.manager.transaction(async (em) => {
+      const msgRepo = em.getRepository(Message);
+      const gmRepo = em.getRepository(GroupMessage);
+      const gRepo = em.getRepository(Group);
+
+      const message = await msgRepo.findOne({ where: { id: message_id } });
+      if (!message) throw new BadRequestException('Message not found');
+
+      const newGroup = await gRepo.findOne({ where: { id: new_group_id } });
+      if (!newGroup) throw new BadRequestException('Group not found');
+
+      // 1) Родитель: massmsg должен совпасть
+      if ((message.massmsg === true) !== (newGroup.massmsg === true)) {
+        throw new BadRequestException('Cannot move message across parents (massmsg mismatch)');
+      }
+
+      // 2) Если хочешь ограничить в рамках модели (очень рекомендую):
+      // удаляем связи только в рамках этой model_id + massmsg
+      await gmRepo
+        .createQueryBuilder()
+        .delete()
+        .from(GroupMessage)
+        .where(`message_id = :message_id`, { message_id })
+        .andWhere(`
+          group_id IN (
+            SELECT id FROM public."group"
+            WHERE model_id = :model_id AND massmsg = :massmsg
+          )
+        `, { model_id: newGroup.model_id, massmsg: newGroup.massmsg })
+        .execute();
+
+      // 3) Вставляем новую связь (идемпотентно)
+      await gmRepo
+        .createQueryBuilder()
+        .insert()
+        .into(GroupMessage)
+        .values({ group_id: newGroup.id, message_id })
+        .onConflict(`("group_id","message_id") DO NOTHING`)
+        .execute();
+    });
   }
 }

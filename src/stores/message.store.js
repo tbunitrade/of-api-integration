@@ -9,14 +9,15 @@ const useMessageStore = defineStore({
     messages: []
   }),
   actions: {
-    async getMessagesByGroup(id) {
+    async getMessagesByGroup(id, opts = {}) {
       try {
-        const response = await axios.get(`${import.meta.env.VITE_APP_ROOT_API}/message/group/${id}`)
+        const params = {}
+        if (opts.massmsg !== undefined) params.massmsg = opts.massmsg ? 1 : 0
+
+        const response = await axios.get(`${import.meta.env.VITE_APP_ROOT_API}/message/group/${id}`,
+          Object.keys(params).length? {params} : {})
         if (response.data) {
-          const messages = response.data
-          this.messages = messages
-        } else {
-          this.messages = []
+          this.messages = response.data || []
         }
 
         return response.data
@@ -26,17 +27,18 @@ const useMessageStore = defineStore({
       }
     },
 
-    async getMessagesByModel(id, searchStr) {
+    async getMessagesByModel(id, searchStr, opts = {} ) {
       try {
+        const params = {}
+        if (searchStr) params.searchStr = searchStr
+        if (opts.massmsg !== undefined) params.massmsg = opts.massmsg ? 1 : 0
+
         const response = await axios.get(
           `${import.meta.env.VITE_APP_ROOT_API}/message/model/${id}`,
-          searchStr ? { params: { searchStr: searchStr } } : {}
+          Object.keys(params).length ? { params } : {}
         )
         if (response.data) {
-          const messages = response.data
-          this.messages = messages
-        } else {
-          this.messages = []
+          this.messages = response.data || []
         }
 
         return response.data
@@ -51,8 +53,7 @@ const useMessageStore = defineStore({
         const response = await axios.get(`${import.meta.env.VITE_APP_ROOT_API}/message/all`)
 
         if (response.data) {
-          const messages = response.data
-          this.messages = messages
+          this.messages = response.data
         }
 
         return response.data
@@ -68,7 +69,10 @@ const useMessageStore = defineStore({
 
         if (response.data) {
           const message = response.data
-          this.messages = [...this.messages, message]
+          //this.messages = [...this.messages, message]
+          const idx = this.messages.findIndex((it) => String(it.id) === String(message.id))
+          if (idx === -1) this.messages = [...this.messages, message]
+          else this.messages = this.messages.map((it) => (String(it.id) === String(message.id) ? message : it))
         }
         this.isLoading = false
         return response.data
@@ -89,8 +93,11 @@ const useMessageStore = defineStore({
         if (response.data) {
           const message = response.data
           this.messages = this.messages.map((it) => {
-            if (it.id === message.id) {
-              return message
+            // if (it.id === message.id) {
+            //   return message
+            // }
+            if (String(it.id) === String(message.id)) {
+              return { ...it, ...message } // сохраним group_name из raw, если он был
             }
             return it
           })

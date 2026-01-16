@@ -123,6 +123,11 @@ export class InitSchema20251123090500 implements MigrationInterface {
       );
     `);
 
+    await queryRunner.query(`
+      CREATE UNIQUE INDEX IF NOT EXISTS ux_group_message_group_message
+      ON public.group_message (group_id, message_id);
+    `);
+
     // PLATFORM_GROUP
     await queryRunner.query(`
       CREATE TABLE public.platform_group (
@@ -305,5 +310,6 @@ export class InitSchema20251123090500 implements MigrationInterface {
     await queryRunner.query(`DROP TABLE IF EXISTS public.platform CASCADE`);
     await queryRunner.query(`DROP TABLE IF EXISTS public.model CASCADE`);
     await queryRunner.query(`DROP TABLE IF EXISTS public."user" CASCADE`);
+    await queryRunner.query(`DROP INDEX IF EXISTS ux_group_message_group_message;`);
   }
 }

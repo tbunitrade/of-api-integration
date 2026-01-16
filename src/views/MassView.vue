@@ -46,7 +46,7 @@ const { notify } = useNotification();
 
 const tabs = ref([
   { id: 1, title: "Groups" },
-  { id: 2, title: "Message List" },
+  { id: 2, title: "Mass Message List" },
 ]);
 
 const spinnerColor = "#3B82F6";
@@ -99,7 +99,8 @@ const selectedPlatform = computed(() => platformStore.selectedPlatform);
 
 // --- Store lists
 const groupsInStore = computed(() => groupStore.groups || []);
-const messagesInStore = computed(() => messageStore.messages || []);
+const isMass = (v) => v === true || v === 1 || v === "1";
+const messagesInStore = computed(() => (messageStore.messages || []).filter((m) => isMass(m?.massmsg)));
 
 // 🔹 Берём список связок из стора
 const modelPlatforms = computed(() => modelPlatformStore.model_platforms || []);
@@ -186,6 +187,8 @@ const fetchData = async () => {
   if (isFetching.value) return;
   isFetching.value = true;
   try {
+    //messageStore.messages = []; // <-- важно
+
     if (!selectedModel.value?.id || !selectedPlatform.value?.id) {
       console.log(
         "[MassView:fetchData] no selected model/platform yet:",
@@ -218,7 +221,7 @@ const fetchData = async () => {
 // --- Group view
 const onViewGroup = (id) => {
   selectedGroup.value = (groupStore.groups || []).filter((it) => it.id === id)[0];
-  messageStore.getMessagesByGroup(id);
+  messageStore.getMessagesByGroup(id, { massmsg : true });
   isGroupSelected.value = true;
 };
 
@@ -227,10 +230,11 @@ const onCancelAddMessage = () => {
   isGroupSelected.value = false;
 };
 
-const onClickMessageList = (tabNumber) => {
-  if (tabNumber === 2) {
+const onClickMessageList = async (tabNumber) => {
+  if (tabNumber === 2 && selectedModel.value) {
     if (selectedModel.value) {
-      messageStore.getMessagesByModel(selectedModel.value.id);
+      messageStore.messages = []; // <-- важно
+      messageStore.getMessagesByModel(selectedModel.value.id, undefined, { massmsg: true });
     }
   }
   checkedGroups.value = [];
@@ -428,6 +432,7 @@ const onAddNewMessage = () =>
   audienceExcludeIds.value = [];
 
   selectedMessage.value = {
+    massmsg: true,
     isEdit: false,
     id: null,
     name: "",
@@ -558,7 +563,7 @@ const hydrateMassRefsFromMessage = (msg) => {
   }
 };
 
-
+// onFinalSubmitMessage in MassView.vue
 async function onFinalSubmitMessage() {
   console.log('[MassView] submit clicked, selectedMessage =', selectedMessage.value);
 
@@ -569,15 +574,24 @@ async function onFinalSubmitMessage() {
   try {
     const payload = { ...selectedMessage.value };
 
-    // ✅ это mass-message шаблон
-    payload.massmsg = true; // или true — но у тебя в Group DTO ты приводишь к 0/1, так что 1 ок
+    // это mass-message шаблон
+    payload.massmsg = true;
 
-    // ✅ эти поля должны быть пустыми — оставляем пустыми строками
+    // фикс: определяем isEdit один раз и дальше используем ЕГО
+    const isEdit = !!selectedMessage.value.isEdit && !!selectedMessage.value.id;
+
+    if (!isEdit) {
+      delete payload.id;
+    }
+
+    // удаляем флаг из payload (он не нужен бэку), но ЛОГИКА уже в isEdit
+    delete payload.isEdit;
+
+    // эти поля должны быть пустыми — оставляем пустыми строками
     payload.message_list = payload.message_list ?? '';
     payload.message_exclude_list = payload.message_exclude_list ?? '';
 
     payload.vault_media_ids = (vaultMediaIds.value || []).map(String);
-
     payload.audience_include_ids = (audienceIncludeIds.value || []).map(String);
     payload.audience_exclude_ids = (audienceExcludeIds.value || []).map(String);
 
@@ -589,7 +603,6 @@ async function onFinalSubmitMessage() {
 
     payload.user_ids_array = parseCsv(selectedMessage.value.release_form_tags);
 
-
     const day = String(payload.scheduled_date || '').trim();   // 'YYYY-MM-DD'
     const time = String(payload.message_time || '').trim();    // 'HH:MM'
 
@@ -599,14 +612,6 @@ async function onFinalSubmitMessage() {
     } else {
       payload.scheduled_date = undefined; // или не отправляй
     }
-
-    // // нормализация списков
-    // if (Array.isArray(payload.message_list)) {
-    //   payload.message_list = payload.message_list.join(",");
-    // }
-    // if (Array.isArray(payload.message_exclude_list)) {
-    //   payload.message_exclude_list = payload.message_exclude_list.join(",");
-    // }
 
     // нормализация времени до HH:MM
     payload.message_time =
@@ -619,9 +624,11 @@ async function onFinalSubmitMessage() {
         .join(":");
 
     // group_id как число
-    payload.group_id = Number(payload.group_id || 0);
+    // ВАЖНО: если ты хочешь реально менять группу при edit — это отдельная тема (бек сейчас group_id в PATCH игнорит)
+    payload.group_id = Number(selectedGroup.value?.id || payload.group_id || 0);
 
-    const saved = payload.isEdit
+    // фикс: используем isEdit, а не payload.isEdit
+    const saved = isEdit
       ? await messageStore.updateMessage(payload)
       : await messageStore.addMessage(payload);
 
@@ -629,16 +636,16 @@ async function onFinalSubmitMessage() {
       notify({
         title: "Success",
         type: "success",
-        text: payload.isEdit ? "Message updated successfully" : "Message added successfully",
+        text: isEdit ? "Message updated successfully" : "Message added successfully",
       });
 
       $mv.value.$reset();
 
       // Обновить списки (минимально)
       if (isGroupSelected.value && selectedGroup.value?.id) {
-        await messageStore.getMessagesByGroup(selectedGroup.value.id);
+        await messageStore.getMessagesByGroup(selectedGroup.value.id, { massmsg: true });
       } else if (selectedModel.value?.id) {
-        await messageStore.getMessagesByModel(selectedModel.value.id);
+        await messageStore.getMessagesByModel(selectedModel.value.id, undefined, { massmsg: true });
       }
     }
 
@@ -740,6 +747,7 @@ watch(
                   </div>
 
                   <TableMessages
+                    :key="`msg-group-${selectedGroup?.id || 0}`"
                     :messages="messagesInStore"
                     :showGroup="false"
                     @click-row="onClickEditMessage"
@@ -756,8 +764,9 @@ watch(
 
               <TabContent :show="openTab === 2">
                 <div>
-                  <h1 class="font-bold text-xl">Message List</h1>
+                  <h1 class="font-bold text-xl">Mass-Message List</h1>
                   <TableMessages
+                    :key="`msg-model-${selectedModel?.id || 0}-tab-${openTab}`"
                     :messages="messagesInStore"
                     @click-row="onClickEditMessage"
                     @delete-row="onDeleteMessage" />

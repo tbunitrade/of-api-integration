@@ -11,7 +11,7 @@ import {
   Patch,
   Delete,
   UsePipes,
-  Query,
+  Query, BadRequestException,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Message } from './message.entity';
@@ -40,12 +40,16 @@ export class MessageController {
   @Get('group/:id')
   @ApiBearerAuth('jwt')
   @UseGuards(JwtAuthGuard)
-  async findMessagesByGroupId(@Param('id') id: string) {
+
+  async findMessagesByGroupId(@Param('id') id: string, @Query('massmsg') massmsg?: string) {
+    const massFlag =
+      massmsg === undefined || massmsg === null || massmsg === ''
+        ? undefined
+        : (String(massmsg).toLowerCase() === 'true' || String(massmsg) === '1');
     try {
-      const result = await this.messageService.findAllByGroupId(id);
-      return result;
+      return this.messageService.findAllByGroupId(id, massFlag);
     } catch (error) {
-      throw error;
+         throw error;
     }
   }
 
@@ -56,13 +60,15 @@ export class MessageController {
   async findMessagesByModelId(
     @Param('id') id: string,
     @Query() searchRequestDto: SearchRequestDto,
+    @Query('massmsg') massmsg?: string,
   ) {
+    const massFlag =
+      massmsg === undefined || massmsg === null || massmsg === ''
+        ? undefined
+        : (String(massmsg).toLowerCase() === 'true' || String(massmsg) === '1');
+
     try {
-      const result = await this.messageService.findAllByModelId(
-        id,
-        searchRequestDto.searchStr,
-      );
-      return result;
+      return this.messageService.findAllByModelId(id, searchRequestDto.searchStr, massFlag);
     } catch (error) {
       throw error;
     }
@@ -76,9 +82,16 @@ export class MessageController {
     try {
       const { group_id, ...payload } = message as any;
 
+      if (payload?.id) {
+        throw new BadRequestException('Use PATCH /message/:id for update');
+      }
+
       const result = await this.messageService.create(payload);
       await this.messageService.addMessageToGroup(group_id, result.id);
+
+      console.log('[MESSAGE ADD] group_id=', message?.group_id, 'payload.id=', (message as any)?.id);
       return result;
+
     } catch (error) {
       throw error;
     }
@@ -110,7 +123,15 @@ export class MessageController {
 
       // update уже чисто под Message (Partial<Message>)
       const result = await this.messageService.update(id, update);
+
+      // если фронт прислал group_id — обеспечим связь (без дублей)
+      if (group_id) {
+        //await this.messageService.addMessageToGroup(Number(group_id), result.id);
+        await this.messageService.moveMessageToGroup(result.id, Number(group_id));
+      }
+      console.log('[MESSAGE PATCH] id=', id, 'dto.id=', (updateMessageDto as any)?.id, 'group_id=', (updateMessageDto as any)?.group_id);
       return result;
+
     } catch (error) {
       throw error;
     }
