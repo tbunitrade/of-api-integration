@@ -288,13 +288,21 @@ const loadVaultMedia = async (reset = true) => {
     const medias = normalizeMedias(data);
     vaultMedias.value = reset ? medias : [...vaultMedias.value, ...medias];
 
+    // ✅ purge selection ТОЛЬКО после того как vaultMedias уже обновлён
+    if (reset) {
+      const allIds = new Set(
+        (vaultMedias.value || [])
+          .map((m) => String(m?.id || '').trim())
+          .filter(Boolean)
+      );
+      selectedMediaIdsLocal.value = (selectedMediaIdsLocal.value || []).filter((id) =>
+        allIds.has(String(id).trim())
+      );
+    }
+
     hasMore.value = Boolean(data?.data?.hasMore);
     offset.value = offset.value + limit.value;
-
-    // purge selection: оставляем только те ids, которые реально есть в текущем пуле
-    const allIds = new Set<string>(vaultMedias.value.map((m: any) => String(m?.id || '').trim()).filter(Boolean));
-    selectedMediaIdsLocal.value = selectedMediaIdsLocal.value.filter((id) => allIds.has(String(id)));
-  } catch (e: any) {
+  } catch (e) {
     console.log('[ExternalVaultMediaCard] loadVaultMedia error', e);
     notify({ title: 'Error', type: 'error', text: 'Failed to load vault media' });
   } finally {

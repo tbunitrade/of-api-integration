@@ -91,6 +91,7 @@ const selectedMessage = ref({
   content_attached: false,
   content: "",
   isEdit: false,
+  scheduled_date: "",
 });
 // --- Selected Model / Platform (как у тебя)
 const selectedModel = computed(() => modelStore.selectedModel);
@@ -385,6 +386,10 @@ const onClickEditMessage = (id) => {
   if (typeof selectedMessage.value.content === 'string' && selectedMessage.value.content.length > 0) {
     fileStore.setFiles(selectedMessage.value.content.split(','));
   }
+
+  // 👇 подтянуть массивы и дату/время из БД в refs (vaultMediaIds/audience*)
+  hydrateMassRefsFromMessage(row);
+
   isMessageModalActive.value = true;
 };
 
@@ -418,6 +423,10 @@ const onCheckGroups = (ids) =>
 
 const onAddNewMessage = () =>
 {
+  vaultMediaIds.value = [];
+  audienceIncludeIds.value = [];
+  audienceExcludeIds.value = [];
+
   selectedMessage.value = {
     isEdit: false,
     id: null,
@@ -433,6 +442,7 @@ const onAddNewMessage = () =>
     release_user_tags: "",
     content_attached: false,
     content: "",
+    scheduled_date: "",
   };
   fileStore.setEmpty();
   $gv.value.$reset();
@@ -490,6 +500,65 @@ const onSubmitGroup = async () => {
     notify({ title: "Error", type: "error", text: "Failed to save group" });
   }
 };
+
+const parseArrayField = (v) => {
+  if (Array.isArray(v)) return v.map(String).map(s => s.trim()).filter(Boolean);
+
+  const s = String(v ?? '').trim();
+  if (!s) return [];
+
+  // try JSON: '["recent","fans"]'
+  try {
+    const j = JSON.parse(s);
+    if (Array.isArray(j)) return j.map(String).map(x => x.trim()).filter(Boolean);
+  } catch (_) {}
+
+  // fallback: 'recent,fans'
+  return s.split(',').map(x => x.trim()).filter(Boolean);
+};
+
+const normalizeHHMM = (v) => {
+  const s = String(v ?? '').trim();
+  if (!s) return '';
+  // '08:00:00' -> '08:00'
+  const m = s.match(/^(\d{2}):(\d{2})/);
+  return m ? `${m[1]}:${m[2]}` : s;
+};
+
+const toLocalYYYYMMDD = (v) => {
+  if (!v) return '';
+  const d = new Date(v);
+  if (Number.isNaN(d.getTime())) return '';
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+};
+
+const hydrateMassRefsFromMessage = (msg) => {
+  vaultMediaIds.value = parseArrayField(msg?.vault_media_ids);
+  audienceIncludeIds.value = parseArrayField(msg?.audience_include_ids);
+  audienceExcludeIds.value = parseArrayField(msg?.audience_exclude_ids);
+
+  // если scheduled_date хранится Date/timestamptz — для input[type=date] нужен YYYY-MM-DD
+  if (msg?.scheduled_date) {
+
+    selectedMessage.value.scheduled_date = toLocalYYYYMMDD(msg.scheduled_date);
+  }
+
+  // если message_time в БД '08:00:00'
+  if (msg?.message_time) {
+    selectedMessage.value.message_time = normalizeHHMM(msg.message_time);
+  }
+
+  // если в БД user_ids_array jsonb, а в UI ты редактируешь release_form_tags (csv)
+  if (!selectedMessage.value.release_form_tags) {
+    const ids = parseArrayField(msg?.user_ids_array);
+    if (ids.length) selectedMessage.value.release_form_tags = ids.join(',');
+  }
+};
+
+
 async function onFinalSubmitMessage() {
   console.log('[MassView] submit clicked, selectedMessage =', selectedMessage.value);
 
@@ -597,6 +666,8 @@ watch(
   [() => selectedModel.value?.id, () => selectedPlatform.value?.id],
   async ([modelId, platformId], [prevModelId, prevPlatformId]) => {
     vaultMediaIds.value = [];
+    audienceIncludeIds.value = [];
+    audienceExcludeIds.value = [];
     console.log('[MassView] vaultMediaIds reset (modelPlatform changed)');
     console.log("[MassView:watch] model/platform changed:", {
       prevModelId,
@@ -782,8 +853,8 @@ watch(
                 <div class="flex gap-5 md:flex-row flex-col">
 
                   <div class="flex-1">
-                    <FormField label="user_ids_array = Release Form Tags" help="Required. Release Form Tags">
-                      <FormControl v-model="selectedMessage.release_form_tags" name="release_form_tags" required
+                    <FormField label="user_ids_array = Release Form Tags" help=" Release Form Tags">
+                      <FormControl v-model="selectedMessage.release_form_tags" name="release_form_tags"
                                    autocomplete="release_form_tags" placeholder="(separate with commas)" />
                     </FormField>
                   </div>
