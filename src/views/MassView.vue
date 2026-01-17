@@ -573,19 +573,26 @@ async function onFinalSubmitMessage() {
 
   try {
     const payload = { ...selectedMessage.value };
-
     // это mass-message шаблон
     payload.massmsg = true;
 
-    // фикс: определяем isEdit один раз и дальше используем ЕГО
-    const isEdit = !!selectedMessage.value.isEdit && !!selectedMessage.value.id;
+    // ВАЖНО: сохраняем флаг ДО удаления
+    //const isEdit = !!selectedMessage.value.isEdit;
 
-    if (!isEdit) {
-      delete payload.id;
+    // ---- HARD RULE: EDIT ONLY BY id ----
+    const idNum = Number(payload.id || 0);
+    const isEdit = Number.isFinite(idNum) && idNum > 0;
+
+    console.log('[MassView] isEdit(by id)=', isEdit, 'payload.id=', payload.id, 'payload.isEdit=', payload.isEdit);
+
+
+    if (isEdit) {
+      payload.id = idNum;          // гарантируем number
+    } else {
+      delete payload.id;           // только для create
     }
 
-    // удаляем флаг из payload (он не нужен бэку), но ЛОГИКА уже в isEdit
-    delete payload.isEdit;
+    delete payload.isEdit;         // UI-флаг не нужен бэку
 
     // эти поля должны быть пустыми — оставляем пустыми строками
     payload.message_list = payload.message_list ?? '';
@@ -607,10 +614,9 @@ async function onFinalSubmitMessage() {
     const time = String(payload.message_time || '').trim();    // 'HH:MM'
 
     if (day && time) {
-      // локальное время -> Date
       payload.scheduled_date = new Date(`${day}T${time}:00`);
     } else {
-      payload.scheduled_date = undefined; // или не отправляй
+      payload.scheduled_date = undefined;
     }
 
     // нормализация времени до HH:MM
@@ -623,11 +629,10 @@ async function onFinalSubmitMessage() {
         .slice(0, 2)
         .join(":");
 
-    // group_id как число
-    // ВАЖНО: если ты хочешь реально менять группу при edit — это отдельная тема (бек сейчас group_id в PATCH игнорит)
-    payload.group_id = Number(selectedGroup.value?.id || payload.group_id || 0);
+    // group_id как число — берём из селекта (и не подменяем всегда selectedGroup)
+    payload.group_id = Number(payload.group_id || 0);
 
-    // фикс: используем isEdit, а не payload.isEdit
+    // ВАЖНО: тут используем isEdit, а не payload.isEdit (его уже удалили)
     const saved = isEdit
       ? await messageStore.updateMessage(payload)
       : await messageStore.addMessage(payload);
@@ -641,7 +646,6 @@ async function onFinalSubmitMessage() {
 
       $mv.value.$reset();
 
-      // Обновить списки (минимально)
       if (isGroupSelected.value && selectedGroup.value?.id) {
         await messageStore.getMessagesByGroup(selectedGroup.value.id, { massmsg: true });
       } else if (selectedModel.value?.id) {
