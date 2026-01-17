@@ -31,6 +31,7 @@ export class MessageController {
   async findAll() {
     try {
       const result = await this.messageService.findAll();
+      console.log('[MESSAGE findAll] res=', result);
       return result;
     } catch (error) {
       throw error;
@@ -47,6 +48,7 @@ export class MessageController {
         ? undefined
         : (String(massmsg).toLowerCase() === 'true' || String(massmsg) === '1');
     try {
+      console.log('[MESSAGE findMessagesByGroupId] id=', id);
       return this.messageService.findAllByGroupId(id, massFlag);
     } catch (error) {
          throw error;
@@ -68,6 +70,7 @@ export class MessageController {
         : (String(massmsg).toLowerCase() === 'true' || String(massmsg) === '1');
 
     try {
+      console.log('[MESSAGE findMessagesByModelId] id=', id);
       return this.messageService.findAllByModelId(id, searchRequestDto.searchStr, massFlag);
     } catch (error) {
       throw error;
@@ -89,7 +92,7 @@ export class MessageController {
       const result = await this.messageService.create(payload);
       await this.messageService.addMessageToGroup(group_id, result.id);
 
-      console.log('[MESSAGE ADD] group_id=', message?.group_id, 'payload.id=', (message as any)?.id);
+      console.log('[MESSAGE ADD group_id=', message?.group_id, 'payload.id=', (message as any)?.id);
       return result;
 
     } catch (error) {
@@ -103,6 +106,7 @@ export class MessageController {
   async getMessageById(@Param('id') id: number): Promise<Message> {
     try {
       const result = await this.messageService.findById(id);
+      console.log('[MESSAGE getMessageById] id=', id);
       return result;
     } catch (error) {
       throw error;
@@ -143,6 +147,7 @@ export class MessageController {
   async delete(@Param('id') id: number): Promise<Message> {
     try {
       const result = await this.messageService.delete(id);
+      console.log('[MESSAGE DELETED] id=', id);
       return result;
     } catch (error) {
       throw error;

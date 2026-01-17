@@ -370,10 +370,11 @@ const onClickEditMessage = (id) => {
   if (!row) return;
 
   selectedMessage.value = {
-    isEdit: true,
-    id: String(row.id ?? ''),
     ...selectedMessage.value,
     ...row,
+
+    //normalizing нормализации ниже должны быть ПОСЛЕ ...row, чтобы перезаписать сырые значения
+    id: String(row.id ?? ''),
     name: String(row.name ?? ''),
     group_id: Number(row.group_id ?? selectedGroup.value?.id ?? 0),
     price: Number(row.price ?? 0),
@@ -385,6 +386,9 @@ const onClickEditMessage = (id) => {
     release_user_tags: String(row.release_user_tags ?? ''),
     content_attached: !!row.content_attached,
     content: String(row.content ?? ''),
+
+    // Important ВАЖНО: isEdit в конце, чтобы никто его не перетёр
+    isEdit: true,
   };
   // Превью файлов
   if (typeof selectedMessage.value.content === 'string' && selectedMessage.value.content.length > 0) {
@@ -573,18 +577,13 @@ async function onFinalSubmitMessage() {
 
   try {
     const payload = { ...selectedMessage.value };
-    // это mass-message шаблон
     payload.massmsg = true;
-
-    // ВАЖНО: сохраняем флаг ДО удаления
-    //const isEdit = !!selectedMessage.value.isEdit;
 
     // ---- HARD RULE: EDIT ONLY BY id ----
     const idNum = Number(payload.id || 0);
     const isEdit = Number.isFinite(idNum) && idNum > 0;
 
     console.log('[MassView] isEdit(by id)=', isEdit, 'payload.id=', payload.id, 'payload.isEdit=', payload.isEdit);
-
 
     if (isEdit) {
       payload.id = idNum;          // гарантируем number
@@ -613,13 +612,9 @@ async function onFinalSubmitMessage() {
     const day = String(payload.scheduled_date || '').trim();   // 'YYYY-MM-DD'
     const time = String(payload.message_time || '').trim();    // 'HH:MM'
 
-    if (day && time) {
-      payload.scheduled_date = new Date(`${day}T${time}:00`);
-    } else {
-      payload.scheduled_date = undefined;
-    }
+    if (day && time) payload.scheduled_date = new Date(`${day}T${time}:00`);
+    else payload.scheduled_date = undefined;
 
-    // нормализация времени до HH:MM
     payload.message_time =
       (typeof payload.message_time === "string"
           ? payload.message_time
@@ -629,10 +624,9 @@ async function onFinalSubmitMessage() {
         .slice(0, 2)
         .join(":");
 
-    // group_id как число — берём из селекта (и не подменяем всегда selectedGroup)
+    // group_id берём из payload (селект в модалке должен менять payload.group_id)
     payload.group_id = Number(payload.group_id || 0);
 
-    // ВАЖНО: тут используем isEdit, а не payload.isEdit (его уже удалили)
     const saved = isEdit
       ? await messageStore.updateMessage(payload)
       : await messageStore.addMessage(payload);
@@ -656,11 +650,7 @@ async function onFinalSubmitMessage() {
     isMessageModalActive.value = false;
   } catch (error) {
     console.error("[MassView] onFinalSubmitMessage error:", error);
-    notify({
-      title: "Error",
-      type: "error",
-      text: "Failed to save message",
-    });
+    notify({ title: "Error", type: "error", text: "Failed to save message" });
   }
 }
 

@@ -105,12 +105,12 @@ const useModelPlatformStore = defineStore({
     async addModelPlatform(data) {
       try {
         this.isLoading = true
-        //console.log('Start addModelPlatform', data);
+        console.log('Start addModelPlatform', data);
         const response = await axios.post(
           `${import.meta.env.VITE_APP_ROOT_API}/model_platform/add`,
           data
         )
-        //console.log('Start addModelPlatform response.data', response);
+        console.log('Start addModelPlatform response.data', response);
         if (response.data) {
           const model_platform = response.data
           this.model_platforms = [...this.model_platforms, model_platform]
@@ -126,13 +126,13 @@ const useModelPlatformStore = defineStore({
     async updateModelPlatform(data) {
       try {
         this.isLoading = true
-        //console.log('method updateModelPlatform', data)
+        console.log('method updateModelPlatform', data)
         const response = await axios.patch(
           `${import.meta.env.VITE_APP_ROOT_API}/model_platform/${data.id}`,
           data
         )
 
-        //console.log('response from ', `${import.meta.env.VITE_APP_ROOT_API}/model_platform/${data.id}`, response);
+        console.log('response from ', response , `${import.meta.env.VITE_APP_ROOT_API}/model_platform/${data.id}`, data);
 
         if (response.data) {
           const model_platform = response.data
