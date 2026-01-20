@@ -401,6 +401,66 @@ const onClickEditMessage = (id) => {
   isMessageModalActive.value = true;
 };
 
+const openMessageAsCopy = (row, opts = { withMedia: true }) => {
+  if (!row) return;
+
+  selectedMessage.value = {
+    ...selectedMessage.value,
+    ...row,
+
+    // копия: НОВОЕ сообщение
+    id: null,
+    isEdit: false,
+
+    // нормализация после ...row
+    name: String(row.name ?? ''),
+    group_id: Number(row.group_id ?? selectedGroup.value?.id ?? 0),
+    price: Number(row.price ?? 0),
+    free_preview: Number(row.free_preview ?? 0),
+    message_time: String(row.message_time ?? ''),
+    message_list: Array.isArray(row.message_list) ? (row.message_list[0] ?? '') : String(row.message_list ?? ''),
+    message_exclude_list: Array.isArray(row.message_exclude_list) ? (row.message_exclude_list[0] ?? '') : String(row.message_exclude_list ?? ''),
+    release_form_tags: String(row.release_form_tags ?? ''),
+    release_user_tags: String(row.release_user_tags ?? ''),
+    content_attached: !!row.content_attached,
+    content: String(row.content ?? '')
+  };
+
+  // контент-файлы (локально) можно оставить как есть
+  if (typeof selectedMessage.value.content === 'string' && selectedMessage.value.content.length > 0) {
+    fileStore.setFiles(selectedMessage.value.content.split(','));
+  } else {
+    fileStore.setEmpty();
+  }
+
+  // подтягиваем аудитории/дату/время/вулт
+  hydrateMassRefsFromMessage(row);
+
+  // copy-without-media -> чистим vaultMediaIds
+  if (!opts.withMedia) {
+    vaultMediaIds.value = [];
+
+    // чтобы не ловить 400 на бэке:
+    selectedMessage.value.price = 0;
+    selectedMessage.value.free_preview = 0; // опционально
+  }
+
+  isMessageModalActive.value = true;
+
+};
+
+const onCopyFull = (id) => {
+  const [row] = messagesInStore.value.filter((it) => it.id === id);
+  if(!row) return
+  openMessageAsCopy(row, { withMedia : true});
+}
+
+const onCopyWithoutMedia = (id) => {
+  const [row] = messagesInStore.value.filter((it) => it.id === id);
+  if(!row) return
+  openMessageAsCopy(row, { withMedia : false});
+}
+
 const onDeleteMessage = async (id) =>
 {
   isModalDangerActive.value = true;
@@ -745,6 +805,8 @@ watch(
                     :messages="messagesInStore"
                     :showGroup="false"
                     @click-row="onClickEditMessage"
+                    @copy-full="onCopyFull"
+                    @copy-no-media="onCopyWithoutMedia"
                     @delete-row="onDeleteMessage"
                   />
 
@@ -763,6 +825,8 @@ watch(
                     :key="`msg-model-${selectedModel?.id || 0}-tab-${openTab}`"
                     :messages="messagesInStore"
                     @click-row="onClickEditMessage"
+                    @copy-full="onCopyFull"
+                    @copy-no-media="onCopyWithoutMedia"
                     @delete-row="onDeleteMessage" />
                 </div>
               </TabContent>

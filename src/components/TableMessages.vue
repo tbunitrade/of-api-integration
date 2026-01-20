@@ -103,7 +103,7 @@ const checkAll = (isChecked) => {
 
 };
 
-const emit = defineEmits(['click-row', 'delete-row', 'check-rows']);
+const emit = defineEmits(['click-row', 'delete-row', 'check-rows', 'copy-full', 'copy-no-media']);
 const clickRow = (id) => {
   emit('click-row', id);
 };
@@ -152,11 +152,12 @@ const onPageNumberClick = (page) => {
     <tbody>
       <tr v-for="client in itemsPaginated" :key="client.id">
         <TableCheckboxCell v-if="checkable" @checked="checked($event, client)" />
-        <td data-label="ID" class="text-left">
-          {{ client.id || client.message_id }}
-        </td>
+
         <td data-label="Group Name" class="text-left" v-if="props.showGroup">
           {{ client.group_name }}
+        </td>
+        <td data-label="ID" class="text-left">
+          {{ client.id || client.message_id }}
         </td>
         <td data-label="Message Name" class="text-left">
           {{ client.name }}
@@ -192,7 +193,9 @@ const onPageNumberClick = (page) => {
         </td>-->
         <td data-label="Actions" class="before:hidden lg:w-1 whitespace-nowrap">
           <BaseButtons type="justify-start lg:justify-end" no-wrap>
-            <BaseButton color="info" :icon="mdiPen" small @click="clickRow(client.id)" />
+            <BaseButton color="info" label="Full-Copy" small @click.stop="$emit('copy-full', client.id)"/>
+            <BaseButton color="info" label="Copy w/o media" small @click.stop="$emit('copy-no-media', client.id)" />
+            <BaseButton color="info" label="Edit" :icon="mdiPen" small @click="clickRow(client.id)" />
             <BaseButton color="danger" :icon="mdiTrashCan" small @click="deleteRow(client.id)" />
           </BaseButtons>
         </td>
