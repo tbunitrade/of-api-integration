@@ -43,22 +43,18 @@ const normalizeHeader = (h) =>
     .toLowerCase()
     .replace(/\s+/g, "_");
 
+/**
+ * Разбор списка значений из одной ячейки.
+ * ВАЖНО: НЕ режем по пробелам, чтобы не ломать "Following 2nd folder"
+ */
 const parseIds = (v) => {
   if (v == null) return [];
-  const s = String(v);
+  const s = String(v).trim();
+  if (!s) return [];
   return s
-    .split(/[,;\n\r\t ]+/g)
-    .map((x) => x.trim())
+    .split(/[,;\n\r]+/g) // <-- без пробела
+    .map((x) => String(x || "").trim())
     .filter(Boolean);
-};
-
-const pick = (obj, keys) => {
-  for (const k of keys) {
-    if (obj[k] !== undefined && obj[k] !== null && String(obj[k]).trim() !== "") {
-      return obj[k];
-    }
-  }
-  return "";
 };
 
 const summary = computed(() => {
@@ -95,31 +91,55 @@ const onUpload = async (e) => {
     if (!sheetName) throw new Error("No sheets found in file");
 
     const ws = wb.Sheets[sheetName];
-    const rawRows = XLSX.utils.sheet_to_json(ws, { defval: "" });
 
-    if (!rawRows.length) throw new Error("Spreadsheet is empty");
+    /**
+     * КЛЮЧЕВОЕ:
+     * Читаем лист как матрицу, это стабильнее для CSV и XLSX.
+     * И позволяет склеить значения, если CSV развалил ячейку из-за запятых.
+     */
+    const matrix = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "" });
+    if (!matrix || !matrix.length) throw new Error("Spreadsheet is empty");
 
-    // Берём первую строку как “template”
-    const row = rawRows[0];
+    const headers = (matrix[0] || []).map((x) => normalizeHeader(x));
+    const row = matrix[1] || [];
 
-    // Нормализуем ключи
-    const normalized = {};
-    Object.keys(row).forEach((k) => {
-      normalized[normalizeHeader(k)] = row[k];
-    });
+    const idxVault = headers.indexOf("vaults_id");
+    const idxPrice = headers.indexOf("price");
+    const idxExclude =
+      headers.indexOf("exclude_list") !== -1
+        ? headers.indexOf("exclude_list")
+        : headers.indexOf("message_exclude_list");
 
-    const vaultsRaw = pick(normalized, ["vaults_id", "vault_media_ids", "vault_ids"]);
-    const priceRaw = pick(normalized, ["price"]);
-    const excludeRaw = pick(normalized, ["exclude_list", "message_exclude_list"]);
+    if (idxVault === -1 || idxPrice === -1 || idxExclude === -1) {
+      throw new Error("Invalid headers. Expected: vaults_id | price | exclude_list");
+    }
+
+    /**
+     * Если в CSV значения не в кавычках, запятые разбивают одну ячейку на несколько колонок.
+     * Поэтому:
+     * - vaultsRaw берём как всё между vaults_id и price
+     * - excludeRaw берём как всё от exclude_list до конца
+     */
+    const vaultsRaw = row.slice(idxVault, idxPrice).join(",");
+    const priceRaw = row[idxPrice] ?? "";
+    const excludeRaw = row.slice(idxExclude).join(",");
 
     const vault_media_ids = parseIds(vaultsRaw);
-    const price = Number(priceRaw || 0) || 0;
-    const message_exclude_list = String(excludeRaw || "").trim();
+
+    // price: поддержка "99,00"
+    const price = Number(String(priceRaw).trim().replace(",", ".")) || 0;
+
+    // сохраняем как строку (как у тебя было), но собираем из списка
+    const message_exclude_list = parseIds(excludeRaw).join(",");
 
     const payload = { vault_media_ids, price, message_exclude_list };
 
-    lastResult.value = payload;
+    // guard: если совсем пусто — считаем ошибкой формата
+    if (!payload.vault_media_ids?.length && !payload.price && !payload.message_exclude_list) {
+      throw new Error("Invalid spreadsheet format (no data parsed)");
+    }
 
+    lastResult.value = payload;
     emit("parsed", payload);
 
     // чтобы можно было загрузить тот же файл повторно

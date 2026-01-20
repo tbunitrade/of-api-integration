@@ -725,19 +725,30 @@ const confirmDelete = async () => {
 };
 
 const onMassSheetParsed = ({ vault_media_ids, price, message_exclude_list }) => {
-  // Гард на случай если это не massmsg
-  if (selectedMessage.value?.massmsg !== true) return;
+  // guard: только если это massmsg (у тебя бывает true/1/"1")
+  if (!isMass(selectedMessage.value?.massmsg)) return;
 
-  selectedMessage.value.vault_media_ids = vault_media_ids;
-  selectedMessage.value.price = price;
+  // 1) ВАЖНО: обновляем ref, потому что save берёт из vaultMediaIds.value
+  vaultMediaIds.value = Array.isArray(vault_media_ids) ? vault_media_ids : [];
 
-  // если у тебя в UI exclude как строка — так и оставляем
-  selectedMessage.value.message_exclude_list = message_exclude_list;
+  // 2) Цена идёт в форму
+  selectedMessage.value.price = Number(price || 0) || 0;
+
+  // 3) exclude string (как у тебя в форме)
+  selectedMessage.value.message_exclude_list = String(message_exclude_list || "").trim();
+
+  // 4) если хочешь, чтобы Exclude сразу попал в ExternalMassMessageCard:
+  //    (т.к. ты сохраняешь payload.audience_exclude_ids из audienceExcludeIds.value)
+  audienceExcludeIds.value = String(message_exclude_list || "")
+    .split(",")
+    .map((x) => x.trim())
+    .filter(Boolean);
 
   console.log("[MassMsg] spreadsheet applied", {
-    vault_count: vault_media_ids?.length || 0,
-    price,
-    exclude_len: (message_exclude_list || "").length,
+    vault_count: vaultMediaIds.value.length,
+    price: selectedMessage.value.price,
+    exclude_len: selectedMessage.value.message_exclude_list.length,
+    audience_exclude_count: audienceExcludeIds.value.length,
   });
 };
 
@@ -924,8 +935,10 @@ watch(
                   </div>
                 </div>
                 <MassSpreadsheetUpload
-                  v-if="selectedMessage.massmsg === true && !isEdit"
+                  :enabled="true"
+                  hint="Headers: vaults_id | price | exclude_list"
                   @parsed="onMassSheetParsed"
+                  @error="(e) => console.log('spreadsheet error', e)"
                 />
                 <ExternalVaultMediaCard
                   :modelPlatform="selectedPlatformConfig"
