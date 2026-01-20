@@ -36,6 +36,7 @@ import CardBoxModal from "@/components/CardBoxModal.vue";
 import {colorsText} from "@/colors";
 import FormControl from "@/components/FormControl.vue";
 import ImageVideoUpload from "@/components/ImageVideoUpload.vue";
+import MassSpreadsheetUpload from "@/components/MassSpreadsheetUpload.vue";
 import TimeField from "@/components/TimeField.vue";
 import FormField from "@/components/FormField.vue";
 import Multiselect from "@vueform/multiselect";
@@ -723,6 +724,23 @@ const confirmDelete = async () => {
   }
 };
 
+const onMassSheetParsed = ({ vault_media_ids, price, message_exclude_list }) => {
+  // Гард на случай если это не massmsg
+  if (selectedMessage.value?.massmsg !== true) return;
+
+  selectedMessage.value.vault_media_ids = vault_media_ids;
+  selectedMessage.value.price = price;
+
+  // если у тебя в UI exclude как строка — так и оставляем
+  selectedMessage.value.message_exclude_list = message_exclude_list;
+
+  console.log("[MassMsg] spreadsheet applied", {
+    vault_count: vault_media_ids?.length || 0,
+    price,
+    exclude_len: (message_exclude_list || "").length,
+  });
+};
+
 watch(
   [() => selectedModel.value?.id, () => selectedPlatform.value?.id],
   async ([modelId, platformId], [prevModelId, prevPlatformId]) => {
@@ -905,7 +923,10 @@ watch(
                     </div>
                   </div>
                 </div>
-
+                <MassSpreadsheetUpload
+                  v-if="selectedMessage.massmsg === true && !isEdit"
+                  @parsed="onMassSheetParsed"
+                />
                 <ExternalVaultMediaCard
                   :modelPlatform="selectedPlatformConfig"
                   :notify="notify"
