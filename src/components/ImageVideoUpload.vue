@@ -186,11 +186,18 @@ const processFiles = async (selectedFiles) => {
 
   // Загружаем с передачей signal feature
   try {
+    console.log('[ImageVideoUpload] input change files=', {
+      count: selectedFiles?.length || 0,
+      names: Array.from(selectedFiles || []).map(f => f?.name),
+    });
+
+
     const result = await fileStore.uploadFiles(
       formData,
       throttledProgress,
       controller.signal,
     );
+
 
     // 🔁 Сразу обновляем список из реальной папки:
     await fileStore.refreshFiles(
@@ -207,6 +214,12 @@ const processFiles = async (selectedFiles) => {
             model_id: String(props.modelId || selectedModel.value?.id || ''),
           }
     );
+
+    console.log('[ImageVideoUpload] after upload store.files=', {
+      count: fileStore.files?.length,
+      files: fileStore.files,
+    });
+
     if (result) {
       notify({
         title: "Success",

@@ -71,9 +71,13 @@ const isRealMessageId = computed(() =>
   selectedMessage.value?.id != null && /^\d+$/.test(String(selectedMessage.value.id))
 )
 
-if (!selectedMessage.value.id) {
-  selectedMessage.value.id = null // временный уникальный ID
-}
+const uploadGroupId = computed(() => {
+  return Number(selectedMessage.value.group_id || selectedGroup.value?.id || 0);
+});
+//
+// if (!selectedMessage.value.id) {
+//   selectedMessage.value.id = null // временный уникальный ID
+// }
 
 const spinnerColor = '#3B82F6' // или любой твой бренд-цвет
 const isGroupModalActive = ref(false);
@@ -331,10 +335,31 @@ async function onFinalSubmitMessage() {
   if (!ok) return;
 
   try {
+
     const payload = { ...selectedMessage.value };
+
+    console.log('[MessageView] submit payload (before send)=', {
+      id: payload.id,
+      group_id: payload.group_id,
+      massmsg: payload.massmsg,
+      message_time: payload.message_time,
+      content_attached: payload.content_attached,
+      content: payload.content,
+    });
 
     // обязательно: тип сообщения
     payload.massmsg = false;
+
+    const idNum = Number(payload.id || 0);
+    const isEdit = Number.isFinite(idNum) && idNum > 0;
+
+    console.log('[MessageView] isEdit(by id)=', isEdit, 'payload.id=', payload.id, 'payload.isEdit(UI)=', selectedMessage.value.isEdit);
+
+    if (isEdit) {
+      payload.id = idNum; // гарантируем number
+    } else {
+      delete payload.id;
+    }
 
     // важно: group_id берем из формы (selectedMessage.group_id), а не selectedGroup.id
     payload.group_id = Number(payload.group_id || selectedGroup.value?.id || 0);
@@ -342,10 +367,10 @@ async function onFinalSubmitMessage() {
     // не отправляем UI-поля
     delete payload.isEdit;
 
-    // delete id только при CREATE
-    if (!selectedMessage.value.isEdit) {
-      delete payload.id;
-    }
+    // // delete id только при CREATE
+    // if (!selectedMessage.value.isEdit) {
+    //   delete payload.id;
+    // }
 
     // нормализация list/exclude
     if (Array.isArray(payload.message_list)) payload.message_list = payload.message_list.join(',');
@@ -365,7 +390,8 @@ async function onFinalSubmitMessage() {
         : (payload.message_time?.value || '')
     ).split(':').slice(0, 2).join(':');
 
-    const saved = selectedMessage.value.isEdit
+    //const saved = selectedMessage.value.isEdit
+    const saved = isEdit
       ? await messageStore.updateMessage(payload)
       : await messageStore.addMessage(payload);
 
@@ -373,7 +399,7 @@ async function onFinalSubmitMessage() {
       notify({
         title: "Success",
         type: "success",
-        text: selectedMessage.value.isEdit ? "Message updated successfully" : "Message added successfully",
+        text: isEdit ? "Message updated successfully" : "Message added successfully",
       });
 
       $mv.value.$reset();
@@ -410,11 +436,12 @@ const onClickEditMessage = (id) => {
   const [row] = messagesInStore.value.filter((it) => it.id === id);
   if (!row) return;
 
+  console.log('[MessageView] click edit row=', { id: row.id, group_id: row.group_id, name: row.name });
+
   selectedMessage.value = {
-    isEdit: true,
-    id: String(row.id ?? ''),
     ...selectedMessage.value,
     ...row,
+    id: String(row.id ?? ''),
     name: String(row.name ?? ''),
     group_id: Number(row.group_id ?? selectedGroup.value?.id ?? 0),
     price: Number(row.price ?? 0),
@@ -426,6 +453,8 @@ const onClickEditMessage = (id) => {
     release_user_tags: String(row.release_user_tags ?? ''),
     content_attached: !!row.content_attached,
     content: String(row.content ?? ''),
+
+    isEdit: true,
   };
   // Превью файлов
   if (typeof selectedMessage.value.content === 'string' && selectedMessage.value.content.length > 0) {
@@ -433,6 +462,75 @@ const onClickEditMessage = (id) => {
   }
   isMessageModalActive.value = true;
 };
+
+const openMessageAsCopy = (row, opts = { withMedia: true }) => {
+  if (!row) return;
+
+  selectedMessage.value = {
+    ...selectedMessage.value,
+    ...row,
+
+    // копия: НОВОЕ сообщение
+    id: null,
+    isEdit: false,
+
+    // нормализация после ...row
+    name: String(row.name ?? ''),
+    group_id: Number(row.group_id ?? selectedGroup.value?.id ?? 0),
+    price: Number(row.price ?? 0),
+    free_preview: Number(row.free_preview ?? 0),
+    message_time: String(row.message_time ?? ''),
+    message_list: Array.isArray(row.message_list) ? (row.message_list[0] ?? '') : String(row.message_list ?? ''),
+    message_exclude_list: Array.isArray(row.message_exclude_list) ? (row.message_exclude_list[0] ?? '') : String(row.message_exclude_list ?? ''),
+    release_form_tags: String(row.release_form_tags ?? ''),
+    release_user_tags: String(row.release_user_tags ?? ''),
+    content_attached: !!row.content_attached,
+    content: String(row.content ?? ''),
+    copy_from_message_id: Number(row.id),     // <—
+    copy_with_media: !!opts.withMedia,        // <—
+  };
+
+  // контент-файлы (локально) можно оставить как есть
+  if (typeof selectedMessage.value.content === 'string' && selectedMessage.value.content.length > 0) {
+    fileStore.setFiles(selectedMessage.value.content.split(','));
+  } else {
+    fileStore.setEmpty();
+  }
+
+  // подтягиваем аудитории/дату/время/вулт
+  //hydrateMassRefsFromMessage(row);
+
+  // copy-without-media -> чистим vaultMediaIds
+  if (!opts.withMedia) {
+    if (typeof vaultMediaIds !== 'undefined' && vaultMediaIds?.value) {
+      vaultMediaIds.value = [];
+    }
+
+    // чтобы не ловить 400 на бэке:
+    selectedMessage.value.price = 0;
+    selectedMessage.value.free_preview = 0; // опционально
+
+    // ВАЖНО: чистим локальные загруженные файлы/превью
+    fileStore.setEmpty();
+    selectedMessage.value.content = "";
+    selectedMessage.value.content_attached = false;
+  }
+
+  isMessageModalActive.value = true;
+
+};
+
+const onCopyFull = (id) => {
+  const [row] = messagesInStore.value.filter((it) => it.id === id);
+  if(!row) return
+  openMessageAsCopy(row, { withMedia : true});
+}
+
+const onCopyWithoutMedia = (id) => {
+  const [row] = messagesInStore.value.filter((it) => it.id === id);
+  if(!row) return
+  openMessageAsCopy(row, { withMedia : false});
+}
 
 
 const onChangeSearchString = (e) =>
@@ -771,6 +869,18 @@ const props = defineProps({
  const route = useRoute()
  const messageId = computed(() => String(route.params.id || 0))
 
+watch(
+  () => messagesInStore.value,
+  (list) => {
+    console.log('[MessageView] messages order=', (list || []).map(x => ({
+      id: x.id,
+      t: x.message_time,
+      group_id: x.group_id,
+    })));
+  },
+  { immediate: true }
+);
+
 onMounted( async() =>
 {
   if (!selectedModel.value || !selectedPlatform.value)
@@ -859,7 +969,11 @@ onMounted( async() =>
                 <div>
                   <h1 class="font-bold text-xl">{{ selectedGroup.name }}</h1>
                 </div>
-                <TableMessages :messages="messagesInStore" @click-row="onClickEditMessage" @delete-row="onDeleteMessage"
+                <TableMessages :messages="messagesInStore"
+                               @click-row="onClickEditMessage"
+                               @copy-full="onCopyFull"
+                               @copy-no-media="onCopyWithoutMedia"
+                               @delete-row="onDeleteMessage"
                   :showGroup="false" />
                 <div class="w-full flex justify-between">
                   <BaseButton label="Back" color="contrast" rounded small @click="onCancelAddMessage" />
@@ -873,7 +987,11 @@ onMounted( async() =>
                   <h1 class="font-bold text-xl">Message List</h1>
                   <input class="rounded" type="text" @change="onChangeSearchString" placeholder="Search Message" />
                 </div>
-                <TableMessages :messages="messagesInStore" @click-row="onClickEditMessage"
+                <TableMessages
+                  :messages="messagesInStore"
+                  @click-row="onClickEditMessage"
+                  @copy-full="onCopyFull"
+                  @copy-no-media="onCopyWithoutMedia"
                   @delete-row="onDeleteMessage" />
                 <div class="w-full flex justify-end">
                   <BaseButton label="Add Message" color="info" rounded small @click="onAddNewMessage" />
@@ -1050,12 +1168,16 @@ onMounted( async() =>
             <div class="flex flex-col mt-5">
               <div class="flex flex-wrap">
                 <ImageVideoUpload
-                  v-if="selectedModel?.name && selectedGroup?.id && isRealMessageId"
+                  v-if="selectedModel?.name && uploadGroupId && isRealMessageId"
+                  :key="`msg-upload-${selectedMessage.id}-${uploadGroupId}`"
                   :message-id="String(selectedMessage.id)"
-                :group-id="String(selectedGroup.id)"
-                :model-name="selectedModel.name"
-                :info="{ entity: 'messages' }"
+                  :group-id="String(uploadGroupId)"
+                  :model-name="selectedModel.name"
+                  :info="{ entity: 'messages' }"
                 />
+                <div v-else class="text-sm text-gray-500 mt-2">
+                  Save message first to upload attachments.
+                </div>
 <!--                <ImageVideoUpload :id="selectedMessage.id" />-->
               </div>
             </div>

@@ -8,6 +8,7 @@ import { GroupMessage } from 'src/groupMessages/group_message.entity';
 import { GroupMessageDto } from 'src/dtos/group_message.dto';
 import { Group } from 'src/group/group.entity'; // путь подстрой
 import * as path from 'path';
+import * as fs from 'fs/promises';
 
 
 @Injectable()
@@ -62,7 +63,7 @@ export class MessageService {
       }
 
       if ((out.price ?? 0) > 0 && (!out.vault_media_ids || out.vault_media_ids.length === 0)) {
-        throw new BadRequestException('Mass message: vault_media_ids is required when price > 0');
+        throw new BadRequestException('Mass message: vault_media_ids is required when price > 0 v1');
       }
 
       return out;
@@ -108,7 +109,7 @@ export class MessageService {
         : existing.vault_media_ids;
 
       if (finalPrice > 0 && (!finalVault || finalVault.length === 0)) {
-        throw new BadRequestException('Mass message: vault_media_ids is required when price > 0');
+        throw new BadRequestException('Mass message: vault_media_ids is required when price > 0 v02');
       }
 
       return out;
@@ -124,6 +125,154 @@ export class MessageService {
     if (switchedToNonMass || this._isProvided(patch?.scheduled_date)) out.scheduled_date = null;
 
     return out;
+  }
+
+  // =======================
+  // Copy attachments helpers
+  // =======================
+
+  /**
+   * Парсим путь вида:
+   *   /uploads/naomi_vip/group3/messages24/files/image/xxx.jpg
+   * -> { modelName: 'naomi_vip', groupId: 3, messageId: 24 }
+   */
+  private _parseUploadsMetaFromContentPath(p: string): { modelName: string; groupId: number; messageId: number } | null {
+    const s = String(p || '').trim();
+    if (!s) return null;
+
+    const m = s.match(/\/uploads\/([^/]+)\/group(\d+)\/messages(\d+)\//i);
+    if (!m) return null;
+
+    const modelName = m[1];
+    const groupId = Number(m[2] || 0);
+    const messageId = Number(m[3] || 0);
+
+    if (!modelName || !Number.isFinite(groupId) || !Number.isFinite(messageId) || groupId <= 0 || messageId <= 0) {
+      return null;
+    }
+
+    return { modelName, groupId, messageId };
+  }
+
+  private _getUploadsRootDir(): string {
+    // если есть env — ок, если нет — стандартно ./uploads
+    const envDir = process.env.UPLOADS_DIR;
+    if (envDir && String(envDir).trim().length > 0) {
+      return path.resolve(String(envDir).trim());
+    }
+    return path.resolve(process.cwd(), 'uploads');
+  }
+
+  /**
+   * Копируем ПАПКУ сообщения целиком:
+   *   uploads/<model>/group<gid>/messages<oldId> -> uploads/<model>/group<gid>/messages<newId>
+   * + переписываем content: messages<oldId> -> messages<newId>
+   */
+  private async _copyMessageAttachmentsIfNeeded(opts: {
+    savedMessage: Message;
+    copyFromMessageId: number;
+    targetGroupId: number;
+  }): Promise<Message> {
+    const { savedMessage, copyFromMessageId, targetGroupId } = opts;
+
+    if (!savedMessage) return savedMessage;
+
+    // ЖЁСТКИЙ ГАРД: никаких файловых операций для massmsg
+    if (savedMessage.massmsg === true) {
+      return savedMessage;
+    }
+
+    if (!Number.isFinite(copyFromMessageId) || copyFromMessageId <= 0) {
+      return savedMessage;
+    }
+
+    const src = await this.messageRepository.findOne({ where: { id: copyFromMessageId } });
+    if (!src) {
+      console.warn('[MessageService] copy attachments: source message not found id=', copyFromMessageId);
+      return savedMessage;
+    }
+
+    const srcContent = String(src.content || '').trim();
+    if (!srcContent) {
+      // нет контента — нечего копировать
+      return savedMessage;
+    }
+
+    const srcParts = srcContent
+      .split(',')
+      .map((x) => String(x || '').trim())
+      .filter(Boolean);
+
+    if (srcParts.length === 0) return savedMessage;
+
+    // берем первый файл как "якорь" для определения папки
+    const meta = this._parseUploadsMetaFromContentPath(srcParts[0]);
+    if (!meta) {
+      console.warn('[MessageService] copy attachments: cannot parse uploads meta from content:', srcParts[0]);
+      return savedMessage;
+    }
+
+    // sanity: если в пути почему-то другой messageId — всё равно ориентируемся на copyFromMessageId
+    const oldId = Number.isFinite(copyFromMessageId) ? copyFromMessageId : meta.messageId;
+    const newId = Number(savedMessage.id);
+
+    const uploadsRoot = this._getUploadsRootDir();
+
+    //const srcDir = path.join(uploadsRoot, meta.modelName, `group${meta.groupId}`, `messages${oldId}`);
+    //const dstDir = path.join(uploadsRoot, meta.modelName, `group${meta.groupId}`, `messages${newId}`);
+
+    const dstGroupId = Number.isFinite(targetGroupId) && targetGroupId > 0 ? targetGroupId : meta.groupId;
+
+    const srcDir = path.join(uploadsRoot, meta.modelName, `group${meta.groupId}`, `messages${oldId}`);
+    const dstDir = path.join(uploadsRoot, meta.modelName, `group${dstGroupId}`, `messages${newId}`);
+
+    const rewritten = srcParts.map((p) => {
+      const p1 = p.replace(new RegExp(`/group${meta.groupId}/`, 'g'), `/group${dstGroupId}/`);
+      return p1.replace(new RegExp(`/messages${oldId}/`, 'g'), `/messages${newId}/`);
+    });
+
+
+    try {
+      // убедимся что srcDir существует
+      await fs.access(srcDir);
+
+      // создаем родителя dstDir (на всякий)
+      await fs.mkdir(path.dirname(dstDir), { recursive: true });
+
+      // копируем всю директорию (Node 18+: fs.cp)
+      await fs.cp(srcDir, dstDir, { recursive: true, force: true });
+
+      // переписываем content в новой записи
+      // const rewritten = srcParts.map((p) => {
+      //   // меняем только сегмент /messages{oldId}/ -> /messages{newId}/
+      //   return p.replace(new RegExp(`/messages${oldId}/`, 'g'), `/messages${newId}/`);
+      // });
+
+      savedMessage.content = rewritten.join(',');
+      savedMessage.content_attached = true;
+
+      const updated = await this.messageRepository.save(savedMessage);
+
+      console.log('[MessageService] Full-Copy attachments ok:', {
+        from: srcDir,
+        to: dstDir,
+        oldId,
+        newId,
+        files: rewritten.length,
+      });
+
+      return updated;
+    } catch (e) {
+      console.error('[MessageService] Full-Copy attachments failed:', {
+        from: srcDir,
+        to: dstDir,
+        oldId,
+        newId,
+        err: e,
+      });
+      // НЕ валим создание сообщения — просто возвращаем как есть
+      return savedMessage;
+    }
   }
 
   // ===== дальше old методы findAll/findById/... =====
@@ -147,7 +296,8 @@ export class MessageService {
         .createQueryBuilder('message')
         .innerJoin('group_message', 'group_message', 'message.id = group_message.message_id')
         .where('group_message.group_id = :group_id', { group_id: id })
-        .orderBy('message.message_time', 'ASC');
+        .orderBy('message.message_time', 'ASC')
+        .addOrderBy('message.id', 'ASC');
 
       if (massmsg !== undefined) {
         qb.andWhere('message.massmsg = :massmsg', { massmsg });
@@ -183,7 +333,7 @@ export class MessageService {
         else qb.where('message.massmsg = :massmsg', { massmsg });
       }
 
-      return qb.orderBy('message.id').getRawMany();
+      return qb.orderBy('message.message_time', 'ASC').addOrderBy('message.id', 'ASC').getRawMany();
     } catch (err) {
       console.error('Message findAll error', err);
     }
@@ -203,15 +353,59 @@ export class MessageService {
 
   async create(payload: Partial<Message>): Promise<Message> {
     try {
-      const normalized = this._applyRulesForCreate(payload);
+      // 1) Снимаем служебные поля (НЕ пишем в БД)
+      const anyPayload: any = payload || {};
+      const copyFromMessageId = Number(anyPayload.copy_from_message_id || 0);
+      const copyWithMedia = anyPayload.copy_with_media === true;
 
+
+      // чистим служебные поля из payload до нормализации/сейва
+      const cleaned: any = { ...anyPayload };
+      const targetGroupId = Number(cleaned.group_id || 0);
+      delete cleaned.copy_from_message_id;
+      delete cleaned.copy_with_media;
+
+
+      // 2) Нормализация по текущим правилам (mass / non-mass)
+      const normalized = this._applyRulesForCreate(cleaned);
+
+      // 3) Сохраняем как раньше
       const newMessage = this.messageRepository.create(normalized);
-      return await this.messageRepository.save(newMessage);
+      const saved = await this.messageRepository.save(newMessage);
+
+      // 4) ЖЁСТКИЙ ГАРД: массовые сообщения не трогаем вообще
+      if (saved.massmsg === true) {
+        return saved;
+      }
+
+      // 5) Full-Copy: физический перенос attachments (только для обычных сообщений)
+      if (copyWithMedia && copyFromMessageId > 0) {
+        return await this._copyMessageAttachmentsIfNeeded({
+          savedMessage: saved,
+          copyFromMessageId,
+          targetGroupId
+        });
+      }
+
+
+      return saved;
     } catch (err) {
       console.error('Message creation error', err);
       throw err;
     }
   }
+
+  // async create(payload: Partial<Message>): Promise<Message> {
+  //   try {
+  //     const normalized = this._applyRulesForCreate(payload);
+  //
+  //     const newMessage = this.messageRepository.create(normalized);
+  //     return await this.messageRepository.save(newMessage);
+  //   } catch (err) {
+  //     console.error('Message creation error', err);
+  //     throw err;
+  //   }
+  // }
 
   // async addMessageToGroup(
   //   group_id: number,

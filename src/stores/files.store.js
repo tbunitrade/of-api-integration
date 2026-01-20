@@ -40,8 +40,11 @@ const useFileStore = defineStore({
         });
 
         if (response.data) {
-          const files = response.data
-          this.files = [...this.files, ...files]
+          // const files = response.data
+          // this.files = [...this.files, ...files]
+
+          const files = response.data || [];
+          this.files = Array.from(new Set(files));
         }
         this.isLoading = false
         return response.data
