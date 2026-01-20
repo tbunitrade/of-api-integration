@@ -47,13 +47,19 @@ const normalizeHeader = (h) =>
  * Разбор списка значений из одной ячейки.
  * ВАЖНО: НЕ режем по пробелам, чтобы не ломать "Following 2nd folder"
  */
+const stripWrapQuotes = (s) =>
+  String(s ?? "")
+    .trim()
+    .replace(/^[\s"']+/, "")
+    .replace(/[\s"']+$/, "");
+
 const parseIds = (v) => {
   if (v == null) return [];
   const s = String(v).trim();
   if (!s) return [];
   return s
-    .split(/[,;\n\r]+/g) // <-- без пробела
-    .map((x) => String(x || "").trim())
+    .split(/[,;\n\r]+/g)      // без пробелов, как у тебя
+    .map((x) => stripWrapQuotes(x))
     .filter(Boolean);
 };
 
