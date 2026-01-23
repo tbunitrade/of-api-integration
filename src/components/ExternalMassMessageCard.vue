@@ -31,7 +31,7 @@ const excludeTokens = ref<string[]>(
 );
 //end
 
-const emit = defineEmits(['update:audienceIncludeIds', 'update:audienceExcludeIds']);
+const emit = defineEmits(['update:audienceIncludeIds', 'update:audienceExcludeIds', 'audience-lists-loaded',]);
 
 const notify = (payload: any) => {
   if (typeof props.notify === 'function') return (props.notify as any)(payload);
@@ -193,6 +193,7 @@ const loadAudienceLists = async () => {
 
     const lists = normalizeProviderLists(data);
     audienceLists.value = lists;
+    emit('audience-lists-loaded', lists);
 
     const set = new Set(lists.map((x: any) => String(x.id).toLowerCase()));
     includeTokens.value = includeTokens.value.filter((x) => set.has(String(x).toLowerCase()));
@@ -205,49 +206,77 @@ const loadAudienceLists = async () => {
   }
 };
 
-const onSendMassMessage = async () => {
-  if (!canWork.value) {
-    notify({ title: 'Warning', type: 'error', text: 'ModelPlatform is not selected/found' });
-    return;
-  }
 
-  const text = String(massMessageText.value || '').trim();
-  if (!text) {
-    notify({ title: 'Warning', type: 'error', text: 'Message text is required' });
-    return;
-  }
 
-  sendingMassMessage.value = true;
-  try {
-    const payload = {
-      modelPlatformId: modelPlatformId.value,
-      text,
-      userLists: normalizeSelectedTokens(includeTokens.value),
-      excludedLists: normalizeSelectedTokens(excludeTokens.value),
-      userIds: [],
-      mediaIds: Array.isArray(props.mediaIds) ? (props.mediaIds as any).map((x: any) => String(x)) : [],
-    };
+// const onSendMassMessage = async () => {
+//   if (!canWork.value) {
+//     notify({ title: 'Warning', type: 'error', text: 'ModelPlatform is not selected/found' });
+//     return;
+//   }
+//
+//   const text = String(massMessageText.value || '').trim();
+//   if (!text) {
+//     notify({ title: 'Warning', type: 'error', text: 'Message text is required' });
+//     return;
+//   }
+//
+//   sendingMassMessage.value = true;
+//   try {
+//     const payload = {
+//       modelPlatformId: modelPlatformId.value,
+//       text,
+//       userLists: normalizeSelectedTokens(includeTokens.value),
+//       excludedLists: normalizeSelectedTokens(excludeTokens.value),
+//       userIds: [],
+//       mediaIds: Array.isArray(props.mediaIds) ? (props.mediaIds as any).map((x: any) => String(x)) : [],
+//     };
+//
+//     const res = await fetch(`${import.meta.env.VITE_APP_ROOT_API}/automate/send-mass-message`, {
+//       method: 'POST',
+//       headers: { 'Content-Type': 'application/json' },
+//       body: JSON.stringify(payload),
+//     });
+//
+//     const data = await res.json().catch(() => ({}));
+//     lastMassResponse.value = data;
+//
+//     if (!res.ok) throw new Error(data?.message || `HTTP ${res.status}`);
+//
+//     notify({ title: 'Success', type: 'success', text: 'Mass message request sent' });
+//     console.log('[ExternalMassMessageCard] send-mass-message response', data);
+//   } catch (e: any) {
+//     console.log('[ExternalMassMessageCard] send-mass-message error', e);
+//     notify({ title: 'Error', type: 'error', text: e?.message || 'Failed to send mass message' });
+//   } finally {
+//     sendingMassMessage.value = false;
+//   }
+// };
 
-    const res = await fetch(`${import.meta.env.VITE_APP_ROOT_API}/automate/send-mass-message`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
 
-    const data = await res.json().catch(() => ({}));
-    lastMassResponse.value = data;
+/*
+*
+* Решение A (рекомендую): автозагрузка audience lists при наличии токенов
 
-    if (!res.ok) throw new Error(data?.message || `HTTP ${res.status}`);
+Минимально и без ломания логики — просто автозови loadAudienceLists() когда:
+	•	есть modelPlatformId
+	•	audienceLists ещё пустой
+	•	и есть хотя бы один токен include/exclude
+* */
 
-    notify({ title: 'Success', type: 'success', text: 'Mass message request sent' });
-    console.log('[ExternalMassMessageCard] send-mass-message response', data);
-  } catch (e: any) {
-    console.log('[ExternalMassMessageCard] send-mass-message error', e);
-    notify({ title: 'Error', type: 'error', text: e?.message || 'Failed to send mass message' });
-  } finally {
-    sendingMassMessage.value = false;
-  }
-};
+// catch
+watch(
+  () => [modelPlatformId.value, includeTokens.value.length, excludeTokens.value.length] as const,
+  async ([mpId, incLen, excLen]) => {
+    if (!mpId) return;
+
+    // если есть выбранные токены, но справочник ещё не загружен — грузим автоматически
+    if ((incLen > 0 || excLen > 0) && (!audienceLists.value || audienceLists.value.length === 0)) {
+      console.log('[ExternalMassMessageCard] auto loadAudienceLists (tokens exist)');
+      await loadAudienceLists();
+    }
+  },
+  { immediate: true, deep: true }
+);
 
 // props -> local
 watch(
@@ -424,14 +453,14 @@ watch(
 <!--        @click="onSendMassMessage"-->
 <!--      />-->
 
-      <BaseButton
-        label="Send mass message"
-        color="success"
-        rounded
-        small
-        :disabled="sendingMassMessage || !modelPlatformId"
-        @click="onSendMassMessage"
-      />
+<!--      <BaseButton-->
+<!--        label="Send mass message"-->
+<!--        color="success"-->
+<!--        rounded-->
+<!--        small-->
+<!--        :disabled="sendingMassMessage || !modelPlatformId"-->
+<!--        @click="onSendMassMessage"-->
+<!--      />-->
     </div>
 
     <div v-if="lastMassResponse" class="mt-4">

@@ -77,6 +77,19 @@ const selectedGroup = ref({
   isEdit: false,
 });
 
+
+const audienceListsCache = ref([]);
+
+const listIndexById = computed(() => {
+  const m = new Map();
+  for (const l of audienceListsCache.value || []) {
+    const id = String(l?.id ?? '').trim();
+    if (!id) continue;
+    m.set(id, l);
+  }
+  return m;
+});
+
 const selectedMessage = ref({
   id:null,
   name: "",
@@ -628,6 +641,31 @@ const hydrateMassRefsFromMessage = (msg) => {
   }
 };
 
+const buildAudienceMeta = (ids, listsIndex ) => {
+  const out = [];
+  const seen = new Set();
+
+  for (const raw of (Array.isArray(ids) ? ids : [])) {
+    const id = String(raw).trim();
+    if (!id) continue;
+
+    const k = id.toLowerCase();
+    if (seen.has(k)) continue;
+    seen.add(k);
+
+    //const l = listsIndex.get(id); // это твой listIndexById
+    const l = listsIndex && typeof listsIndex.get === "function" ? listsIndex.get(id) : null;
+    const name = String((l && l.name) ? l.name : id).trim();
+    const type = String(l?.type ?? (id.match(/^\d+$/) ? 'custom' : id)).trim();
+
+    out.push({ id, name, type });
+  }
+  return out;
+};
+
+console.log('[MassView] meta include', buildAudienceMeta(audienceIncludeIds.value, listIndexById.value));
+console.log('[MassView] meta exclude', buildAudienceMeta(audienceExcludeIds.value, listIndexById.value));
+
 // onFinalSubmitMessage in MassView.vue
 async function onFinalSubmitMessage() {
   console.log('[MassView] submit clicked, selectedMessage =', selectedMessage.value);
@@ -644,6 +682,8 @@ async function onFinalSubmitMessage() {
     const idNum = Number(payload.id || 0);
     const isEdit = Number.isFinite(idNum) && idNum > 0;
 
+
+
     console.log('[MassView] isEdit(by id)=', isEdit, 'payload.id=', payload.id, 'payload.isEdit=', payload.isEdit);
 
     if (isEdit) {
@@ -656,11 +696,19 @@ async function onFinalSubmitMessage() {
 
     // эти поля должны быть пустыми — оставляем пустыми строками
     payload.message_list = payload.message_list ?? '';
-    payload.message_exclude_list = payload.message_exclude_list ?? '';
+
+    // temporal hide
+    // payload.message_exclude_list = payload.message_exclude_list ?? '';
+    if (isMass(payload.massmsg)) {
+      payload.message_exclude_list = ""; // чтобы в БД колонка была пустая, без мусора
+    }
 
     payload.vault_media_ids = (vaultMediaIds.value || []).map(String);
     payload.audience_include_ids = (audienceIncludeIds.value || []).map(String);
     payload.audience_exclude_ids = (audienceExcludeIds.value || []).map(String);
+
+    payload.audience_exclude_lists = buildAudienceMeta(payload.audience_exclude_ids, listIndexById.value);
+    payload.audience_include_lists = buildAudienceMeta(payload.audience_include_ids, listIndexById.value);
 
     const parseCsv = (s) =>
       String(s ?? '')
@@ -728,14 +776,16 @@ const onMassSheetParsed = ({ vault_media_ids, price, message_exclude_list }) => 
   // guard: только если это massmsg (у тебя бывает true/1/"1")
   if (!isMass(selectedMessage.value?.massmsg)) return;
 
-  // 1) ВАЖНО: обновляем ref, потому что save берёт из vaultMediaIds.value
-  vaultMediaIds.value = Array.isArray(vault_media_ids) ? vault_media_ids : [];
+  // // 1) ВАЖНО: обновляем ref, потому что save берёт из vaultMediaIds.value
+  // vaultMediaIds.value = Array.isArray(vault_media_ids) ? vault_media_ids : [];
+  // vault ids идут в ref (так сохранение у тебя и устроено)
+  vaultMediaIds.value = Array.isArray(vault_media_ids) ? vault_media_ids.map(String) : [];
 
   // 2) Цена идёт в форму
   selectedMessage.value.price = Number(price || 0) || 0;
 
   // 3) exclude string (как у тебя в форме)
-  selectedMessage.value.message_exclude_list = String(message_exclude_list || "").trim();
+  //selectedMessage.value.message_exclude_list = String(message_exclude_list || "").trim();
 
   // 4) если хочешь, чтобы Exclude сразу попал в ExternalMassMessageCard:
   //    (т.к. ты сохраняешь payload.audience_exclude_ids из audienceExcludeIds.value)
@@ -747,7 +797,7 @@ const onMassSheetParsed = ({ vault_media_ids, price, message_exclude_list }) => 
   console.log("[MassMsg] spreadsheet applied", {
     vault_count: vaultMediaIds.value.length,
     price: selectedMessage.value.price,
-    exclude_len: selectedMessage.value.message_exclude_list.length,
+    //exclude_len: selectedMessage.value.message_exclude_list.length,
     audience_exclude_count: audienceExcludeIds.value.length,
   });
 };
@@ -934,21 +984,32 @@ watch(
                     </div>
                   </div>
                 </div>
-                <MassSpreadsheetUpload
-                  :enabled="true"
-                  hint="Headers: vaults_id | price | exclude_list"
-                  @parsed="onMassSheetParsed"
-                  @error="(e) => console.log('spreadsheet error', e)"
-                />
-                <ExternalVaultMediaCard
-                  :modelPlatform="selectedPlatformConfig"
-                  :notify="notify"
-                  v-model:mediaIds="vaultMediaIds"
-                />
                 <div class="flex gap-5 md:flex-row flex-col">
-                  <ExternalMassMessageCard :modelPlatform="selectedPlatformConfig" :notify="notify" :mediaIds="vaultMediaIds"
-                                           v-model:audienceIncludeIds="audienceIncludeIds"
-                                           v-model:audienceExcludeIds="audienceExcludeIds"
+                  <ExternalVaultMediaCard
+                    :modelPlatform="selectedPlatformConfig"
+                    :notify="notify"
+                    v-model:mediaIds="vaultMediaIds"
+                  />
+                </div>
+                <div class="flex gap-5 md:flex-row flex-col">
+                  <MassSpreadsheetUpload
+                    :enabled="true"
+                    hint="Headers: vaults_id | price | exclude_list"
+                    @parsed="onMassSheetParsed"
+                    @error="(e) => console.log('spreadsheet error', e)"
+                  />
+<!--                  <ExternalMassMessageCard :modelPlatform="selectedPlatformConfig" :notify="notify" :mediaIds="vaultMediaIds"-->
+<!--                                           v-model:audienceIncludeIds="audienceIncludeIds"-->
+<!--                                           v-model:audienceExcludeIds="audienceExcludeIds"-->
+<!--                  />-->
+
+                  <ExternalMassMessageCard
+                    :modelPlatform="selectedPlatformConfig"
+                    :notify="notify"
+                    :mediaIds="vaultMediaIds"
+                    v-model:audienceIncludeIds="audienceIncludeIds"
+                    v-model:audienceExcludeIds="audienceExcludeIds"
+                    @audience-lists-loaded="(lists) => (audienceListsCache.value = lists)"
                   />
                 </div>
                 <div class="flex gap-5 md:flex-row flex-col">
