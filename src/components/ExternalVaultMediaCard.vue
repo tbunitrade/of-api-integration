@@ -44,6 +44,73 @@ const selectedMediaIdsLocal = ref<string[]>(
   Array.isArray(props.mediaIds) ? (props.mediaIds as any).map(String) : []
 );
 
+/**
+ * debugFetchJson()
+ * Логирует каждый HTTP запрос:
+ *  - URL + query params
+ *  - status + ms
+ *  - краткую сводку по data.list и meta (rate limits, cache)
+ *
+ * Важно: не логируем Authorization/токены. Здесь их нет, но держим правило.
+ */
+const debugFetchJson = async (url: string, ctx: Record<string, any> = {}) => {
+  const startedAt = performance.now();
+
+  console.log('[HTTP] ->', {
+    url,
+    ctx,
+  });
+
+  let res: Response;
+  try {
+    res = await fetch(url);
+  } catch (e: any) {
+    const ms = Math.round(performance.now() - startedAt);
+    console.log('[HTTP] !! fetch failed', { url, ms, ctx, error: String(e?.message || e) });
+    throw e;
+  }
+
+  const ms = Math.round(performance.now() - startedAt);
+  const status = res.status;
+  const ok = res.ok;
+
+  let data: any = null;
+  let text = '';
+  try {
+    text = await res.text();
+    data = text ? JSON.parse(text) : {};
+  } catch (e: any) {
+    console.log('[HTTP] <- non-json', { url, status, ok, ms, ctx, textPreview: (text || '').slice(0, 400) });
+    throw e;
+  }
+
+  const listLen = Array.isArray(data?.data?.list) ? data.data.list.length : 0;
+  const hasMore = Boolean(data?.data?.hasMore);
+
+  const rate = data?._meta?._rate_limits || null;
+  const cache = data?._meta?._cache || null;
+  const credits = data?._meta?._credits || null;
+
+  console.log('[HTTP] <-', {
+    url,
+    status,
+    ok,
+    ms,
+    listLen,
+    hasMore,
+    rate_limits: rate,
+    cache,
+    credits,
+  });
+
+  if (!ok) {
+    console.log('[HTTP] <- error body preview', { url, status, bodyPreview: (text || '').slice(0, 600) });
+    throw new Error(`HTTP ${status} for ${url}`);
+  }
+
+  return data;
+};
+
 const sameArr = (a, b) => {
   if (a === b) return true;
   if (!Array.isArray(a) || !Array.isArray(b)) return false;
@@ -53,6 +120,8 @@ const sameArr = (a, b) => {
   }
   return true;
 };
+
+
 
 
 const findPostsListId = (lists: any[]) => {
@@ -187,13 +256,50 @@ const normalizeMedias = (res: any) => {
   const list = res?.data?.list;
   if (!Array.isArray(list)) return [];
 
+  const pickFirstUrl = (m: any) => {
+    // 1) самые частые варианты
+    const candidates = [
+      m?.preview,
+      m?.previewUrl,
+      m?.preview_url,
+      m?.thumb,
+      m?.thumbUrl,
+      m?.thumb_url,
+      m?.thumbnail,
+      m?.thumbnailUrl,
+      m?.thumbnail_url,
+
+      // 2) вложенные структуры (часто бывает)
+      m?.files?.preview?.url,
+      m?.files?.thumb?.url,
+      m?.files?.thumbnail?.url,
+
+      // 3) иногда массив variants/sources
+      m?.variants?.[0]?.url,
+      m?.sources?.[0]?.url,
+
+      // 4) твой текущий fallback
+      m?.url,
+    ];
+
+    for (const c of candidates) {
+      const s = String(c || '').trim();
+      if (s) return s;
+    }
+    return '';
+  };
+
+
   return list.map((m: any, idx: number) => {
     const mid = m?.id ?? m?.mediaId ?? m?.media_id ?? m?._id ?? null;
+
+    const previewUrl = pickFirstUrl(m);
     return {
       key: mid != null ? String(mid) : `url:${idx}:${String(m?.url || '')}`,
       id: mid != null ? String(mid) : '',
       type: String(m?.type || ''),
       url: String(m?.url || ''),
+      previewUrl,
       createdAt: String(m?.createdAt || m?.created_at || ''),
       raw: m,
     };
@@ -202,6 +308,35 @@ const normalizeMedias = (res: any) => {
 
 const selectableMedias = computed(() => vaultMedias.value || []);
 
+const getPreviewSrc = (m: any) => {
+  // если previewUrl есть — используем его
+  const p = String(m?.previewUrl || '').trim();
+  if (p) return p;
+
+  // fallback на url (если вдруг превью не дали)
+  const u = String(m?.url || '').trim();
+  if (u) return u;
+
+  return '';
+};
+
+const onImgError = (e: any, m: any) => {
+  // чтобы не спамить — лог только один раз на карточку
+  if (m && m.__previewFailed) return;
+  if (m) m.__previewFailed = true;
+
+  console.log('[ExternalVaultMediaCard] preview load failed:', {
+    id: m?.id,
+    type: m?.type,
+    previewUrl: m?.previewUrl,
+    url: m?.url,
+  });
+
+  // если хочешь — можно принудительно скрыть img и показать placeholder
+  try {
+    if (e?.target) e.target.style.display = 'none';
+  } catch (_) {}
+};
 const toggleMedia = (m: any) => {
   const id = String(m?.id || '').trim();
   if (!id) return;
@@ -237,8 +372,11 @@ const loadVaultLists = async () => {
   loadingLists.value = true;
   try {
     const url = `${import.meta.env.VITE_APP_ROOT_API}/automate/vault-lists?modelPlatformId=${modelPlatformId.value}`;
-    const res = await fetch(url);
-    const data = await res.json().catch(() => ({}));
+    // const res = await fetch(url);
+    // const data = await res.json().catch(() => ({}));
+    // lastResponse.value = data;
+
+    const data = await debugFetchJson(url, { fn: 'loadVaultLists', modelPlatformId: modelPlatformId.value });
     lastResponse.value = data;
 
     const lists = normalizeVaultLists(data);
@@ -281,11 +419,52 @@ const loadVaultMedia = async (reset = true) => {
       `&limit=${encodeURIComponent(String(limit.value))}` +
       `&offset=${encodeURIComponent(String(offset.value))}`;
 
-    const res = await fetch(url);
-    const data = await res.json().catch(() => ({}));
+    // const res = await fetch(url);
+    // const data = await res.json().catch(() => ({}));
+    // lastResponse.value = data;
+    //
+    // const medias = normalizeMedias(data);
+
+    const data = await debugFetchJson(url, {
+      fn: 'loadVaultMedia',
+      modelPlatformId: modelPlatformId.value,
+      listId,
+      limit: limit.value,
+      offset: offset.value,
+      reset,
+    });
     lastResponse.value = data;
 
     const medias = normalizeMedias(data);
+
+// ✅ качество превью (по твоему API это files.preview / files.thumb)
+    try {
+      const rawList = Array.isArray(data?.data?.list) ? data.data.list : [];
+      let withPreview = 0;
+      let withThumb = 0;
+      let withFull = 0;
+      let byType: Record<string, number> = {};
+
+      for (const m of rawList) {
+        const t = String(m?.type || 'unknown');
+        byType[t] = (byType[t] || 0) + 1;
+
+        if (m?.files?.preview?.url) withPreview++;
+        if (m?.files?.thumb?.url) withThumb++;
+        if (m?.files?.full?.url) withFull++;
+      }
+
+      console.log('[VaultMedia] preview stats', {
+        listLen: rawList.length,
+        byType,
+        withPreview,
+        withThumb,
+        withFull,
+      });
+    } catch (e) {
+      console.log('[VaultMedia] preview stats error', e);
+    }
+
     vaultMedias.value = reset ? medias : [...vaultMedias.value, ...medias];
 
     // ✅ purge selection ТОЛЬКО после того как vaultMedias уже обновлён
@@ -319,8 +498,16 @@ const fetchVaultMediaPage = async (listId: string, pageOffset: number, pageLimit
     `&limit=${encodeURIComponent(String(pageLimit))}` +
     `&offset=${encodeURIComponent(String(pageOffset))}`;
 
-  const res = await fetch(url);
-  const data = await res.json().catch(() => ({}));
+  // const res = await fetch(url);
+  // const data = await res.json().catch(() => ({}));
+
+  const data = await debugFetchJson(url, {
+    fn: 'fetchVaultMediaPage',
+    listId,
+    pageOffset,
+    pageLimit,
+    modelPlatformId: modelPlatformId.value,
+  });
 
   const medias = normalizeMedias(data);
   const hasMoreResp = Boolean(data?.data?.hasMore);
@@ -367,6 +554,30 @@ const pickRandomFromManyPages = async (postsListId: string) => {
 
   return false;
 };
+
+
+const DEBUG = Boolean(import.meta.env.VITE_DEBUG_VAULT === '1');
+
+// const getProxyImgSrc = (m: any) => {
+//   const raw = getPreviewSrc(m);
+//   if (!raw) return '';
+//   return `${import.meta.env.VITE_APP_ROOT_API}/automate/vault-media/proxy?url=${encodeURIComponent(raw)}`;
+// };
+
+const getProxyImgSrc = (m: any) => {
+  const src = getPreviewSrc(m); // previewUrl или url
+  if (!src) return '';
+
+  const api = String(import.meta.env.VITE_APP_ROOT_API || '').replace(/\/$/, '');
+  if (!api) {
+    console.log('[VaultMedia] VITE_APP_ROOT_API is empty, cannot build proxy url');
+    return '';
+  }
+
+  return `${api}/automate/proxy-img?url=${encodeURIComponent(src)}`;
+};
+
+const numberOfDays = ref(1);
 
 
 // sync v-model both ways
@@ -540,14 +751,48 @@ watch(
               :title="m.id ? 'Select by id' : 'No media id in response — cannot attach'"
             />
 
+<!--            <img-->
+<!--              v-if="m.url && (m.type === 'photo' || m.type === 'gif')"-->
+<!--              :src="m.url"-->
+<!--              class="w-32 h-32 object-cover"    @error="(e) => onImgError(e, m)"   -->
+
+<!--            />-->
+
+<!--            <img-->
+<!--              v-if="getPreviewSrc(m) && (m.type === 'photo' || m.type === 'gif')"-->
+<!--              :src="getProxyImgSrc(m)"-->
+<!--              class="w-32 h-32 object-cover"-->
+<!--              loading="lazy"-->
+
+<!--              @error="() => console.log('[VaultMedia] img error', { id: m?.id, type: m?.type, files: m?.raw?.files, src: (m.previewUrl || m.thumbUrl || m.url) })"-->
+
+<!--            />-->
+
+<!--            <div class="relative border rounded overflow-hidden w-32 h-32">-->
+<!--              <img-->
+<!--                v-if="getProxyImgSrc(m) && (m.type === 'photo' || m.type === 'gif')"-->
+<!--                :src="getProxyImgSrc(m)"-->
+<!--                class="w-32 h-32 object-cover"-->
+<!--                loading="lazy"-->
+<!--                @error="(e) => onImgError(e, m)"-->
+<!--              />-->
+
+<!--              <div v-else class="w-32 h-32 flex items-center justify-center text-xs opacity-70">-->
+<!--                {{ m.type || 'media' }}-->
+<!--              </div>-->
+<!--            </div>-->
+
             <img
-              v-if="m.url && (m.type === 'photo' || m.type === 'gif')"
-              :src="m.url"
+              v-if="!m.__previewFailed && getProxyImgSrc(m) && (m.type === 'photo' || m.type === 'gif')"
+              :src="getProxyImgSrc(m)"
               class="w-32 h-32 object-cover"
+              loading="lazy"
+              @error="(e) => onImgError(e, m)"
             />
             <div v-else class="w-32 h-32 flex items-center justify-center text-xs opacity-70">
               {{ m.type || 'media' }}
             </div>
+
           </div>
 
           <div class="mt-1 text-xs break-all opacity-70">
@@ -562,13 +807,13 @@ watch(
       </div>
     </div>
 
-    <div v-if="lastResponse" class="mt-4">
+    <div v-if="DEBUG && lastResponse" class="mt-4">
       <label class="block text-sm">Last response</label>
-<!--      <pre class="text-xs whitespace-pre-wrap">-->
-<!--        {{-->
-<!--          JSON.stringify(lastResponse, null, 2)-->
-<!--        }}-->
-<!--      </pre>-->
+      <pre class="text-xs whitespace-pre-wrap">
+        {{
+          JSON.stringify(lastResponse, null, 2)
+        }}
+      </pre>
     </div>
   </CardBox>
 </template>

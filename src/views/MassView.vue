@@ -802,6 +802,13 @@ const onMassSheetParsed = ({ vault_media_ids, price, message_exclude_list }) => 
   });
 };
 
+// MassView.vue <script setup>
+const numberOfDays = ref(1);
+
+const onChangeNumberOfDays = () => {
+  numberOfDays.value = Number(e?.target?.value || 1);
+};
+
 watch(
   [() => selectedModel.value?.id, () => selectedPlatform.value?.id],
   async ([modelId, platformId], [prevModelId, prevPlatformId]) => {
@@ -851,8 +858,23 @@ watch(
           <TabContainer :tabs="tabs" @click-tab="onClickMessageList">
             <template #default="{ openTab }">
               <TabContent :show="openTab === 1">
-                <div v-if="!isGroupSelected">
+                <div v-if="!isGroupSelected" class="groups">
                   <h1 class="font-bold text-xl">Groups</h1>
+
+                  <div class="flex justify-between">
+                    <div>
+                      <label class="block text-sm">Number of Days Scheduled</label>
+
+                      <input class="w-64 rounded" type="number" :value="numberOfDays" @change="onChangeNumberOfDays" />
+                    </div>
+                    <div>
+                      <label class="block text-sm">Update Status</label>
+                      <select class="w-32 rounded" @change="onChangeStatus">
+                        <option value="1">Active</option>
+                        <option value="0">Inactive</option>
+                      </select>
+                    </div>
+                  </div>
 
                   <TableMessageGroup
                     :groups="groupStore.groups"
@@ -965,8 +987,8 @@ watch(
                     <div :class="[colorsText['danger'], 'text-sm']">{{ error.$message }}</div>
                   </div>
                 </div>
-              </div>
-              <div class="flex flex-1 flex-col">
+<!--              </div>-->
+<!--              <div class="flex flex-1 flex-col">-->
                 <div class="flex gap-5 md:flex-row flex-col">
                   <div class="flex-1">
                     <FormField help="Required. Message Time">

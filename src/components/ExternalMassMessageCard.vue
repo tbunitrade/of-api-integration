@@ -465,7 +465,10 @@ watch(
 
     <div v-if="lastMassResponse" class="mt-4">
       <label class="block text-sm">Last response</label>
-      <pre class="text-xs whitespace-pre-wrap">{{ JSON.stringify(lastMassResponse, null, 2) }}</pre>
+<!--      <pre class="text-xs whitespace-pre-wrap">{{ -->
+<!--          JSON.stringify(lastMassResponse, null, 2) -->
+<!--        -->
+<!--        }}</pre>-->
     </div>
   </CardBox>
 </template>
