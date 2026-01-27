@@ -579,6 +579,15 @@ const getProxyImgSrc = (m: any) => {
 
 const numberOfDays = ref(1);
 
+// ExternalVaultMediaCard.vue (script setup)
+const apiRoot = import.meta.env.VITE_APP_ROOT_API; // например http://127.0.0.1:3000/api
+
+const proxyImgByMediaId = (modelPlatformId: number, mediaId: string | number) => {
+  const mp = Number(modelPlatformId);
+  const mid = encodeURIComponent(String(mediaId));
+  return `${apiRoot}/automate/proxy-img?modelPlatformId=${mp}&mediaId=${mid}`;
+};
+
 
 // sync v-model both ways
 // sync v-model both ways (anti ping-pong)
@@ -751,6 +760,17 @@ watch(
               :title="m.id ? 'Select by id' : 'No media id in response — cannot attach'"
             />
 
+            <div class="previewBox">
+              <img
+                v-if="m?.id"
+                :src="proxyImgByMediaId(modelPlatformId, m.id)"
+                class="previewImg"
+                loading="lazy"
+                @error="(e) => console.log('[preview img error]', m.id, (e?.target as any)?.src)"
+              />
+              <div class="fallbackText">photo</div>
+            </div>
+
 <!--            <img-->
 <!--              v-if="m.url && (m.type === 'photo' || m.type === 'gif')"-->
 <!--              :src="m.url"-->
@@ -782,16 +802,16 @@ watch(
 <!--              </div>-->
 <!--            </div>-->
 
-            <img
-              v-if="!m.__previewFailed && getProxyImgSrc(m) && (m.type === 'photo' || m.type === 'gif')"
-              :src="getProxyImgSrc(m)"
-              class="w-32 h-32 object-cover"
-              loading="lazy"
-              @error="(e) => onImgError(e, m)"
-            />
-            <div v-else class="w-32 h-32 flex items-center justify-center text-xs opacity-70">
-              {{ m.type || 'media' }}
-            </div>
+<!--            <img-->
+<!--              v-if="!m.__previewFailed && getProxyImgSrc(m) && (m.type === 'photo' || m.type === 'gif')"-->
+<!--              :src="getProxyImgSrc(m)"-->
+<!--              class="w-32 h-32 object-cover"-->
+<!--              loading="lazy"-->
+<!--              @error="(e) => onImgError(e, m)"-->
+<!--            />-->
+<!--            <div v-else class="w-32 h-32 flex items-center justify-center text-xs opacity-70">-->
+<!--              {{ m.type || 'media' }}-->
+<!--            </div>-->
 
           </div>
 
@@ -817,3 +837,32 @@ watch(
     </div>
   </CardBox>
 </template>
+
+
+<style>
+.previewBox {
+  width: 128px;      /* под твой grid */
+  height: 128px;
+  position: relative;
+  overflow: hidden;
+  border-radius: 6px;
+  background: #f3f3f3;
+}
+
+.previewImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.fallbackText {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  opacity: 0.7;
+}
+</style>

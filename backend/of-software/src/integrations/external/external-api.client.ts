@@ -1,6 +1,7 @@
 // src/integrations/external/external-api.client.ts
-import axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
+import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 import { randomUUID } from 'crypto';
+
 
 export class ExternalApiClient {
   private readonly http: AxiosInstance;
@@ -220,5 +221,107 @@ export class ExternalApiClient {
       url: `/api/${accountId}/media/vault/lists/${encodeURIComponent(String(listId))}/media`,
       data: { mediaIds },
     });
+  }
+
+  // src/integrations/external/external-api.client.ts
+  // import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
+  // import { randomUUID } from 'crypto';
+  //
+  // // ...
+
+  async requestBinary(config: AxiosRequestConfig): Promise<AxiosResponse<any>> {
+    const fixedUrl = this._fixUrl(config.url as any);
+    const base = this.http.defaults.baseURL || '';
+    const fullUrl = `${base}${fixedUrl || ''}`;
+
+    const requestId = randomUUID();
+    const startedAt = Date.now();
+
+    console.log('[ExternalApiClient] requestBinary', { requestId, fullUrl, method: config.method });
+
+    const maxAttempts = 4;
+
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        const res = await this.http.request<any>({
+          ...config,
+          url: fixedUrl,
+          responseType: 'arraybuffer',
+          validateStatus: () => true, // IMPORTANT: do not throw on 403/404
+          headers: {
+            ...(config.headers || {}),
+            'x-request-id': requestId,
+          },
+        });
+
+        const ms = Date.now() - startedAt;
+
+        const status = res.status;
+        const ct = res.headers?.['content-type'];
+
+        // Log basic response
+        console.log('[ExternalApiClient] responseBinary', {
+          requestId,
+          method: config.method,
+          url: fixedUrl,
+          status,
+          ms,
+          attempt,
+          ct,
+          len: res.data ? (Buffer.isBuffer(res.data) ? res.data.length : Buffer.byteLength(String(res.data))) : 0,
+        });
+
+        // If non-2xx: decide retry or return
+        if (status < 200 || status >= 300) {
+          // preview first ~300 bytes for debugging
+          const preview = (() => {
+            try {
+              const b = Buffer.isBuffer(res.data) ? res.data : Buffer.from(res.data);
+              return b.toString('utf8', 0, 300);
+            } catch {
+              return null;
+            }
+          })();
+
+          console.log('[ExternalApiClient] responseBinary non-2xx', {
+            requestId,
+            status,
+            ct,
+            preview,
+          });
+
+          // Retry only on 429 / 5xx
+          const retryable = status === 429 || (status >= 500 && status <= 599);
+          if (retryable && attempt < maxAttempts) {
+            await new Promise((r) => setTimeout(r, 250 * attempt));
+            continue;
+          }
+
+          // Return the response to caller (caller decides fallback)
+          return res;
+        }
+
+        return res;
+      } catch (e: any) {
+        const ms = Date.now() - startedAt;
+        console.log('[ExternalApiClient] requestBinary error', {
+          requestId,
+          url: fixedUrl,
+          method: config.method,
+          ms,
+          attempt,
+          message: String(e?.message || e),
+        });
+
+        if (attempt < maxAttempts) {
+          await new Promise((r) => setTimeout(r, 250 * attempt));
+          continue;
+        }
+
+        throw e;
+      }
+    }
+
+    throw new Error('requestBinary failed unexpectedly');
   }
 }

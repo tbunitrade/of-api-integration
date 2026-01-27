@@ -78,4 +78,56 @@ export class ApiVaultMediaService {
     console.log('[ApiVaultMediaService] getVaultMedia', { modelPlatformId, accountId, mediaId: mid });
     return this.externalApi.getVaultMedia(accountId, mid);
   }
+
+  //find method
+  // backend/of-software/src/automate/api-vault-media.service.ts
+  // backend/of-software/src/automate/api-vault-media.service.ts
+  async downloadFromCdn(modelPlatformId: number, cdnUrl: string): Promise<{ buffer: Buffer; contentType?: string }> {
+    if (!cdnUrl) throw new Error('cdnUrl is required');
+
+    const accountId = await this._getAccountIdByModelPlatformId(Number(modelPlatformId));
+    const cdnUrlStr = String(cdnUrl);
+
+    console.log('[ApiVaultMediaService] downloadFromCdn', {
+      modelPlatformId,
+      accountId,
+      cdnUrlLen: cdnUrlStr.length,
+      hadQuery: (() => { try { return !!new URL(cdnUrlStr).search; } catch { return null; } })(),
+    });
+
+    // ✅ Provider docs: GET /api/{account}/media/download/{cdnUrl}
+    const cdnEncoded = encodeURIComponent(cdnUrlStr);
+
+    const r1 = await this.externalApi.requestBinary({
+      method: 'GET',
+      url: `/api/${accountId}/media/download/${cdnEncoded}`,
+      timeout: 20_000,
+    });
+
+    const status1 = (r1 as any)?.status;
+    if (status1 && status1 >= 200 && status1 < 300) {
+      const ct1 = r1?.headers?.['content-type'];
+      const buffer1 = Buffer.isBuffer(r1.data) ? r1.data : Buffer.from(r1.data);
+      return { buffer: buffer1, contentType: ct1 };
+    }
+
+    // Fallback: some providers support query-param form (keep full signed URL!)
+    const r2 = await this.externalApi.requestBinary({
+      method: 'GET',
+      url: `/api/${accountId}/media/download`,
+      params: { url: cdnUrlStr }, // если у них именно `url`
+      timeout: 20_000,
+    });
+
+    const status2 = (r2 as any)?.status;
+    if (!status2 || status2 < 200 || status2 >= 300) {
+      throw new Error(`downloadFromCdn failed: status=${status2 || status1}`);
+    }
+
+    const ct2 = r2?.headers?.['content-type'];
+    const buffer2 = Buffer.isBuffer(r2.data) ? r2.data : Buffer.from(r2.data);
+    return { buffer: buffer2, contentType: ct2 };
+  }
+
+
 }

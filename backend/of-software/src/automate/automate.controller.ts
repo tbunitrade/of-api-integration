@@ -63,56 +63,72 @@ export class AutomateController {
     return this.apiVaultMediaService.getVaultMedia(Number(modelPlatformId), mediaId);
   }
 
-  // @Get('start')
-  // async start() {
-  //   await this.automateService.startMessage();
-  //   return true;
-  // }
-
   @Get('proxy-img')
-  async proxyImg(@Query('url') url: string, @Res() res: Response) {
-    if (!url) throw new BadRequestException('url is required');
+  async proxyImg(
+    @Query('modelPlatformId') modelPlatformId: string,
+    @Query('mediaId') mediaId: string,
+    @Query('url') url: string,
+    @Res() res: Response,
+  ) {
+    const mpId = Number(modelPlatformId);
+    if (!mpId) throw new BadRequestException('modelPlatformId is required');
+
+    // 1) Получаем targetUrl
+    let targetUrl = url;
+
+    if (!targetUrl && mediaId) {
+      const one = await this.apiVaultMediaService.getVaultMedia(mpId, String(mediaId));
+      const d = (one as any)?.data ?? one;
+
+      targetUrl =
+        d?.files?.preview?.url ||
+        d?.files?.squarePreview?.url ||
+        d?.files?.thumb?.url ||
+        d?.files?.full?.url;
+    }
+    console.log('[proxy-img] target', {
+      mpId,
+      mediaId,
+      hasUrl: !!url,
+      targetHost: (() => {
+        try { return new URL(String(targetUrl)).host; } catch { return 'bad-url'; }
+      })(),
+      targetUrlLen: String(targetUrl || '').length,
+    });
+
+    if (!targetUrl) throw new BadRequestException('mediaId or url is required');
+
+    console.log('[proxy-img] target', {
+      mpId,
+      mediaId,
+      hasUrl: !!url,
+      targetHost: (() => {
+        try { return new URL(String(targetUrl)).host; } catch { return 'bad-url'; }
+      })(),
+      targetUrlLen: String(targetUrl || '').length,
+    });
 
     try {
-      // ВАЖНО: НЕ делать decodeURIComponent(url) здесь.
-      // Express уже декодирует query-параметры автоматически.
-      const r = await axios.get(url, {
-        responseType: 'arraybuffer',
-        timeout: 20000,
-        headers: {
-          'User-Agent': 'Mozilla/5.0',
-          'Accept': 'image/avif,image/webp,image/apng,image/*,*/*;q=0.8',
-          // иногда помогает:
-          // 'Referer': 'https://onlyfans.com/',
-        },
-        // можно разрешить любые статусы и обработать вручную
-        validateStatus: () => true,
-      });
+      // 2) Критично: качаем через провайдера, а не напрямую с cdn2
+      const out = await this.apiVaultMediaService.downloadFromCdn(mpId, targetUrl);
 
-      if (r.status < 200 || r.status >= 300) {
-        // Логни тело (первые 300-500 символов), чтобы увидеть 403/HTML
-        const bodyPreview = Buffer.isBuffer(r.data)
-          ? Buffer.from(r.data).toString('utf8', 0, 500)
-          : String(r.data).slice(0, 500);
-
-        console.log('[proxy-img] upstream non-2xx', {
-          status: r.status,
-          ct: r.headers?.['content-type'],
-          bodyPreview,
-        });
-
-        return res.status(502).send('proxy-img upstream failed');
-      }
-
-      const ct = r.headers?.['content-type'] || 'application/octet-stream';
+      const ct = out?.contentType || 'application/octet-stream';
       res.setHeader('Content-Type', ct);
       res.setHeader('Cache-Control', 'public, max-age=3600');
 
-      return res.send(Buffer.from(r.data));
+      console.log('[proxy-img] resolved', { mpId, mediaId, hasUrl: !!url, targetUrlLen: (targetUrl || '').length });
+
+      return res.send(out.buffer);
     } catch (e: any) {
       console.log('[proxy-img] error', String(e?.message || e));
       return res.status(502).send('proxy-img failed');
     }
   }
+
+  // @Get('start')
+  // async start() {
+  //   await this.automateService.startMessage();
+  //   return true;
+  // }
 
 }
