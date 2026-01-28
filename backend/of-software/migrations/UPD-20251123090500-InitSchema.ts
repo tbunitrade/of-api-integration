@@ -63,12 +63,19 @@ export class InitSchema20251123090500 implements MigrationInterface {
       );
     `);
 
+    await queryRunner.query(`
+      CREATE UNIQUE INDEX IF NOT EXISTS ux_model_platform_model_platform
+      ON public.model_platform(model_id, platform_id);
+    `);
+
     // GROUP
     await queryRunner.query(`
       CREATE TABLE public."group" (
         id SERIAL PRIMARY KEY,
         name VARCHAR NOT NULL,
-        model_id INTEGER NOT NULL,
+--         model_id INTEGER NOT NULL,
+--         massmsg BOOLEAN NOT NULL DEFAULT false,
+        model_id INTEGER NOT NULL REFERENCES public.model(id) ON DELETE CASCADE,
         massmsg BOOLEAN NOT NULL DEFAULT false,
         added_on_platform_at TIMESTAMP DEFAULT now(),
         status INTEGER DEFAULT 1 NOT NULL,
@@ -129,15 +136,40 @@ export class InitSchema20251123090500 implements MigrationInterface {
     `);
 
     // PLATFORM_GROUP
+    // await queryRunner.query(`
+    //   CREATE TABLE public.platform_group (
+    //     id SERIAL PRIMARY KEY,
+    //     platform_id INTEGER NOT NULL REFERENCES public.platform(id),
+    //     group_id INTEGER NOT NULL REFERENCES public."group"(id),
+    //     status INTEGER DEFAULT 1 NOT NULL,
+    //     created_at TIMESTAMP DEFAULT now() NOT NULL,
+    //     updated_at TIMESTAMP DEFAULT now() NOT NULL
+    //   );
+    // `);
+
+    // PLATFORM_GROUP
     await queryRunner.query(`
       CREATE TABLE public.platform_group (
-        id SERIAL PRIMARY KEY,
-        platform_id INTEGER NOT NULL REFERENCES public.platform(id),
-        group_id INTEGER NOT NULL REFERENCES public."group"(id),
-        status INTEGER DEFAULT 1 NOT NULL,
-        created_at TIMESTAMP DEFAULT now() NOT NULL,
-        updated_at TIMESTAMP DEFAULT now() NOT NULL
+         id SERIAL PRIMARY KEY,
+         platform_id INTEGER NOT NULL REFERENCES public.platform(id),
+         group_id INTEGER NOT NULL REFERENCES public."group"(id),
+
+         status INTEGER DEFAULT 1 NOT NULL,
+
+        -- OFAPI state (то что ты хотел ALTER'ом)
+         added_on_platform_at TIMESTAMP NULL,
+         last_scheduled_at TIMESTAMPTZ NULL,
+         last_published_at TIMESTAMPTZ NULL,
+         last_external_id BIGINT NULL,
+
+         created_at TIMESTAMP DEFAULT now() NOT NULL,
+         updated_at TIMESTAMP DEFAULT now() NOT NULL
       );
+    `);
+
+    await queryRunner.query(`
+      CREATE UNIQUE INDEX IF NOT EXISTS ux_platform_group_platform_group
+      ON public.platform_group(platform_id, group_id);
     `);
 
     // POST
@@ -229,7 +261,7 @@ export class InitSchema20251123090500 implements MigrationInterface {
       true,
     );
 
-    // ========= SCHEDULER =========
+    // ========= SCHEDULER for Python usage =========
 
     await queryRunner.createTable(
       new Table({
@@ -243,6 +275,56 @@ export class InitSchema20251123090500 implements MigrationInterface {
       }),
       true,
     );
+
+// ========= SCHEDULER type OF Api =========
+    await queryRunner.query(`
+      CREATE TABLE public.schedulerofapi (
+                                      id SERIAL PRIMARY KEY,
+
+        -- что мы планируем/выполняем
+                                      model_platform_id INTEGER NOT NULL REFERENCES public.model_platform(id) ON DELETE CASCADE,
+                                      group_id INTEGER NULL REFERENCES public."group"(id) ON DELETE SET NULL,
+                                      message_id INTEGER NULL REFERENCES public.message(id) ON DELETE SET NULL,
+
+                                      job_type VARCHAR NOT NULL DEFAULT 'massmsg',     -- massmsg / post / sync / etc
+                                      status VARCHAR NOT NULL DEFAULT 'queued',       -- queued / scheduled / sent / done / failed / canceled
+                                      attempt INTEGER NOT NULL DEFAULT 0,
+                                      error TEXT NULL,
+
+                                      scheduled_at TIMESTAMPTZ NULL,                  -- когда ДОЛЖНО уйти (UTC)
+                                      external_id BIGINT NULL,                        -- provider queue id (data.id)
+
+                                      payload JSONB NULL,                             -- наш payload на отправку
+                                      provider_response JSONB NULL,                   -- ответ провайдера (или queue object)
+
+        -- денормализация нужных полей из provider_response (быстро для UI)
+                                      provider_date TIMESTAMPTZ NULL,
+                                      provider_is_ready BOOLEAN NULL,
+                                      provider_is_done BOOLEAN NULL,
+                                      provider_has_error BOOLEAN NULL,
+                                      provider_is_canceled BOOLEAN NULL,
+                                      provider_pending INTEGER NULL,
+                                      provider_total INTEGER NULL,
+                                      provider_can_unsend BOOLEAN NULL,
+                                      provider_unsend_seconds INTEGER NULL,
+
+                                      created_at TIMESTAMP NOT NULL DEFAULT now(),
+                                      updated_at TIMESTAMP NOT NULL DEFAULT now()
+      );
+    `);
+
+    await queryRunner.query(`CREATE INDEX IF NOT EXISTS idx_schedulerofapi_mp ON public.schedulerofapi(model_platform_id)`);
+    await queryRunner.query(`CREATE INDEX IF NOT EXISTS idx_schedulerofapi_group ON public.schedulerofapi(group_id)`);
+    await queryRunner.query(`CREATE INDEX IF NOT EXISTS idx_schedulerofapi_message ON public.schedulerofapi(message_id)`);
+    await queryRunner.query(`CREATE INDEX IF NOT EXISTS idx_schedulerofapi_external ON public.schedulerofapi(external_id)`);
+    await queryRunner.query(`CREATE INDEX IF NOT EXISTS idx_schedulerofapi_status ON public.schedulerofapi(status)`);
+    await queryRunner.query(`CREATE INDEX IF NOT EXISTS idx_schedulerofapi_scheduled_at ON public.schedulerofapi(scheduled_at)`);
+
+    await queryRunner.query(`
+      CREATE UNIQUE INDEX IF NOT EXISTS ux_schedulerofapi_unique_job
+      ON public.schedulerofapi(model_platform_id, message_id, scheduled_at, job_type)
+      WHERE message_id IS NOT NULL AND scheduled_at IS NOT NULL;
+    `);
 
     // ========= POST_QUEUE_ENTITY =========
 
@@ -293,11 +375,14 @@ export class InitSchema20251123090500 implements MigrationInterface {
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
+    // сначала то, что ссылается на другие таблицы
+    await queryRunner.query(`DROP TABLE IF EXISTS public.schedulerofapi CASCADE`);
     await queryRunner.query(`DROP TABLE IF EXISTS "post_queue_entity"`);
+    // дальше — сервисные
     await queryRunner.dropTable('scheduler', true);
     await queryRunner.dropTable('model_daily_limit_entity', true);
     await queryRunner.dropTable('model_status_log_entity', true);
-
+    // дальше основная доменная часть
     await queryRunner.query(`DROP TABLE IF EXISTS public.post_time CASCADE`);
     await queryRunner.query(`DROP TABLE IF EXISTS public.post_file CASCADE`);
     await queryRunner.query(`DROP TABLE IF EXISTS public.post_caption CASCADE`);
@@ -310,6 +395,7 @@ export class InitSchema20251123090500 implements MigrationInterface {
     await queryRunner.query(`DROP TABLE IF EXISTS public.platform CASCADE`);
     await queryRunner.query(`DROP TABLE IF EXISTS public.model CASCADE`);
     await queryRunner.query(`DROP TABLE IF EXISTS public."user" CASCADE`);
+    // индекс можно не дропать отдельно (CASCADE и так его убьёт)
     await queryRunner.query(`DROP INDEX IF EXISTS ux_group_message_group_message;`);
   }
 }
