@@ -173,26 +173,26 @@ const selectRandom4Photos = () => {
   selectedMediaIdsLocal.value = pickRandom(ids, Math.min(4, ids.length));
 };
 
-const ensurePostsMediaLoaded = async () => {
-  // 1) списки
-  if (!vaultLists.value.length) {
-    await loadVaultLists();
-  }
-
-  const postsListId = findPostsListId(vaultLists.value);
-  if (!postsListId) {
-    notify({ title: 'Error', type: 'error', text: 'Posts list not found in vault-lists' });
-    return false;
-  }
-
-  // 2) переключаем список на Posts и грузим медиа (без двойного вызова watcher)
-  suppressAutoLoad.value = true;
-  selectedVaultListId.value = postsListId;
-  suppressAutoLoad.value = false;
-
-  await loadVaultMedia(true);
-  return true;
-};
+// const ensurePostsMediaLoaded = async () => {
+//   // 1) списки
+//   if (!vaultLists.value.length) {
+//     await loadVaultLists();
+//   }
+//
+//   const postsListId = findPostsListId(vaultLists.value);
+//   if (!postsListId) {
+//     notify({ title: 'Error', type: 'error', text: 'Posts list not found in vault-lists' });
+//     return false;
+//   }
+//
+//   // 2) переключаем список на Posts и грузим медиа (без двойного вызова watcher)
+//   suppressAutoLoad.value = true;
+//   selectedVaultListId.value = postsListId;
+//   suppressAutoLoad.value = false;
+//
+//   await loadVaultMedia(true);
+//   return true;
+// };
 
 const selectRandom4PhotosFromPosts = async () => {
   if (!canWork.value) {
@@ -320,23 +320,24 @@ const getPreviewSrc = (m: any) => {
   return '';
 };
 
-const onImgError = (e: any, m: any) => {
-  // чтобы не спамить — лог только один раз на карточку
-  if (m && m.__previewFailed) return;
-  if (m) m.__previewFailed = true;
+// const onImgError = (e: any, m: any) => {
+//   // чтобы не спамить — лог только один раз на карточку
+//   if (m && m.__previewFailed) return;
+//   if (m) m.__previewFailed = true;
+//
+//   console.log('[ExternalVaultMediaCard] preview load failed:', {
+//     id: m?.id,
+//     type: m?.type,
+//     previewUrl: m?.previewUrl,
+//     url: m?.url,
+//   });
+//
+//   // если хочешь — можно принудительно скрыть img и показать placeholder
+//   try {
+//     if (e?.target) e.target.style.display = 'none';
+//   } catch (_) {}
+// };
 
-  console.log('[ExternalVaultMediaCard] preview load failed:', {
-    id: m?.id,
-    type: m?.type,
-    previewUrl: m?.previewUrl,
-    url: m?.url,
-  });
-
-  // если хочешь — можно принудительно скрыть img и показать placeholder
-  try {
-    if (e?.target) e.target.style.display = 'none';
-  } catch (_) {}
-};
 const toggleMedia = (m: any) => {
   const id = String(m?.id || '').trim();
   if (!id) return;
@@ -564,18 +565,18 @@ const DEBUG = Boolean(import.meta.env.VITE_DEBUG_VAULT === '1');
 //   return `${import.meta.env.VITE_APP_ROOT_API}/automate/vault-media/proxy?url=${encodeURIComponent(raw)}`;
 // };
 
-const getProxyImgSrc = (m: any) => {
-  const src = getPreviewSrc(m); // previewUrl или url
-  if (!src) return '';
-
-  const api = String(import.meta.env.VITE_APP_ROOT_API || '').replace(/\/$/, '');
-  if (!api) {
-    console.log('[VaultMedia] VITE_APP_ROOT_API is empty, cannot build proxy url');
-    return '';
-  }
-
-  return `${api}/automate/proxy-img?url=${encodeURIComponent(src)}`;
-};
+// const getProxyImgSrc = (m: any) => {
+//   const src = getPreviewSrc(m); // previewUrl или url
+//   if (!src) return '';
+//
+//   const api = String(import.meta.env.VITE_APP_ROOT_API || '').replace(/\/$/, '');
+//   if (!api) {
+//     console.log('[VaultMedia] VITE_APP_ROOT_API is empty, cannot build proxy url');
+//     return '';
+//   }
+//
+//   return `${api}/automate/proxy-img?url=${encodeURIComponent(src)}`;
+// };
 
 const numberOfDays = ref(1);
 
@@ -770,48 +771,6 @@ watch(
               />
               <div class="fallbackText">photo</div>
             </div>
-
-<!--            <img-->
-<!--              v-if="m.url && (m.type === 'photo' || m.type === 'gif')"-->
-<!--              :src="m.url"-->
-<!--              class="w-32 h-32 object-cover"    @error="(e) => onImgError(e, m)"   -->
-
-<!--            />-->
-
-<!--            <img-->
-<!--              v-if="getPreviewSrc(m) && (m.type === 'photo' || m.type === 'gif')"-->
-<!--              :src="getProxyImgSrc(m)"-->
-<!--              class="w-32 h-32 object-cover"-->
-<!--              loading="lazy"-->
-
-<!--              @error="() => console.log('[VaultMedia] img error', { id: m?.id, type: m?.type, files: m?.raw?.files, src: (m.previewUrl || m.thumbUrl || m.url) })"-->
-
-<!--            />-->
-
-<!--            <div class="relative border rounded overflow-hidden w-32 h-32">-->
-<!--              <img-->
-<!--                v-if="getProxyImgSrc(m) && (m.type === 'photo' || m.type === 'gif')"-->
-<!--                :src="getProxyImgSrc(m)"-->
-<!--                class="w-32 h-32 object-cover"-->
-<!--                loading="lazy"-->
-<!--                @error="(e) => onImgError(e, m)"-->
-<!--              />-->
-
-<!--              <div v-else class="w-32 h-32 flex items-center justify-center text-xs opacity-70">-->
-<!--                {{ m.type || 'media' }}-->
-<!--              </div>-->
-<!--            </div>-->
-
-<!--            <img-->
-<!--              v-if="!m.__previewFailed && getProxyImgSrc(m) && (m.type === 'photo' || m.type === 'gif')"-->
-<!--              :src="getProxyImgSrc(m)"-->
-<!--              class="w-32 h-32 object-cover"-->
-<!--              loading="lazy"-->
-<!--              @error="(e) => onImgError(e, m)"-->
-<!--            />-->
-<!--            <div v-else class="w-32 h-32 flex items-center justify-center text-xs opacity-70">-->
-<!--              {{ m.type || 'media' }}-->
-<!--            </div>-->
 
           </div>
 

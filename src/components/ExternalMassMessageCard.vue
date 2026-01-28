@@ -207,52 +207,6 @@ const loadAudienceLists = async () => {
 };
 
 
-
-// const onSendMassMessage = async () => {
-//   if (!canWork.value) {
-//     notify({ title: 'Warning', type: 'error', text: 'ModelPlatform is not selected/found' });
-//     return;
-//   }
-//
-//   const text = String(massMessageText.value || '').trim();
-//   if (!text) {
-//     notify({ title: 'Warning', type: 'error', text: 'Message text is required' });
-//     return;
-//   }
-//
-//   sendingMassMessage.value = true;
-//   try {
-//     const payload = {
-//       modelPlatformId: modelPlatformId.value,
-//       text,
-//       userLists: normalizeSelectedTokens(includeTokens.value),
-//       excludedLists: normalizeSelectedTokens(excludeTokens.value),
-//       userIds: [],
-//       mediaIds: Array.isArray(props.mediaIds) ? (props.mediaIds as any).map((x: any) => String(x)) : [],
-//     };
-//
-//     const res = await fetch(`${import.meta.env.VITE_APP_ROOT_API}/automate/send-mass-message`, {
-//       method: 'POST',
-//       headers: { 'Content-Type': 'application/json' },
-//       body: JSON.stringify(payload),
-//     });
-//
-//     const data = await res.json().catch(() => ({}));
-//     lastMassResponse.value = data;
-//
-//     if (!res.ok) throw new Error(data?.message || `HTTP ${res.status}`);
-//
-//     notify({ title: 'Success', type: 'success', text: 'Mass message request sent' });
-//     console.log('[ExternalMassMessageCard] send-mass-message response', data);
-//   } catch (e: any) {
-//     console.log('[ExternalMassMessageCard] send-mass-message error', e);
-//     notify({ title: 'Error', type: 'error', text: e?.message || 'Failed to send mass message' });
-//   } finally {
-//     sendingMassMessage.value = false;
-//   }
-// };
-
-
 /*
 *
 * Решение A (рекомендую): автозагрузка audience lists при наличии токенов
@@ -344,14 +298,6 @@ watch(
     </div>
 
     <div class="mt-4 flex gap-2">
-<!--      <BaseButton-->
-<!--        label="Load audience lists"-->
-<!--        color="info"-->
-<!--        rounded-->
-<!--        small-->
-<!--        :disabled="loadingAudienceLists || !canWork"-->
-<!--        @click="loadAudienceLists"-->
-<!--      />-->
 
       <BaseButton
         label="Load audience lists"
