@@ -26,6 +26,7 @@ import { PostFileModule } from './postFile/post_file.module';
 
 import { DatabaseModule } from './database/database.module';
 import {AdminController} from "./admin/admin.controller";
+import { SchedulerOfApiModule } from './schedulerOfApi/schedulerofapi.module';
 
 @Module({
   imports: [
@@ -61,6 +62,7 @@ import {AdminController} from "./admin/admin.controller";
     PostTimeModule,
     PostCaptionModule,
     PostFileModule,
+    SchedulerOfApiModule,
   ],
   controllers: [AppController, AdminController], // ✅ Добавлено
   providers: [AppService], // ✅ Добавлено
