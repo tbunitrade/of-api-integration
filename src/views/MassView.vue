@@ -41,6 +41,7 @@ import TimeField from "@/components/TimeField.vue";
 import FormField from "@/components/FormField.vue";
 import Multiselect from "@vueform/multiselect";
 import '@vueform/multiselect/themes/default.css';
+import { useSchedulerOfApiStore } from "@/stores/schedulerofapi.store"; // или через общий barrel export
 
 const fileStore = useFileStore();
 const { notify } = useNotification();
@@ -50,6 +51,7 @@ const tabs = ref([
   { id: 2, title: "Mass Message List" },
 ]);
 
+const schedulerOfApiStore = useSchedulerOfApiStore();
 const spinnerColor = "#3B82F6";
 
 
@@ -496,10 +498,23 @@ const confirmDeleteMessage = async () =>
   }
 };
 
+//
 const onCheckGroups = (ids) =>
 {
   checkedGroups.value = ids;
 };
+
+const selectedGroupIds = computed(() => {
+  const raw = Array.isArray(checkedGroups.value) ? checkedGroups.value : [];
+  // TableMessageGroup может отдавать [1,2] или [{id:1}, {id:2}]
+  const ids = raw
+    .map((x) => (x && typeof x === 'object' ? x.id : x))
+    .map((x) => Number(x))
+    .filter((x) => Number.isFinite(x) && x > 0);
+
+  // uniq
+  return Array.from(new Set(ids));
+});
 
 //add message
 
@@ -803,11 +818,148 @@ const onMassSheetParsed = ({ vault_media_ids, price, message_exclude_list }) => 
 };
 
 // MassView.vue <script setup>
-const numberOfDays = ref(1);
+const numberOfDays = ref(0);
 
-const onChangeNumberOfDays = () => {
-  numberOfDays.value = Number(e?.target?.value || 1);
+const onChangeNumberOfDays = (e) => {
+  numberOfDays.value = Math.max(0, Number(e?.target?.value ?? 0) || 0);
+  console.log('[MassView] numberOfDaysScheduled=', numberOfDays.value);
 };
+
+//schedulerOfAPi
+const buildScheduledAt = (dayOffset, hhmmss) => {
+  const parts = String(hhmmss || '').split(':').map((x) => Number(x));
+  const hh = parts[0], mm = parts[1];
+  if (!Number.isFinite(hh) || !Number.isFinite(mm)) return null;
+
+  const d = new Date();
+  d.setHours(hh, mm, 0, 0);
+  d.setDate(d.getDate() + Number(dayOffset || 0));
+  return d;
+};
+
+const buildSchedulerJobsForLoadedGroup = (groupId, days) => {
+  const msgs = (messageStore.messages || []); // уже messages этой группы
+  const jobs = [];
+
+  for (const m of msgs) {
+    // начинать с завтра
+    for (let i = 1; i <= days; i++) {
+      const scheduledAt = buildScheduledAt(i, m.message_time);
+      if (!scheduledAt) {
+        console.log('[MassView] skip message without valid time:', m?.id, m?.message_time);
+        continue;
+      }
+
+      jobs.push({
+        model_platform_id: Number(selectedModelPlatformId.value),
+        group_id: Number(groupId),
+        message_id: Number(m.id),
+        job_type: 'massmsg',
+        status: 'queued',
+        scheduled_at: scheduledAt.toISOString(),
+        payload: {
+          message_id: m.id,
+          group_id: groupId,
+          model_platform_id: selectedModelPlatformId.value,
+
+          message: m.message,
+          price: m.price,
+          free_preview: m.free_preview,
+          vault_media_ids: m.vault_media_ids ?? [],
+          audience_include_ids: m.audience_include_ids ?? [],
+          audience_exclude_ids: m.audience_exclude_ids ?? [],
+          user_ids_array: m.user_ids_array ?? [],
+        },
+      });
+    }
+  }
+
+  return jobs;
+};
+
+const onScheduleCheckedGroups = async () => {
+  const gids = (checkedGroups.value || []).map(Number).filter(Boolean);
+  const days = Number(numberOfDays.value || 0);
+
+  console.log('[MassView] schedule groups', { gids, days });
+  if (!gids.length || days <= 0) return;
+
+  let total = 0;
+  let created = 0;
+
+  for (const gid of gids) {
+    await messageStore.getMessagesByGroup(gid, { massmsg: true });
+
+    const jobs = buildSchedulerJobsForLoadedGroup(gid, days);
+    console.log('[MassView] jobs for group', gid, jobs.length);
+
+    total += jobs.length;
+
+    try {
+      const r = await schedulerOfApiStore.createJobsBulk(jobs);
+      console.log('[MassView] bulk result', r);
+      created += r.created;
+    } catch (e) {
+      console.log('[MassView] bulk error', gid, e?.response?.data || e?.message || e);
+    }
+  }
+
+  notify({ title: 'Success', type: 'success', text: `Scheduled: ${created}/${total}` });
+};
+
+const onPurgeScheduledJobs = async () => {
+  try {
+    const mp = Number(selectedModelPlatformId.value);
+    if (!mp) return;
+
+    console.log('[MassView] purge jobs', { model_platform_id: mp, job_type: 'massmsg' });
+
+    const r = await schedulerOfApiStore.purge({
+      model_platform_id: mp,
+      job_type: 'massmsg',
+    });
+
+    console.log('[MassView] purge result', r);
+
+    notify({
+      title: 'Success',
+      type: 'success',
+      text: `Purged: ${r?.affected || 0}`,
+    });
+  } catch (e) {
+    console.log('[MassView] purge error', e?.response?.data || e?.message || e);
+    notify({ title: 'Error', type: 'danger', text: 'Purge failed' });
+  }
+};
+
+const onPublishScheduledJobs = async () => {
+  try {
+    const mp = Number(selectedModelPlatformId.value)
+    if (!mp) return
+
+    console.log('[MassView] publish jobs FORCE', { model_platform_id: mp, job_type: 'massmsg' })
+
+    const r = await schedulerOfApiStore.dispatch({
+      model_platform_id: mp,
+      job_type: 'massmsg',
+      limit: 50,
+      force: 1, // <-- форс: игнорировать scheduled_at
+    })
+
+    console.log('[MassView] publish result', r)
+
+    notify({
+      title: 'Success',
+      type: 'success',
+      text: `Dispatch: sent=${r?.sent || 0}, failed=${r?.failed || 0}`,
+    })
+  } catch (e) {
+    console.log('[MassView] publish error', e?.response?.data || e?.message || e)
+    notify({ title: 'Error', type: 'danger', text: 'Publish failed' })
+  }
+}
+
+//end scheduling job and dispatch
 
 watch(
   [() => selectedModel.value?.id, () => selectedPlatform.value?.id],
@@ -864,9 +1016,34 @@ watch(
                   <div class="flex justify-between">
                     <div>
                       <label class="block text-sm">Number of Days Scheduled</label>
-
-                      <input class="w-64 rounded" type="number" :value="numberOfDays" @change="onChangeNumberOfDays" />
+                      <input class="w-64 rounded" type="number" min="0" :value="numberOfDays" @change="onChangeNumberOfDays" />
                     </div>
+                    <BaseButton
+                      label="Schedule Group"
+                      color="success"
+                      rounded
+                      small
+                      :disabled="(checkedGroups?.length || 0) === 0 || numberOfDays <= 0"
+                      @click="onScheduleCheckedGroups"
+                    />
+
+                    <BaseButton
+                      label="Publish Now"
+                      color="warning"
+                      rounded
+                      small
+                      :disabled="!selectedModelPlatformId"
+                      @click="onPublishScheduledJobs"
+                    />
+
+                    <BaseButton
+                      label="Purge Scheduled"
+                      color="danger"
+                      rounded
+                      small
+                      :disabled="!selectedModelPlatformId"
+                      @click="onPurgeScheduledJobs"
+                    />
                     <div>
                       <label class="block text-sm">Update Status</label>
                       <select class="w-32 rounded" @change="onChangeStatus">

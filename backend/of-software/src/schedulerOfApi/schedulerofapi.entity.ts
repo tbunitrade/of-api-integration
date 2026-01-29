@@ -12,6 +12,7 @@ import {
 export type SchedulerOfApiJobType = 'massmsg' | 'post' | 'sync' | 'other';
 export type SchedulerOfApiStatus =
   | 'queued'
+  | 'processing'
   | 'scheduled'
   | 'sent'
   | 'done'

@@ -119,10 +119,21 @@ export class ApiMassMessageService {
 
   async startMassMessage(dto: any) {
     const modelPlatformId = Number(dto?.modelPlatformId);
-    const text = String(dto?.text || '').trim();
+    //const text = String(dto?.text || '').trim();
+
+    // внутри startMassMessage(payload)
+    const text = String(
+        (dto?.text ?? dto?.message ?? dto?.content ?? '')
+    ).trim();
+
+    // compatibility with scheduler payload keys
+    dto.userLists = dto.userLists ?? dto.audience_include_ids;
+    dto.excludedLists = dto.excludedLists ?? dto.audience_exclude_ids;
+    dto.userIds = dto.userIds ?? dto.user_ids_array;
+    dto.mediaIds = dto.mediaIds ?? dto.vault_media_ids;
 
     if (!modelPlatformId) throw new BadRequestException('modelPlatformId is required');
-    if (!text) throw new BadRequestException('text is required');
+    if (!text) throw new BadRequestException('Text is required, DTO is empty');
 
     const mp = await this.modelPlatformService.findById(modelPlatformId);
     if (!mp) throw new BadRequestException(`ModelPlatform not found: ${modelPlatformId}`);
@@ -158,6 +169,8 @@ export class ApiMassMessageService {
       userIds: payload.userIds?.length,
     });
 
+    // delay  чуть больше 10с
+    await this._throttle10s(accountId);
     const res = await this.externalApi.sendMassMessage(accountId, payload);
     console.log('[ApiMassMessageService] provider response', res);
     return res;
@@ -259,5 +272,29 @@ export class ApiMassMessageService {
     }
 
     return uniq;
+  }
+
+  // ApiMassMessageService (class-level)
+  private static _lastSendAtByAccount = new Map<string, number>();
+
+  private async _sleep(ms: number) {
+    return new Promise((r) => setTimeout(r, ms));
+  }
+
+  private async _throttle10s(accountId: string) {
+    const key = String(accountId || '').trim();
+    if (!key) return;
+
+    const now = Date.now();
+    const last = ApiMassMessageService._lastSendAtByAccount.get(key) || 0;
+    const diff = now - last;
+
+    const waitMs = 10_500 - diff; // чуть больше 10с
+    if (waitMs > 0) {
+      console.log('[ApiMassMessageService] throttle: wait', { accountId: key, waitMs });
+      await this._sleep(waitMs);
+    }
+
+    ApiMassMessageService._lastSendAtByAccount.set(key, Date.now());
   }
 }
