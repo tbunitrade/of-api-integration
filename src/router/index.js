@@ -60,6 +60,14 @@ const routes = [
   },
   {
     meta: {
+      title: 'List'
+    },
+    path: '/cron-jobs',
+    name: 'cron-jobs',
+    component: () => import('@/views/CronJobsView.vue')
+  },
+  {
+    meta: {
       title: 'Message'
     },
     path: '/message',

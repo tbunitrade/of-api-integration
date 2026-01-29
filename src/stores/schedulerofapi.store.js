@@ -2,7 +2,7 @@
 import { defineStore } from 'pinia'
 import axios from '../plugin/axios'
 
-const useSchedulerOfApiStore = defineStore({
+export const useSchedulerOfApiStore = defineStore({
   id: 'schedulerofapi',
   state: () => ({
     isLoading: false,
@@ -12,6 +12,39 @@ const useSchedulerOfApiStore = defineStore({
     offset: 0,
   }),
   actions: {
+
+    async load(q = {}) {
+      this.loading = true
+      try {
+        const params = {
+          page: q.page ?? this.page,
+          limit: q.limit ?? this.limit,
+        }
+
+        if (q.model_platform_id) params.model_platform_id = q.model_platform_id
+        if (q.group_id) params.group_id = q.group_id
+        if (q.message_id) params.message_id = q.message_id
+        if (q.status) params.status = q.status
+        if (q.job_type) params.job_type = q.job_type
+        if (q.from) params.from = q.from
+        if (q.to) params.to = q.to
+
+        const res = await axios.get(
+          `${import.meta.env.VITE_APP_ROOT_API}/schedulerofapi/list`,
+          { params }
+        )
+
+        this.items = res.data?.items || []
+        this.total = res.data?.total || 0
+        this.page = res.data?.page || params.page
+        this.limit = res.data?.limit || params.limit
+
+        console.log('[schedulerofapi.store] loaded', { total: this.total, page: this.page, limit: this.limit })
+      } finally {
+        this.loading = false
+      }
+    },
+
     async findAll(params = {}) {
       try {
         this.isLoading = true
@@ -111,4 +144,4 @@ const useSchedulerOfApiStore = defineStore({
   },
 })
 
-export { useSchedulerOfApiStore }
+//export { useSchedulerOfApiStore }

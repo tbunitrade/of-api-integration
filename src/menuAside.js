@@ -26,6 +26,12 @@ export default [
     label: 'Mass',
     icon: mdiTable
   },
+  //add new routes
+  {
+    to: '/cron-jobs',
+    label: 'Listing',
+    icon: mdiTable
+  },
   //end  new routes
   {
     to: '/posts',

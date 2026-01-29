@@ -137,6 +137,8 @@ const onPageNumberClick = (page) => {
         <th class="text-left"> Message Id </th>
         <th class="text-left"> Message Name </th>
         <th class="text-right">Message Time</th>
+        <th class="text-left">Status </th>
+        <th class="text-left">External Id </th>
         <th class="text-right">Message List</th>
         <th class="text-right">Message List Exclude</th>
         <th class="text-right">User Tags</th>
@@ -164,6 +166,12 @@ const onPageNumberClick = (page) => {
         </td>
         <td data-label="Message Time" class="text-right">
           {{ convert24to12(client.message_time) }}
+        </td>
+        <td data-label="Status" class="text-left">
+          {{ client.job_status ?? 'new' }}
+        </td>
+        <td data-label="External Id" class="text-left">
+          {{ client.job_external_id ?? client.external_id ?? '' }}
         </td>
         <td data-label="Message List" class="text-left">
           {{ client.message_list }}

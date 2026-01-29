@@ -1,6 +1,8 @@
 // backend/of-software/src/schedulerOfApi/schedulerofapi.controller.ts
 
-import { Controller, Get, Param, Req, Post, Body, Patch, Query, Delete } from '@nestjs/common';
+import { Controller, Get, Param, Req, Post, Body, Patch, Query, Delete, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import type { Request } from 'express';
 import { SchedulerOfApiService } from './schedulerofapi.service';
 import { CreateSchedulerOfApiDto } from '../dtos/create-schedulerofapi.dto';
@@ -16,6 +18,16 @@ export class SchedulerOfApiController {
   findAll(@Req() req: Request, @Query()  query: any) {
     console.log('[schedulerofapi] GET url=', req.originalUrl, 'query=', query);
     return this.service.findAll(query);
+  }
+
+  @Get('list')
+  @ApiBearerAuth('jwt')
+  @UseGuards(JwtAuthGuard)
+  async list(@Query() q: any) {
+    // ожидаемые query:
+    // page, limit, model_platform_id, group_id, message_id, job_type, status
+    // from, to (ISO date strings)
+    return this.service.list(q);
   }
 
   @Get(':id')

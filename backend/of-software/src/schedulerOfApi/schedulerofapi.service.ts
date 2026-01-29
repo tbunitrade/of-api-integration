@@ -1,8 +1,8 @@
 // backend/of-software/src/schedulerOfApi/schedulerofapi.service.ts
 
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import {Between, Repository} from 'typeorm';
 import { SchedulerOfApiEntity } from './schedulerofapi.entity';
 import { ApiMassMessageService } from '../automate/api-mass-message.service';
 import { CreateSchedulerOfApiDto } from '../dtos/create-schedulerofapi.dto';
@@ -188,6 +188,7 @@ export class SchedulerOfApiService {
           group_id: job.group_id,
           message_id: job.message_id,
           scheduledDate, // <-- важно
+          skipValidateLists: true, // ✅ ВАЖНО: чтобы НЕ дергать user-lists
         };
 
 
@@ -205,9 +206,20 @@ export class SchedulerOfApiService {
         // если провайдер возвращает id — сохрани
         if ((providerResp as any)?.data?.id) job.external_id = String((providerResp as any).data.id);
 
-        job.status = 'sent'; // или 'scheduled' — как ты решишь по провайдеру
-        await this.repo.save(job);
+        const accepted =
+          !!(providerResp as any)?.data?.id &&
+          (providerResp as any)?.data?.hasError !== true;
 
+        if (!accepted) {
+          job.status = 'failed';
+          job.error = { note: 'Provider did not accept job', providerResp } as any;
+          await this.repo.save(job);
+          failed++;
+          continue;
+        }
+
+        job.status = 'sent';
+        await this.repo.save(job);
         sent++;
       } catch (e: any) {
         job.status = 'failed';
@@ -218,6 +230,50 @@ export class SchedulerOfApiService {
     }
 
     return { ok: true, processed, sent, failed, force };
+  }
+
+  async list(q: any) {
+    const page = Math.max(1, Number(q?.page || 1));
+    const limit = Math.min(200, Math.max(1, Number(q?.limit || 50)));
+    const skip = (page - 1) * limit;
+
+    const model_platform_id = q?.model_platform_id ? Number(q.model_platform_id) : undefined;
+    const group_id = q?.group_id ? Number(q.group_id) : undefined;
+    const message_id = q?.message_id ? Number(q.message_id) : undefined;
+
+    const job_type = q?.job_type ? String(q.job_type).trim() : undefined;
+    const status = q?.status ? String(q.status).trim() : undefined;
+
+    const from = q?.from ? new Date(String(q.from)) : undefined;
+    const to = q?.to ? new Date(String(q.to)) : undefined;
+
+    if (from && Number.isNaN(from.getTime())) throw new BadRequestException('Invalid from date');
+    if (to && Number.isNaN(to.getTime())) throw new BadRequestException('Invalid to date');
+
+    const where: any = {};
+    if (model_platform_id) where.model_platform_id = model_platform_id;
+    if (group_id) where.group_id = group_id;
+    if (message_id) where.message_id = message_id;
+    if (job_type) where.job_type = job_type;
+    if (status) where.status = status;
+
+    // if (from && to) where.scheduled_at = Between(from, to);
+    // else if (from) where.scheduled_at = Between(from, new Date('2999-01-01'));
+    // else if (to) where.scheduled_at = Between(new Date('1970-01-01'), to);
+
+    // станет (если в entity scheduledAt):
+    if (from && to) where.scheduledAt = Between(from, to);
+    else if (from) where.scheduledAt = Between(from, new Date('2999-01-01'));
+    else if (to) where.scheduledAt = Between(new Date('1970-01-01'), to);
+
+    const [items, total] = await this.repo.findAndCount({
+      where,
+      order: { id: 'DESC' }, // удобнее как “живой лог”
+      take: limit,
+      skip,
+    });
+
+    return { items, total, page, limit };
   }
 
 }
