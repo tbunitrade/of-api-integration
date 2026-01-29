@@ -13,6 +13,7 @@ const useMessageStore = defineStore({
       try {
         const params = {}
         if (opts.massmsg !== undefined) params.massmsg = opts.massmsg ? 1 : 0
+        if (opts.model_platform_id) params.model_platform_id = opts.model_platform_id
 
         const response = await axios.get(`${import.meta.env.VITE_APP_ROOT_API}/message/group/${id}`,
           Object.keys(params).length? {params} : {})
@@ -32,6 +33,7 @@ const useMessageStore = defineStore({
         const params = {}
         if (searchStr) params.searchStr = searchStr
         if (opts.massmsg !== undefined) params.massmsg = opts.massmsg ? 1 : 0
+        if (opts.model_platform_id) params.model_platform_id = opts.model_platform_id
 
         const response = await axios.get(
           `${import.meta.env.VITE_APP_ROOT_API}/message/model/${id}`,

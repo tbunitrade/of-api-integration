@@ -41,15 +41,19 @@ export class MessageController {
   @Get('group/:id')
   @ApiBearerAuth('jwt')
   @UseGuards(JwtAuthGuard)
-
-  async findMessagesByGroupId(@Param('id') id: string, @Query('massmsg') massmsg?: string) {
+  async findMessagesByGroupId(
+    @Param('id') id: string,
+    @Query('massmsg') massmsg?: string,
+    @Query('model_platform_id') model_platform_id?: string,) {
     const massFlag =
       massmsg === undefined || massmsg === null || massmsg === ''
         ? undefined
         : (String(massmsg).toLowerCase() === 'true' || String(massmsg) === '1');
+    const mpId = model_platform_id ? Number(model_platform_id) : undefined;
+
     try {
       console.log('[MESSAGE findMessagesByGroupId] id=', id);
-      return this.messageService.findAllByGroupId(id, massFlag);
+      return this.messageService.findAllByGroupId(id, massFlag, mpId);
     } catch (error) {
          throw error;
     }
@@ -63,15 +67,17 @@ export class MessageController {
     @Param('id') id: string,
     @Query() searchRequestDto: SearchRequestDto,
     @Query('massmsg') massmsg?: string,
+    @Query('model_platform_id') model_platform_id?: string,
   ) {
     const massFlag =
       massmsg === undefined || massmsg === null || massmsg === ''
         ? undefined
         : (String(massmsg).toLowerCase() === 'true' || String(massmsg) === '1');
+    const mpId = model_platform_id ? Number(model_platform_id) : undefined;
 
     try {
       console.log('[MESSAGE findMessagesByModelId] id=', id);
-      return this.messageService.findAllByModelId(id, searchRequestDto.searchStr, massFlag);
+      return this.messageService.findAllByModelId(id, searchRequestDto.searchStr, massFlag, mpId);
     } catch (error) {
       throw error;
     }

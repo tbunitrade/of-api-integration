@@ -290,10 +290,15 @@ export class MessageService {
     }
   }
 
-  async findAllByGroupId(id: string, massmsg?: boolean): Promise<Message[]> {
+  async findAllByGroupId(
+    id: string,
+    massmsg?: boolean,
+    modelPlatformId?: number
+  ): Promise<any[]> {
     try {
       const qb = this.messageRepository
         .createQueryBuilder('message')
+        .select(['message.*']) // ✅ КРИТИЧНО: убирает message_ префиксы в raw
         .innerJoin('group_message', 'group_message', 'message.id = group_message.message_id')
         .where('group_message.group_id = :group_id', { group_id: id })
         .orderBy('message.message_time', 'ASC')
@@ -303,13 +308,50 @@ export class MessageService {
         qb.andWhere('message.massmsg = :massmsg', { massmsg });
       }
 
-      return await qb.getMany();
+      // ✅ join latest scheduler row for this message + model_platform_id
+      if (modelPlatformId) {
+        qb.leftJoin(
+          'schedulerofapi',
+          'sch',
+          `sch.id = (
+          SELECT s2.id
+          FROM schedulerofapi s2
+          WHERE s2.message_id = message.id
+            AND s2.model_platform_id = :mpid
+          ORDER BY s2.id DESC
+          LIMIT 1
+        )`,
+          { mpid: modelPlatformId },
+        );
+
+        // ✅ ВАЖНО: добавляем sch поля в raw
+        qb.addSelect('sch.status', 'job_status');
+        qb.addSelect('sch.external_id', 'job_external_id');
+        qb.addSelect('sch.id', 'job_id');
+        // qb.addSelect('sch.scheduledDate', 'job_scheduled_date'); // включи если точно есть такое поле
+      } else {
+        // если modelPlatformId не передали — sch будет NULL (поля тоже null)
+        qb.leftJoin('schedulerofapi', 'sch', '1=0');
+
+        // можно не добавлять addSelect — будут просто отсутствовать поля
+        // но если хочешь чтобы ключи существовали всегда:
+        // qb.addSelect('NULL', 'job_status');
+        // qb.addSelect('NULL', 'job_external_id');
+        // qb.addSelect('NULL', 'job_id');
+      }
+
+      return await qb.getRawMany();
     } catch (err) {
       console.error('Message findAll error', err);
     }
   }
 
-  async findAllByModelId(id: string, searchStr?: string, massmsg?: boolean) {
+  async findAllByModelId(
+    id: string,
+    searchStr?: string,
+    massmsg?: boolean,
+    modelPlatformId?: number
+  ) {
     try {
       const qb = this.messageRepository
         .createQueryBuilder('message')
@@ -333,7 +375,35 @@ export class MessageService {
         else qb.where('message.massmsg = :massmsg', { massmsg });
       }
 
-      return qb.orderBy('message.message_time', 'ASC').addOrderBy('message.id', 'ASC').getRawMany();
+      if (modelPlatformId) {
+        qb.leftJoin(
+          'schedulerofapi',
+          'sch',
+          `sch.id = (
+          SELECT s2.id
+          FROM schedulerofapi s2
+          WHERE s2.message_id = message.id
+            AND s2.model_platform_id = :mpid
+          ORDER BY s2.id DESC
+          LIMIT 1
+        )`,
+          { mpid: modelPlatformId },
+        );
+
+        // ✅ ВАЖНО: правильные алиасы под фронт
+        qb.addSelect('sch.status', 'job_status');
+        qb.addSelect('sch.external_id', 'job_external_id');
+        qb.addSelect('sch.id', 'job_id');
+        // qb.addSelect('sch.scheduledDate', 'job_scheduled_date'); // включи если поле реально так называется
+      } else {
+        qb.leftJoin('schedulerofapi', 'sch', '1=0');
+        // см. коммент выше про NULL
+      }
+
+      return qb
+        .orderBy('message.message_time', 'ASC')
+        .addOrderBy('message.id', 'ASC')
+        .getRawMany();
     } catch (err) {
       console.error('Message findAll error', err);
     }

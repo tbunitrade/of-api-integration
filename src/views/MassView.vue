@@ -237,7 +237,7 @@ const fetchData = async () => {
 // --- Group view
 const onViewGroup = (id) => {
   selectedGroup.value = (groupStore.groups || []).filter((it) => it.id === id)[0];
-  messageStore.getMessagesByGroup(id, { massmsg : true });
+  messageStore.getMessagesByGroup(id, { massmsg : true, model_platform_id: selectedModelPlatformId.value  });
   isGroupSelected.value = true;
 };
 
@@ -765,9 +765,9 @@ async function onFinalSubmitMessage() {
       $mv.value.$reset();
 
       if (isGroupSelected.value && selectedGroup.value?.id) {
-        await messageStore.getMessagesByGroup(selectedGroup.value.id, { massmsg: true });
+        await messageStore.getMessagesByGroup(selectedGroup.value.id, { massmsg: true, model_platform_id: selectedModelPlatformId.value  });
       } else if (selectedModel.value?.id) {
-        await messageStore.getMessagesByModel(selectedModel.value.id, undefined, { massmsg: true });
+        await messageStore.getMessagesByModel(selectedModel.value.id, undefined, { massmsg: true, model_platform_id: selectedModelPlatformId.value  });
       }
     }
 
@@ -888,7 +888,7 @@ const onScheduleCheckedGroups = async () => {
   let created = 0;
 
   for (const gid of gids) {
-    await messageStore.getMessagesByGroup(gid, { massmsg: true });
+    await messageStore.getMessagesByGroup(gid, { massmsg: true, model_platform_id: selectedModelPlatformId.value  });
 
     const jobs = buildSchedulerJobsForLoadedGroup(gid, days);
     console.log('[MassView] jobs for group', gid, jobs.length);

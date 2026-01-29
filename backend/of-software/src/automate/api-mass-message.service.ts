@@ -73,6 +73,10 @@ export class ApiMassMessageService {
     return set;
   }
 
+  // ApiMassMessageService (class-level)
+  private static _audienceCache = new Map<string, { ts: number; providerSet: Set<string> }>();
+  private static _AUDIENCE_TTL_MS = 10 * 60 * 1000; // 10 минут
+
   private async _validateAudienceLists(accountId: string, dto: any) {
     const userLists = this._normalizeListNames(dto?.userLists);
     const excludedLists = this._normalizeListNames(dto?.excludedLists);
@@ -81,20 +85,48 @@ export class ApiMassMessageService {
       return { userLists, excludedLists };
     }
 
-    // ЕДИНСТВЕННЫЙ источник истины: всегда грузим все списки
-    const providerLists = await this._loadAllProviderLists(accountId);
+    // ====== CACHE (чтобы не дергать GET user-lists на каждый job) ======
+    const key = String(accountId || '').trim();
+    const now = Date.now();
+    const cached = ApiMassMessageService._audienceCache.get(key);
 
-    // Если провайдер вернул пусто — НЕ блокируем mass-message (иначе будет флапать UX)
-    if (!providerLists.length) {
-      console.log('[ApiMassMessageService] provider lists empty, skip strict validation', {
-        accountId,
-        userLists,
-        excludedLists,
+    let providerSet: Set<string> = new Set();
+
+    if (cached && (now - cached.ts) < ApiMassMessageService._AUDIENCE_TTL_MS) {
+      providerSet = cached.providerSet;
+    } else {
+      const providerLists = await this._loadAllProviderLists(accountId);
+
+      if (!providerLists.length) {
+        console.log('[ApiMassMessageService] provider lists empty, skip strict validation', {
+          accountId, userLists, excludedLists,
+        });
+        return { userLists, excludedLists };
+      }
+
+      providerSet = this._buildProviderKeySet(providerLists);
+
+      ApiMassMessageService._audienceCache.set(key, {
+        ts: now,
+        providerSet,
       });
-      return { userLists, excludedLists };
     }
+    // ================================================================
 
-    const providerSet = this._buildProviderKeySet(providerLists);
+    // // ЕДИНСТВЕННЫЙ источник истины: всегда грузим все списки
+    // const providerLists = await this._loadAllProviderLists(accountId);
+    //
+    // // Если провайдер вернул пусто — НЕ блокируем mass-message (иначе будет флапать UX)
+    // if (!providerLists.length) {
+    //   console.log('[ApiMassMessageService] provider lists empty, skip strict validation', {
+    //     accountId,
+    //     userLists,
+    //     excludedLists,
+    //   });
+    //   return { userLists, excludedLists };
+    // }
+    //
+    // const providerSet = this._buildProviderKeySet(providerLists);
 
     const missingUser = userLists.filter((x) => !providerSet.has(String(x).toLowerCase()));
     const missingExcluded = excludedLists.filter((x) => !providerSet.has(String(x).toLowerCase()));
@@ -104,8 +136,10 @@ export class ApiMassMessageService {
         accountId,
         missingUser,
         missingExcluded,
-        providerCount: providerLists.length,
+        //providerCount: providerLists.length,
       });
+
+      ApiMassMessageService._audienceCache.delete(String(accountId || '').trim());
 
       throw new BadRequestException(
         `Audience lists are outdated. Missing: ` +
@@ -122,14 +156,15 @@ export class ApiMassMessageService {
     //const text = String(dto?.text || '').trim();
 
     // внутри startMassMessage(payload)
-    const text = String(
-        (dto?.text ?? dto?.message ?? dto?.content ?? '')
-    ).trim();
+    const text = String((dto?.text ?? dto?.message ?? dto?.content ?? '')).trim();
 
     // compatibility with scheduler payload keys
     dto.userLists = dto.userLists ?? dto.audience_include_ids;
     dto.excludedLists = dto.excludedLists ?? dto.audience_exclude_ids;
     dto.userIds = dto.userIds ?? dto.user_ids_array;
+
+    // media ids from scheduler (vault_media_ids) -> provider expects mediaFiles
+    // keep dto.mediaIds for backward compatibility but map it to mediaFiles later
     dto.mediaIds = dto.mediaIds ?? dto.vault_media_ids;
 
     if (!modelPlatformId) throw new BadRequestException('modelPlatformId is required');
@@ -143,22 +178,98 @@ export class ApiMassMessageService {
       throw new BadRequestException(`Account ID (ofid_username) is empty for modelPlatformId=${modelPlatformId}`);
     }
 
-    const { userLists, excludedLists } = await this._validateAudienceLists(accountId, dto);
+    //const { userLists, excludedLists } = await this._validateAudienceLists(accountId, dto);
 
     //const userLists = this._normalizeListNames(dto?.userLists);
     //const excludedLists = this._normalizeListNames(dto?.excludedLists);
+
+    // If dispatcher passes skipValidateLists=true -> do NOT call GET user-lists
+    let userLists = this._normalizeListNames(dto?.userLists);
+    let excludedLists = this._normalizeListNames(dto?.excludedLists);
+
+    if (!dto?.skipValidateLists) {
+      const validated = await this._validateAudienceLists(accountId, dto);
+      userLists = validated.userLists;
+      excludedLists = validated.excludedLists;
+    }
+
     const userIds = Array.isArray(dto?.userIds) ? dto.userIds : [];
+
+    // normalize media ids/strings
     const mediaIds = Array.isArray(dto?.mediaIds)
       ? dto.mediaIds.map((x: any) => String(x ?? '').trim()).filter(Boolean)
       : [];
 
-    const payload = {
+    // provider contract fields
+    const lockedText =
+      dto?.lockedText !== undefined ? !!dto.lockedText :
+        dto?.locked_text !== undefined ? !!dto.locked_text :
+          undefined;
+
+    const saveForLater =
+      dto?.saveForLater !== undefined ? !!dto.saveForLater :
+        dto?.save_for_later !== undefined ? !!dto.save_for_later :
+          undefined;
+
+    const scheduledDate =
+      dto?.scheduledDate != null ? String(dto.scheduledDate).trim() :
+        dto?.scheduled_date != null ? String(dto.scheduled_date).trim() :
+          undefined;
+
+    // IMPORTANT: price rules per docs: 0 or 3-200, and if price > 0 -> mediaFiles required
+    const priceRaw =
+      dto?.price !== undefined && dto?.price !== null && dto?.price !== ''
+        ? Number(dto.price)
+        : undefined;
+
+    const hasPrice = priceRaw !== undefined && !Number.isNaN(priceRaw);
+    const price = hasPrice ? priceRaw : undefined;
+
+    // previews can be: file[] | string[] | int[]
+    const previews = Array.isArray(dto?.previews) ? dto.previews : undefined;
+
+    // Build provider payload (correct names)
+    const payload: any = {
       text,
       userLists,
       excludedLists,
       userIds,
-      ...(mediaIds.length ? { mediaIds } : {} ),
+      //...(mediaIds.length ? { mediaIds } : {} ),
     };
+
+    if (lockedText !== undefined) payload.lockedText = lockedText;
+    if (saveForLater !== undefined) payload.saveForLater = saveForLater;
+    if (scheduledDate) payload.scheduledDate = scheduledDate;
+
+    // mediaFiles mapping
+    // mediaIds (vault ids / ofapi ids) -> mediaFiles
+    if (mediaIds.length) payload.mediaFiles = mediaIds;
+
+    if (price !== undefined) {
+      payload.price = price;
+
+      // validate price bounds (docs: 0 or 3-200)
+      const okPrice = price === 0 || (price >= 3 && price <= 200);
+      if (!okPrice) {
+        throw new BadRequestException('price must be 0 or between 3 and 200');
+      }
+
+      // If paid: mediaFiles REQUIRED
+      if (price > 0) {
+        if (!payload.mediaFiles || !Array.isArray(payload.mediaFiles) || payload.mediaFiles.length === 0) {
+          throw new BadRequestException('price > 0 requires mediaFiles (use vault_media_ids / mediaIds)');
+        }
+
+        // previews optional, but supported
+        if (previews && previews.length) payload.previews = previews;
+      } else {
+        // price === 0: previews not needed, mediaFiles allowed (already set if present)
+        if (previews && previews.length) payload.previews = previews; // harmless; provider may ignore
+      }
+    } else {
+      // price is unset: if previews provided - still pass (provider may ignore)
+      if (previews && previews.length) payload.previews = previews;
+    }
 
     console.log('[ApiMassMessageService] sending', {
       modelPlatformId,
@@ -167,11 +278,19 @@ export class ApiMassMessageService {
       userLists: userLists.length,
       excludedLists: excludedLists.length,
       userIds: payload.userIds?.length,
+      lockedText: payload.lockedText,
+      saveForLater: payload.saveForLater,
+      scheduledDate: payload.scheduledDate,
+      price: payload.price,
+      mediaFilesLen: Array.isArray(payload.mediaFiles) ? payload.mediaFiles.length : undefined,
+      previewsLen: Array.isArray(payload.previews) ? payload.previews.length : undefined,
     });
 
     // delay  чуть больше 10с
     await this._throttle10s(accountId);
+
     const res = await this.externalApi.sendMassMessage(accountId, payload);
+
     console.log('[ApiMassMessageService] provider response', res);
     return res;
   }
