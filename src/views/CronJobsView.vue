@@ -1,5 +1,4 @@
 // src/views/CronJobsView.vue
-
 <script setup>
 import { computed, reactive, ref, onMounted, watch } from 'vue'
 import { useSchedulerOfApiStore } from '@/stores/schedulerofapi.store'
