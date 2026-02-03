@@ -411,6 +411,11 @@ export class ApiMassMessageService {
     // free_preview (0/1) from MessageDto / frontend
     const freePreviewFlag = Number(dto?.free_preview ?? dto?.freePreview ?? 0) === 1;
 
+    // если free_preview включили — тогда price обязателен”, добавь жёсткую проверку
+    if (freePreviewFlag && (price === undefined || price <= 0)) {
+      throw new BadRequestException('free_preview requires price > 0');
+    }
+
     // Build provider payload (correct names)
     const payload: any = {
       text,
