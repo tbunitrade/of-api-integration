@@ -1229,16 +1229,31 @@ watch(
                 </div>
                 <div class="flex gap-5 md:flex-row flex-col">
                   <div class="flex-1">
+<!--                    <FormField label="Free Preview">-->
+<!--                      <select-->
+<!--                        v-model="selectedMessage.free_preview"-->
+<!--                        class="w-full rounded border px-2 py-1"-->
+<!--                      >-->
+<!--                        <option v-for="option in freePreviewOptions" :key="option.value" :value="option.value">-->
+<!--                          {{ option.label }}-->
+<!--                        </option>-->
+<!--                      </select>-->
+
+<!--                    </FormField>-->
+
                     <FormField label="Free Preview">
                       <select
-                        v-model="selectedMessage.free_preview"
+                        v-model.number="selectedMessage.free_preview"
                         class="w-full rounded border px-2 py-1"
                       >
-                        <option v-for="option in freePreviewOptions" :key="option.value" :value="option.value">
+                        <option
+                          v-for="option in freePreviewOptions"
+                          :key="option.value"
+                          :value="option.value"
+                        >
                           {{ option.label }}
                         </option>
                       </select>
-
                     </FormField>
 
                   </div>

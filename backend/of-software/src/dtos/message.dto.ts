@@ -74,7 +74,11 @@ export class MessageDto {
 
   @ApiPropertyOptional({ type: 'number', required: false })
   @IsOptional()
-  @Transform(({ value }) => (value === '' || value == null ? 0 : value))
+  @Transform(({ value }) => {
+    if (value === '' || value == null) return 0;
+    const n = Number(value);
+    return Number.isFinite(n) ? n : 0;
+  })
   @IsNumber()
   free_preview?: number;
 
