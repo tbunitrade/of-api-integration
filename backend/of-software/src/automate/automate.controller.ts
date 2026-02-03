@@ -46,9 +46,30 @@ export class AutomateController {
     return this.apiVaultMediaService.addMediaToVaultList(body);
   }
 
+  // @Get('vault-lists')
+  // getVaultLists(@Query('modelPlatformId') modelPlatformId: string, @Query() q: any) {
+  //   const params = { ...q };
+  //   delete params.modelPlatformId;
+  //   return this.apiVaultMediaService.getVaultLists(Number(modelPlatformId), params);
+  // }
+
   @Get('vault-lists')
-  getVaultLists(@Query('modelPlatformId') modelPlatformId: string) {
-    return this.apiVaultMediaService.getVaultLists(Number(modelPlatformId));
+  getVaultLists(@Query('modelPlatformId') modelPlatformId: string, @Query() q: any) {
+    const params = { ...q };
+    delete params.modelPlatformId;
+
+    // allow only these
+    const out: any = {};
+
+    if (typeof params.query === 'string' && params.query.trim()) out.query = params.query.trim();
+
+    const limitNum = Number(params.limit);
+    if (Number.isFinite(limitNum)) out.limit = Math.min(Math.max(limitNum, 1), 30);
+
+    const offsetNum = Number(params.offset);
+    if (Number.isFinite(offsetNum)) out.offset = Math.max(offsetNum, 0);
+
+    return this.apiVaultMediaService.getVaultLists(Number(modelPlatformId), out);
   }
 
   @Get('vault-media')

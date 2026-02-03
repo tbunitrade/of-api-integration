@@ -364,6 +364,31 @@ const selectLast4 = () => {
   selectedMediaIdsLocal.value = ids;
 };
 
+const vaultListSearch = ref('');
+
+const fetchVaultListsPage = async (pageOffset: number, pageLimit: number) => {
+
+  const q = String(vaultListSearch.value || '').trim();
+  const url =
+    `${import.meta.env.VITE_APP_ROOT_API}/automate/vault-lists` +
+    `?modelPlatformId=${modelPlatformId.value}` +
+    `&limit=${encodeURIComponent(String(pageLimit))}` +
+    `&offset=${encodeURIComponent(String(pageOffset))}` +
+    (q ? `&query=${encodeURIComponent(q)}` : '');;
+
+  const data = await debugFetchJson(url, {
+    fn: 'fetchVaultListsPage',
+    modelPlatformId: modelPlatformId.value,
+    pageLimit,
+    pageOffset,
+  });
+
+  const lists = normalizeVaultLists(data);
+  const hasMoreResp = Boolean(data?.data?.hasMore);
+
+  return { lists, hasMoreResp, raw: data };
+};
+
 const loadVaultLists = async () => {
   if (!canWork.value) {
     notify({ title: 'Warning', type: 'error', text: 'ModelPlatform is not selected/found' });
@@ -372,20 +397,51 @@ const loadVaultLists = async () => {
 
   loadingLists.value = true;
   try {
-    const url = `${import.meta.env.VITE_APP_ROOT_API}/automate/vault-lists?modelPlatformId=${modelPlatformId.value}`;
-    // const res = await fetch(url);
-    // const data = await res.json().catch(() => ({}));
-    // lastResponse.value = data;
+    const pageLimit = 30;      // безопасный лимит
+    let pageOffset = 0;
+    let pages = 0;
 
-    const data = await debugFetchJson(url, { fn: 'loadVaultLists', modelPlatformId: modelPlatformId.value });
-    lastResponse.value = data;
+    const all: any[] = [];
+    let hasMoreResp = true;
 
-    const lists = normalizeVaultLists(data);
-    vaultLists.value = lists;
+    while (hasMoreResp && pages < 50) { // safety limit
+      const { lists, hasMoreResp: hm, raw } = await fetchVaultListsPage(pageOffset, pageLimit);
 
-    if (!selectedVaultListId.value && lists.length) {
-      selectedVaultListId.value = String(lists[0].id);
+      // сохраняем последний ответ для DEBUG
+      lastResponse.value = raw;
+
+      // если внезапно пусто — выходим, чтобы не крутиться
+      if (!lists.length) break;
+
+      all.push(...lists);
+
+      hasMoreResp = hm;
+      pageOffset += pageLimit;
+      pages++;
     }
+
+    // дедуп по id (на случай перекрытий страниц)
+    const byId: Record<string, any> = {};
+    for (const l of all) {
+      if (l?.id) byId[String(l.id)] = l;
+    }
+
+    const merged = Object.values(byId);
+
+    vaultLists.value = merged;
+
+    // если selection пустой — ставим первый элемент
+    if (!selectedVaultListId.value && merged.length) {
+      selectedVaultListId.value = String(merged[0].id);
+    }
+
+    // если selection был, но его больше нет — тоже поставим первый
+    if (selectedVaultListId.value && merged.length) {
+      const exists = merged.some((x: any) => String(x.id) === String(selectedVaultListId.value));
+      if (!exists) selectedVaultListId.value = String(merged[0].id);
+    }
+
+    console.log('[VaultLists] loaded full', { pages, total: merged.length });
   } catch (e: any) {
     console.log('[ExternalVaultMediaCard] loadVaultLists error', e);
     notify({ title: 'Error', type: 'error', text: 'Failed to load vault lists' });
@@ -393,6 +449,36 @@ const loadVaultLists = async () => {
     loadingLists.value = false;
   }
 };
+
+// const loadVaultLists = async () => {
+//   if (!canWork.value) {
+//     notify({ title: 'Warning', type: 'error', text: 'ModelPlatform is not selected/found' });
+//     return;
+//   }
+//
+//   loadingLists.value = true;
+//   try {
+//     const url = `${import.meta.env.VITE_APP_ROOT_API}/automate/vault-lists?modelPlatformId=${modelPlatformId.value}`;
+//     // const res = await fetch(url);
+//     // const data = await res.json().catch(() => ({}));
+//     // lastResponse.value = data;
+//
+//     const data = await debugFetchJson(url, { fn: 'loadVaultLists', modelPlatformId: modelPlatformId.value });
+//     lastResponse.value = data;
+//
+//     const lists = normalizeVaultLists(data);
+//     vaultLists.value = lists;
+//
+//     if (!selectedVaultListId.value && lists.length) {
+//       selectedVaultListId.value = String(lists[0].id);
+//     }
+//   } catch (e: any) {
+//     console.log('[ExternalVaultMediaCard] loadVaultLists error', e);
+//     notify({ title: 'Error', type: 'error', text: 'Failed to load vault lists' });
+//   } finally {
+//     loadingLists.value = false;
+//   }
+// };
 
 const loadVaultMedia = async (reset = true) => {
   if (!canWork.value) {
